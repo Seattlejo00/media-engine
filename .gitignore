@@ -1,0 +1,12 @@
+.env
+output/
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+youtube_credentials.json
+token.json
+media_engine.log
