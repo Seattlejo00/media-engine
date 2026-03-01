@@ -87,6 +87,9 @@ def run_pipeline(script_only: bool = False, dry_run: bool = False) -> dict:
     summary["episode_title"] = script.get("title", "Untitled")
     logger.info(f"Episode: {script.get('title', 'Untitled')}")
 
+    # Save readable transcript
+    _save_transcript(script, episode_dir, date_str)
+
     if script_only:
         logger.info("Script-only mode — stopping after script generation.")
         summary["status"] = "script_complete"
@@ -172,6 +175,30 @@ def run_pipeline(script_only: bool = False, dry_run: bool = False) -> dict:
     logger.info(f"Pipeline complete! Summary: {summary_path}")
 
     return summary
+
+
+def _save_transcript(script: dict, episode_dir: Path, date_str: str):
+    """Save a clean, readable transcript as a text file."""
+    lines = []
+    title = script.get("title", f"The AI Daily — {date_str}")
+    lines.append(f"THE AI DAILY — {date_str}")
+    lines.append(f'"{title}"')
+    lines.append("=" * 60)
+    lines.append("")
+
+    for segment in script.get("segments", []):
+        seg_type = segment.get("type", "").replace("_", " ").title()
+        lines.append(f"--- {seg_type} ---")
+        lines.append("")
+
+        for dialogue in segment.get("dialogue", []):
+            speaker = dialogue.get("speaker", "Unknown")
+            text = dialogue.get("text", "")
+            lines.append(f"  {speaker}: {text}")
+            lines.append("")
+
+    transcript_path = episode_dir / "transcript.txt"
+    transcript_path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def _update_rss_feed(script: dict, audio_path: Path, duration: float, date_str: str):

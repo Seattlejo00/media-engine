@@ -157,9 +157,9 @@ def _render_clip(
 
     video = video.with_audio(audio)
 
-    # Limit to max clip duration
+    # Only hard-truncate if way over limit (let dialogue finish naturally)
     max_duration = config.CLIP_DURATION_SECONDS
-    if video.duration > max_duration:
+    if video.duration > max_duration * 1.5:
         video = video.subclipped(0, max_duration)
 
     # Export

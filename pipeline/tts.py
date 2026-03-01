@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 # Voice mapping: speaker -> (voice_id, speed)
 VOICE_MAP = {
-    "Claude": {"voice": config.CLAUDE_VOICE, "speed": 0.95},  # Slightly slower, thoughtful
-    "ChatGPT": {"voice": config.CHATGPT_VOICE, "speed": 1.05},  # Slightly faster, energetic
+    "Claude": {"voice": config.CLAUDE_VOICE, "speed": 1.1},
+    "ChatGPT": {"voice": config.CHATGPT_VOICE, "speed": 1.1},
 }
 
 

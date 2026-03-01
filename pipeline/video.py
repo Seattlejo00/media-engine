@@ -54,6 +54,7 @@ def _create_speaker_frame(
 ) -> CompositeVideoClip:
     """Create a single video frame showing who's speaking with subtitles."""
     width, height = size
+    is_landscape = size == LANDSCAPE
 
     # Background
     bg = ColorClip(size=size, color=BG_COLOR).with_duration(duration)
@@ -61,48 +62,69 @@ def _create_speaker_frame(
     # Speaker indicator bar at top
     color = CLAUDE_COLOR if speaker == "Claude" else CHATGPT_COLOR
     speaker_bar = ColorClip(
-        size=(width, 6), color=color
+        size=(width, 8), color=color
     ).with_duration(duration).with_position((0, 0))
 
-    # Speaker name
-    speaker_label = TextClip(
-        text=speaker,
-        font_size=48,
-        color="white",
-        font=FONT_BOLD,
-        stroke_color="black",
-        stroke_width=1,
-    ).with_duration(duration).with_position(("center", height * 0.35))
-
     # Speaker icon (colored circle)
-    icon_size = 120
+    icon_size = 100 if is_landscape else 80
+    icon_y = int(height * 0.12) if is_landscape else int(height * 0.08)
     icon = ColorClip(
         size=(icon_size, icon_size), color=color
     ).with_duration(duration).with_position(
-        ((width - icon_size) // 2, int(height * 0.18))
+        ((width - icon_size) // 2, icon_y)
     )
 
-    # Subtitle text (word-wrapped)
-    max_chars_per_line = 50 if size == LANDSCAPE else 30
-    wrapped = _wrap_text(text, max_chars_per_line)
+    # Speaker name — explicit height prevents descender clipping (g, p, y in "ChatGPT")
+    name_y = icon_y + icon_size + 20
+    name_font_size = 44 if is_landscape else 36
+    name_height = int(name_font_size * 1.8)  # generous height for descenders + stroke
+    speaker_label = TextClip(
+        text=speaker,
+        font_size=name_font_size,
+        color="white",
+        font=FONT_BOLD,
+        stroke_color="black",
+        stroke_width=2,
+        text_align="center",
+        size=(None, name_height),
+    ).with_duration(duration).with_position(("center", name_y))
+
+    # Subtitle text — constrain width, limit lines, center in middle zone
+    max_chars = 45 if is_landscape else 28
+    wrapped = _wrap_text(text, max_chars)
+
+    # Cap lines to prevent overflow into watermark area
+    lines = wrapped.split("\n")
+    max_lines = 5 if is_landscape else 7
+    if len(lines) > max_lines:
+        lines = lines[:max_lines]
+        lines[-1] = lines[-1].rstrip() + "..."
+    wrapped = "\n".join(lines)
+
+    sub_font_size = 32 if is_landscape else 26
+    subtitle_y = name_y + name_height + 40  # breathing room below name
 
     subtitle = TextClip(
         text=wrapped,
-        font_size=36 if size == LANDSCAPE else 28,
+        font_size=sub_font_size,
         color="white",
         font=FONT_REGULAR,
         text_align="center",
         stroke_color="black",
         stroke_width=1,
-    ).with_duration(duration).with_position(("center", height * 0.55))
+        size=(width - 200, None),
+    ).with_duration(duration).with_position(("center", subtitle_y))
 
-    # Show title
+    # Show title / watermark — explicit height to prevent bottom clipping
+    watermark_font_size = 20
+    watermark_height = int(watermark_font_size * 2.0)
     title = TextClip(
         text="THE AI DAILY",
-        font_size=24,
-        color=(150, 150, 150),
+        font_size=watermark_font_size,
+        color=(120, 120, 120),
         font=FONT_BOLD,
-    ).with_duration(duration).with_position(("center", height * 0.92))
+        size=(None, watermark_height),
+    ).with_duration(duration).with_position(("center", int(height * 0.90)))
 
     return CompositeVideoClip(
         [bg, speaker_bar, icon, speaker_label, subtitle, title], size=size

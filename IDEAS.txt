@@ -1,0 +1,52 @@
+FUTURE IMPROVEMENTS
+====================
+
+1. ANIMATED SUBTITLES (word-by-word reveal as they speak)
+   - Use OpenAI Whisper API to transcribe each TTS audio segment back
+   - Whisper returns word-level timestamps
+   - Render subtitles progressively: words appear as they're spoken
+   - Could highlight current word in a different color (karaoke-style)
+   - Would need higher FPS (at least 10-15fps) for smooth word reveals
+   - Tradeoff: slower render time, but much more engaging video
+
+2. BETTER VISUAL DESIGN
+   - Replace colored squares with actual Claude/ChatGPT logos/avatars
+   - Animated waveform or equalizer visualization while speaking
+   - Smooth transitions between speakers (fade/slide)
+   - Background subtle particle effects or gradient animations
+   - Episode title card at the start
+
+3. PODCAST HOSTING / RSS
+   - Set up Cloudflare R2 or podcast hosting service
+   - Auto-upload audio + update RSS feed for Spotify/Apple Podcasts
+   - Episode show notes auto-generated from script
+
+4. CONTENT IMPROVEMENTS
+   - Guest AI models (Gemini, Llama, Mistral) for special episodes
+   - Listener questions segment (pull from comments/social)
+   - Weekly recap episodes
+   - Topic voting via community posts
+
+5. DISTRIBUTION
+   - TikTok auto-posting (needs developer app approval)
+   - Twitter/X posting (expensive - $200/mo for media upload)
+   - Instagram Reels via Facebook Graph API
+   - Auto-generated thumbnails for YouTube
+
+7. LONGER EPISODES
+   - Currently 12 min target (EPISODE_DURATION_MINUTES in .env)
+   - Could go 20-30 min for deeper dives
+   - Add "deep dive" episode type vs "daily briefing"
+   - Longer eps = more API cost but more content
+
+8. READABLE TRANSCRIPTS
+   - Auto-generate a clean .txt or .md transcript from script.json
+   - Include speaker labels, timestamps, segment headers
+   - Could publish as blog post / show notes on distomostech.com
+   - SEO value from written transcripts
+
+9. SCHEDULING / RELIABILITY
+   - Move from local cron to cloud (Railway, Render, or AWS Lambda)
+   - Retry logic for API failures
+   - Episode quality scoring before publishing
+   - Dashboard to monitor daily runs
