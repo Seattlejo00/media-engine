@@ -1,8 +1,15 @@
 import os
+import platform
 from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
+
+# --- Ensure ffmpeg is in PATH (Windows WinGet install location) ---
+if platform.system() == "Windows":
+    _winget_links = Path.home() / "AppData" / "Local" / "Microsoft" / "WinGet" / "Links"
+    if _winget_links.exists() and str(_winget_links) not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = str(_winget_links) + os.pathsep + os.environ.get("PATH", "")
 
 # --- Paths ---
 BASE_DIR = Path(__file__).parent
