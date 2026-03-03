@@ -12,6 +12,7 @@ from moviepy import AudioFileClip, CompositeVideoClip, concatenate_videoclips
 from openai import OpenAI
 
 import config
+from pipeline.cost_tracker import tracker
 from pipeline.video import PORTRAIT, _create_speaker_frame, _estimate_duration
 
 logger = logging.getLogger(__name__)
@@ -69,6 +70,15 @@ def identify_clip_segments(script: dict) -> list[dict]:
         response_format={"type": "json_object"},
         temperature=0.7,
     )
+
+    # Track usage
+    usage = response.usage
+    if usage:
+        tracker.record(
+            step="clip_identification", model="gpt-4o-mini",
+            input_tokens=usage.prompt_tokens,
+            output_tokens=usage.completion_tokens,
+        )
 
     try:
         result = json.loads(response.choices[0].message.content)

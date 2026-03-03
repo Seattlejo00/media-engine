@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 import requests
 
 import config
+from pipeline.cost_tracker import tracker
 
 logger = logging.getLogger(__name__)
 
@@ -156,6 +157,15 @@ def rank_topics(articles: list[dict]) -> list[dict]:
         response_format={"type": "json_object"},
         temperature=0.7,
     )
+
+    # Track usage
+    usage = resp.usage
+    if usage:
+        tracker.record(
+            step="topic_ranking", model="gpt-4o-mini",
+            input_tokens=usage.prompt_tokens,
+            output_tokens=usage.completion_tokens,
+        )
 
     try:
         result = json.loads(resp.choices[0].message.content)

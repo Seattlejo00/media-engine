@@ -24,6 +24,7 @@ from pipeline.tts import synthesize_script
 from pipeline.audio import assemble_episode, get_episode_duration
 from pipeline.video import generate_landscape_video
 from pipeline.clips import identify_clip_segments, extract_clips
+from pipeline.cost_tracker import tracker
 from distribution.youtube import upload_episode, upload_clip
 from distribution.rss import generate_feed
 from distribution.social import post_episode_to_twitter, post_clip_to_twitter
@@ -61,7 +62,13 @@ def run_pipeline(
     elif guest:
         if guest not in config.SPEAKERS:
             raise ValueError(
-                f"Unknown guest: {guest}. Available: {config.get_guests()}"
+                f"Unknown guest: {guest}. "
+                f"Available: {config.get_all_guests()}"
+            )
+        if not config.speaker_has_api_key(guest):
+            raise ValueError(
+                f"{guest} has no API key configured — guests can't speak "
+                f"unless they write their own lines. Add the API key to .env first."
             )
         roster = config.get_hosts() + [guest]
     else:
@@ -190,6 +197,10 @@ def run_pipeline(
 
     # RSS feed (append to existing)
     _update_rss_feed(script, episode_audio, duration, date_str)
+
+    # === STEP 8: Cost Report ===
+    cost_summary = tracker.save_report(episode_dir)
+    summary["cost_usd"] = cost_summary["total_cost_usd"]
 
     # === Done ===
     summary["status"] = "complete"

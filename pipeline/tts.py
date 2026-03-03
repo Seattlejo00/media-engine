@@ -10,6 +10,7 @@ from pathlib import Path
 from openai import OpenAI
 
 import config
+from pipeline.cost_tracker import tracker
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ def synthesize_line(
     )
 
     response.stream_to_file(str(output_path))
+    tracker.record_tts(len(text))
     logger.debug(f"TTS: {speaker} -> {output_path.name}")
     return output_path
 

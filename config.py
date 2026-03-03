@@ -112,13 +112,40 @@ SPEAKERS = {
 }
 
 
+# --- API key lookup (maps api_type -> env var) ---
+_API_KEY_MAP = {
+    "anthropic": ANTHROPIC_API_KEY,
+    "openai": OPENAI_API_KEY,
+    "google": GOOGLE_AI_API_KEY,
+    "xai": XAI_API_KEY,
+}
+
+
+def speaker_has_api_key(name: str) -> bool:
+    """Check if a speaker's API key is configured (non-empty)."""
+    api_type = SPEAKERS[name]["api_type"]
+    return bool(_API_KEY_MAP.get(api_type, ""))
+
+
 def get_hosts() -> list[str]:
     """Return permanent host speaker names."""
     return [name for name, s in SPEAKERS.items() if s["role"] == "host"]
 
 
 def get_guests() -> list[str]:
-    """Return guest speaker names."""
+    """Return guest speaker names that have valid API keys.
+
+    A guest without an API key can't write their own lines,
+    so they're excluded — no one speaks unless they write it.
+    """
+    return [
+        name for name, s in SPEAKERS.items()
+        if s["role"] == "guest" and speaker_has_api_key(name)
+    ]
+
+
+def get_all_guests() -> list[str]:
+    """Return ALL guest speaker names (regardless of key status)."""
     return [name for name, s in SPEAKERS.items() if s["role"] == "guest"]
 
 
@@ -129,6 +156,9 @@ def get_episode_roster(date: datetime | None = None) -> list[str]:
     - Normal days: just the permanent hosts
     - Guest day (default Friday): hosts + one rotating guest
     - Roundtable format: hosts + all guests
+
+    Only guests with valid API keys are eligible — no one speaks
+    unless they can write their own lines.
     """
     if date is None:
         date = datetime.now()
@@ -136,7 +166,7 @@ def get_episode_roster(date: datetime | None = None) -> list[str]:
     hosts = get_hosts()
 
     if date.strftime("%A") == GUEST_EPISODE_DAY:
-        guests = get_guests()
+        guests = get_guests()  # already filtered by API key
         if not guests:
             return hosts
         if GUEST_FORMAT == "roundtable":

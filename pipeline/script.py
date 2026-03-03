@@ -13,6 +13,7 @@ from anthropic import Anthropic
 from openai import OpenAI
 
 import config
+from pipeline.cost_tracker import tracker
 
 logger = logging.getLogger(__name__)
 
@@ -125,6 +126,15 @@ def _generate_initial_script(episode_prompt: str, roster: list[str]) -> dict:
         system=system_msg,
     )
 
+    # Track usage
+    tracker.record(
+        step="initial_script",
+        model=config.CLAUDE_MODEL,
+        input_tokens=response.usage.input_tokens,
+        output_tokens=response.usage.output_tokens,
+        speaker="Claude",
+    )
+
     text = response.content[0].text
 
     # Extract JSON from the response (handle markdown code blocks)
@@ -215,6 +225,11 @@ def _rewrite_line(
             system=persona,
             messages=[{"role": "user", "content": user_content}],
         )
+        tracker.record(
+            step="voice_rewrite", model=model, speaker=speaker,
+            input_tokens=response.usage.input_tokens,
+            output_tokens=response.usage.output_tokens,
+        )
         return response.content[0].text.strip()
 
     elif api_type in ("openai", "xai"):
@@ -226,10 +241,25 @@ def _rewrite_line(
                 {"role": "user", "content": user_content},
             ],
         )
+        usage = response.usage
+        if usage:
+            tracker.record(
+                step="voice_rewrite", model=model, speaker=speaker,
+                input_tokens=usage.prompt_tokens,
+                output_tokens=usage.completion_tokens,
+            )
         return response.choices[0].message.content.strip()
 
     elif api_type == "google":
         response = client.generate_content(f"{persona}\n\n{user_content}")
+        # Gemini usage metadata
+        meta = getattr(response, "usage_metadata", None)
+        if meta:
+            tracker.record(
+                step="voice_rewrite", model=model, speaker=speaker,
+                input_tokens=getattr(meta, "prompt_token_count", 0),
+                output_tokens=getattr(meta, "candidates_token_count", 0),
+            )
         return response.text.strip()
 
     return original  # fallback
