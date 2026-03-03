@@ -1,5 +1,6 @@
 openai>=1.40.0
 anthropic>=0.34.0
+google-generativeai>=0.7.0
 pydub>=0.25.1
 moviepy>=2.0.0
 feedgen>=1.0.0

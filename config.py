@@ -1,5 +1,6 @@
 import os
 import platform
+from datetime import datetime
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -20,6 +21,8 @@ PROMPTS_DIR = BASE_DIR / "prompts"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 NEWS_API_KEY = os.getenv("NEWS_API_KEY", "")
+GOOGLE_AI_API_KEY = os.getenv("GOOGLE_AI_API_KEY", "")
+XAI_API_KEY = os.getenv("XAI_API_KEY", "")
 
 # --- Episode Settings ---
 EPISODE_DURATION_MINUTES = int(os.getenv("EPISODE_DURATION_MINUTES", "30"))
@@ -29,8 +32,6 @@ TIMEZONE = os.getenv("TIMEZONE", "America/Los_Angeles")
 
 # --- TTS ---
 TTS_PROVIDER = os.getenv("TTS_PROVIDER", "openai")
-CLAUDE_VOICE = os.getenv("CLAUDE_VOICE", "onyx")
-CHATGPT_VOICE = os.getenv("CHATGPT_VOICE", "nova")
 
 # --- Podcast Metadata ---
 PODCAST_TITLE = os.getenv("PODCAST_TITLE", "The AI Daily")
@@ -57,3 +58,92 @@ TIKTOK_ACCESS_TOKEN = os.getenv("TIKTOK_ACCESS_TOKEN", "")
 # --- Models ---
 CLAUDE_MODEL = "claude-sonnet-4-20250514"
 CHATGPT_MODEL = "gpt-4o"
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+GROK_MODEL = os.getenv("GROK_MODEL", "grok-3")
+
+# --- Guest Episode Settings ---
+GUEST_EPISODE_DAY = os.getenv("GUEST_EPISODE_DAY", "Friday")
+GUEST_FORMAT = os.getenv("GUEST_FORMAT", "guest_friday")  # "guest_friday" or "roundtable"
+
+# --- Speaker Registry ---
+# Central data structure that all modules use.
+# Adding a new AI = one dict entry here + one persona prompt file.
+SPEAKERS = {
+    "Claude": {
+        "company": "Anthropic",
+        "voice": os.getenv("CLAUDE_VOICE", "onyx"),
+        "tts_speed": 1.1,
+        "color": (204, 120, 50),
+        "model": CLAUDE_MODEL,
+        "api_type": "anthropic",
+        "persona_prompt": "claude_host.txt",
+        "role": "host",
+    },
+    "ChatGPT": {
+        "company": "OpenAI",
+        "voice": os.getenv("CHATGPT_VOICE", "nova"),
+        "tts_speed": 1.1,
+        "color": (16, 163, 127),
+        "model": CHATGPT_MODEL,
+        "api_type": "openai",
+        "persona_prompt": "chatgpt_host.txt",
+        "role": "host",
+    },
+    "Gemini": {
+        "company": "Google",
+        "voice": os.getenv("GEMINI_VOICE", "echo"),
+        "tts_speed": 1.1,
+        "color": (66, 133, 244),
+        "model": GEMINI_MODEL,
+        "api_type": "google",
+        "persona_prompt": "gemini_guest.txt",
+        "role": "guest",
+    },
+    "Grok": {
+        "company": "xAI",
+        "voice": os.getenv("GROK_VOICE", "fable"),
+        "tts_speed": 1.1,
+        "color": (239, 68, 68),
+        "model": GROK_MODEL,
+        "api_type": "xai",
+        "persona_prompt": "grok_guest.txt",
+        "role": "guest",
+    },
+}
+
+
+def get_hosts() -> list[str]:
+    """Return permanent host speaker names."""
+    return [name for name, s in SPEAKERS.items() if s["role"] == "host"]
+
+
+def get_guests() -> list[str]:
+    """Return guest speaker names."""
+    return [name for name, s in SPEAKERS.items() if s["role"] == "guest"]
+
+
+def get_episode_roster(date: datetime | None = None) -> list[str]:
+    """
+    Determine which speakers participate in today's episode.
+
+    - Normal days: just the permanent hosts
+    - Guest day (default Friday): hosts + one rotating guest
+    - Roundtable format: hosts + all guests
+    """
+    if date is None:
+        date = datetime.now()
+
+    hosts = get_hosts()
+
+    if date.strftime("%A") == GUEST_EPISODE_DAY:
+        guests = get_guests()
+        if not guests:
+            return hosts
+        if GUEST_FORMAT == "roundtable":
+            return hosts + guests
+        # Rotate guests week by week
+        week_num = date.isocalendar()[1]
+        guest = guests[week_num % len(guests)]
+        return hosts + [guest]
+
+    return hosts

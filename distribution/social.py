@@ -63,7 +63,18 @@ def post_to_twitter(
         return None
 
 
-def post_episode_to_twitter(script: dict, youtube_url: str | None = None) -> str | None:
+def _roster_hashtags(roster: list[str] | None = None) -> str:
+    """Build hashtags from the episode roster."""
+    if roster is None:
+        roster = config.get_hosts()
+    tags = [f"#{name}" for name in roster]
+    tags.extend(["#AI", "#Podcast"])
+    return " ".join(tags)
+
+
+def post_episode_to_twitter(
+    script: dict, youtube_url: str | None = None, roster: list[str] | None = None,
+) -> str | None:
     """Post episode announcement to Twitter."""
     title = script.get("title", "New Episode")
     text = f"🎙️ New episode of The AI Daily\n\n{title}\n\n"
@@ -71,18 +82,20 @@ def post_episode_to_twitter(script: dict, youtube_url: str | None = None) -> str
     if youtube_url:
         text += f"Watch: {youtube_url}\n\n"
 
-    text += "#AI #ChatGPT #Claude #Podcast"
+    text += _roster_hashtags(roster)
 
     return post_to_twitter(text)
 
 
 def post_clip_to_twitter(
-    clip_path: Path, clip_title: str, episode_url: str | None = None
+    clip_path: Path, clip_title: str, episode_url: str | None = None,
+    roster: list[str] | None = None,
 ) -> str | None:
     """Post a clip to Twitter with video."""
     text = f"🔥 {clip_title}\n\nFrom today's AI Daily"
     if episode_url:
         text += f"\n\nFull ep: {episode_url}"
+    text += f"\n\n{_roster_hashtags(roster)}"
 
     return post_to_twitter(text, clip_path)
 

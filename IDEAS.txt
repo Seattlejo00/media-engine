@@ -22,10 +22,24 @@ FUTURE IMPROVEMENTS
    - Episode show notes auto-generated from script
 
 4. CONTENT IMPROVEMENTS
-   - Guest AI models (Gemini, Llama, Mistral) for special episodes
    - Listener questions segment (pull from comments/social)
    - Weekly recap episodes
    - Topic voting via community posts
+
+10. GUEST AI HOSTS (Gemini, Grok, etc.)
+   - Gemini: Google AI Studio API (gemini-2.0-flash or gemini-1.5-pro)
+     - Has TTS? No native TTS — would need to use ElevenLabs or similar to create a distinct voice
+   - Grok: xAI API (grok-2, grok-3)
+     - Same deal — no native TTS, would need a unique voice
+   - Format ideas:
+     - "Guest Friday" — 3rd AI joins as a guest panelist
+     - "Debate episodes" — two guest AIs argue a topic, Claude & ChatGPT moderate
+     - "AI Roundtable" — all four weigh in on one big story
+   - Technical work:
+     - Add new voice profiles (distinct from Claude/ChatGPT voices)
+     - Update script.py to handle 3-4 speakers
+     - Update video.py for additional speaker colors/icons
+     - Moderate difficulty — main challenge is making each AI sound distinct
 
 5. DISTRIBUTION
    - TikTok auto-posting (needs developer app approval)
@@ -34,8 +48,7 @@ FUTURE IMPROVEMENTS
    - Auto-generated thumbnails for YouTube
 
 7. LONGER EPISODES
-   - Currently 12 min target (EPISODE_DURATION_MINUTES in .env)
-   - Could go 20-30 min for deeper dives
+   - Now set to 30 min (EPISODE_DURATION_MINUTES=30 in .env)
    - Add "deep dive" episode type vs "daily briefing"
    - Longer eps = more API cost but more content
 

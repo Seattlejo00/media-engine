@@ -22,7 +22,9 @@ INTRO_SILENCE = 500              # Silence at the start
 OUTRO_SILENCE = 1500             # Silence at the end
 
 
-def assemble_episode(audio_manifest: list[dict], output_dir: Path) -> Path:
+def assemble_episode(
+    audio_manifest: list[dict], output_dir: Path, roster: list[str] | None = None
+) -> Path:
     """
     Stitch all audio segments into a single episode MP3.
 
@@ -82,7 +84,7 @@ def assemble_episode(audio_manifest: list[dict], output_dir: Path) -> Path:
         bitrate="192k",
         tags={
             "title": config.PODCAST_TITLE,
-            "artist": "Claude & ChatGPT",
+            "artist": " & ".join(roster) if roster else "Claude & ChatGPT",
             "album": config.PODCAST_TITLE,
             "genre": "Podcast",
         },

@@ -40,7 +40,12 @@ logging.basicConfig(
 logger = logging.getLogger("media-engine")
 
 
-def run_pipeline(script_only: bool = False, dry_run: bool = False) -> dict:
+def run_pipeline(
+    script_only: bool = False,
+    dry_run: bool = False,
+    guest: str | None = None,
+    roundtable: bool = False,
+) -> dict:
     """
     Execute the full episode generation pipeline.
 
@@ -50,7 +55,25 @@ def run_pipeline(script_only: bool = False, dry_run: bool = False) -> dict:
     episode_dir = config.OUTPUT_DIR / date_str
     episode_dir.mkdir(parents=True, exist_ok=True)
 
-    summary = {"date": date_str, "status": "started"}
+    # Determine today's episode roster
+    if roundtable:
+        roster = config.get_hosts() + config.get_guests()
+    elif guest:
+        if guest not in config.SPEAKERS:
+            raise ValueError(
+                f"Unknown guest: {guest}. Available: {config.get_guests()}"
+            )
+        roster = config.get_hosts() + [guest]
+    else:
+        roster = config.get_episode_roster()
+
+    is_guest_episode = len(roster) > len(config.get_hosts())
+
+    summary = {"date": date_str, "status": "started", "roster": roster}
+
+    if is_guest_episode:
+        guests = [s for s in roster if config.SPEAKERS[s]["role"] == "guest"]
+        logger.info(f"Guest episode! Today's guests: {guests}")
 
     # === STEP 1: Discover Topics ===
     logger.info("=" * 60)
@@ -81,7 +104,7 @@ def run_pipeline(script_only: bool = False, dry_run: bool = False) -> dict:
     logger.info("STEP 2: Generating script...")
     logger.info("=" * 60)
 
-    script = generate_script(topics)
+    script = generate_script(topics, roster=roster)
     script_path = save_script(script, episode_dir)
     summary["script_path"] = str(script_path)
     summary["episode_title"] = script.get("title", "Untitled")
@@ -108,7 +131,7 @@ def run_pipeline(script_only: bool = False, dry_run: bool = False) -> dict:
     logger.info("STEP 4: Assembling episode audio...")
     logger.info("=" * 60)
 
-    episode_audio = assemble_episode(audio_manifest, episode_dir)
+    episode_audio = assemble_episode(audio_manifest, episode_dir, roster=roster)
     duration = get_episode_duration(episode_audio)
     summary["episode_audio"] = str(episode_audio)
     summary["duration_seconds"] = duration
@@ -139,7 +162,7 @@ def run_pipeline(script_only: bool = False, dry_run: bool = False) -> dict:
     logger.info("=" * 60)
 
     # YouTube - full episode
-    yt_episode_id = upload_episode(episode_video, script, date_str)
+    yt_episode_id = upload_episode(episode_video, script, date_str, roster=roster)
     yt_url = f"https://youtube.com/watch?v={yt_episode_id}" if yt_episode_id else None
     summary["youtube_episode_id"] = yt_episode_id
 
@@ -149,13 +172,13 @@ def run_pipeline(script_only: bool = False, dry_run: bool = False) -> dict:
         clip_title = (
             clip_segments[i]["title"] if i < len(clip_segments) else f"Clip {i+1}"
         )
-        clip_id = upload_clip(clip_path, clip_title, yt_episode_id)
+        clip_id = upload_clip(clip_path, clip_title, yt_episode_id, roster=roster)
         if clip_id:
             yt_clip_ids.append(clip_id)
     summary["youtube_clip_ids"] = yt_clip_ids
 
     # Twitter/X - episode announcement
-    tweet_id = post_episode_to_twitter(script, yt_url)
+    tweet_id = post_episode_to_twitter(script, yt_url, roster=roster)
     summary["tweet_id"] = tweet_id
 
     # Twitter/X - clips
@@ -163,7 +186,7 @@ def run_pipeline(script_only: bool = False, dry_run: bool = False) -> dict:
         clip_title = (
             clip_segments[i]["title"] if i < len(clip_segments) else f"Clip {i+1}"
         )
-        post_clip_to_twitter(clip_path, clip_title, yt_url)
+        post_clip_to_twitter(clip_path, clip_title, yt_url, roster=roster)
 
     # RSS feed (append to existing)
     _update_rss_feed(script, episode_audio, duration, date_str)
@@ -283,6 +306,14 @@ def main():
         "--dry-run", action="store_true",
         help="Discover topics only (no generation)",
     )
+    parser.add_argument(
+        "--guest", type=str, default=None,
+        help="Force a guest for this episode (e.g., --guest Gemini)",
+    )
+    parser.add_argument(
+        "--roundtable", action="store_true",
+        help="Force roundtable format with all speakers",
+    )
 
     args = parser.parse_args()
 
@@ -292,6 +323,8 @@ def main():
         summary = run_pipeline(
             script_only=args.script_only,
             dry_run=args.dry_run,
+            guest=args.guest,
+            roundtable=args.roundtable,
         )
 
         if summary["status"] == "complete":

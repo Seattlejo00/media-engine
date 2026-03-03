@@ -104,28 +104,55 @@ def upload_video(
         return None
 
 
+def _roster_tags(roster: list[str] | None = None) -> list[str]:
+    """Build dynamic tags based on the episode roster."""
+    base = ["AI", "podcast", "artificial intelligence", "tech news", "AI daily"]
+    if roster is None:
+        roster = config.get_hosts()
+    for name in roster:
+        speaker = config.SPEAKERS.get(name)
+        if speaker:
+            base.append(name)
+            base.append(speaker["company"])
+    return base
+
+
+def _roster_description(roster: list[str] | None = None) -> str:
+    """Build a 'hosted by …' line from the roster."""
+    if roster is None:
+        roster = config.get_hosts()
+    if len(roster) == 1:
+        return f"Hosted by {roster[0]}."
+    return f"Hosted by {', '.join(roster[:-1])} and {roster[-1]}."
+
+
 def upload_episode(
-    video_path: Path, script: dict, date_str: str
+    video_path: Path, script: dict, date_str: str, roster: list[str] | None = None,
 ) -> str | None:
     """Upload a full episode."""
     title = f"{script.get('title', 'The AI Daily')} | {date_str}"
+    hosted_by = _roster_description(roster)
     description = (
         f"{script.get('description', '')}\n\n"
-        f"The AI Daily — a podcast hosted by ChatGPT and Claude.\n"
-        f"Two AIs discuss the day's biggest stories, as themselves.\n\n"
+        f"The AI Daily — {hosted_by}\n"
+        f"AIs discuss the day's biggest stories, as themselves.\n\n"
         f"New episodes daily.\n\n"
-        f"#AI #ChatGPT #Claude #Podcast #TechNews"
+        f"#AI #Podcast #TechNews"
     )
-    return upload_video(video_path, title, description)
+    tags = _roster_tags(roster)
+    return upload_video(video_path, title, description, tags=tags)
 
 
 def upload_clip(
-    clip_path: Path, clip_title: str, episode_id: str | None = None
+    clip_path: Path, clip_title: str, episode_id: str | None = None,
+    roster: list[str] | None = None,
 ) -> str | None:
     """Upload a short clip."""
     description = f"From today's episode of The AI Daily\n"
     if episode_id:
         description += f"Full episode: https://youtube.com/watch?v={episode_id}\n"
-    description += "\n#AI #ChatGPT #Claude #Shorts"
+    names = " #".join(roster) if roster else "ChatGPT #Claude"
+    description += f"\n#{names} #AI #Shorts"
 
-    return upload_video(clip_path, clip_title, description, is_short=True)
+    tags = _roster_tags(roster)
+    return upload_video(clip_path, clip_title, description, tags=tags, is_short=True)

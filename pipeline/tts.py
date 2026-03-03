@@ -13,18 +13,12 @@ import config
 
 logger = logging.getLogger(__name__)
 
-# Voice mapping: speaker -> (voice_id, speed)
-VOICE_MAP = {
-    "Claude": {"voice": config.CLAUDE_VOICE, "speed": 1.1},
-    "ChatGPT": {"voice": config.CHATGPT_VOICE, "speed": 1.1},
-}
-
-
 def synthesize_line(
     client: OpenAI, text: str, speaker: str, output_path: Path
 ) -> Path:
     """Convert a single line of dialogue to an MP3 file."""
-    voice_config = VOICE_MAP.get(speaker, VOICE_MAP["ChatGPT"])
+    speaker_config = config.SPEAKERS.get(speaker, config.SPEAKERS["ChatGPT"])
+    voice_config = {"voice": speaker_config["voice"], "speed": speaker_config["tts_speed"]}
 
     response = client.audio.speech.create(
         model="tts-1-hd",

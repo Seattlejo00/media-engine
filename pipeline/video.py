@@ -40,8 +40,6 @@ PORTRAIT = (1080, 1920)   # TikTok / Reels / Shorts
 
 # Colors
 BG_COLOR = (10, 10, 20)           # Dark background
-CLAUDE_COLOR = (204, 120, 50)     # Warm orange/brown - Anthropic-ish
-CHATGPT_COLOR = (16, 163, 127)    # Teal/green - OpenAI-ish
 TEXT_COLOR = (255, 255, 255)
 SUBTITLE_BG = (0, 0, 0)
 
@@ -59,8 +57,8 @@ def _create_speaker_frame(
     # Background
     bg = ColorClip(size=size, color=BG_COLOR).with_duration(duration)
 
-    # Speaker indicator bar at top
-    color = CLAUDE_COLOR if speaker == "Claude" else CHATGPT_COLOR
+    # Speaker indicator bar at top — color from registry
+    color = config.SPEAKERS.get(speaker, config.SPEAKERS["ChatGPT"])["color"]
     speaker_bar = ColorClip(
         size=(width, 8), color=color
     ).with_duration(duration).with_position((0, 0))
@@ -93,16 +91,22 @@ def _create_speaker_frame(
     max_chars = 45 if is_landscape else 28
     wrapped = _wrap_text(text, max_chars)
 
-    # Cap lines to prevent overflow into watermark area
+    # Cap lines to prevent overflow — portrait needs fewer lines because
+    # YouTube Shorts overlays UI on the bottom ~20% of the screen
     lines = wrapped.split("\n")
-    max_lines = 5 if is_landscape else 7
+    max_lines = 5 if is_landscape else 5
     if len(lines) > max_lines:
         lines = lines[:max_lines]
         lines[-1] = lines[-1].rstrip() + "..."
     wrapped = "\n".join(lines)
 
-    sub_font_size = 32 if is_landscape else 26
+    sub_font_size = 32 if is_landscape else 28
     subtitle_y = name_y + name_height + 40  # breathing room below name
+
+    # For portrait, constrain subtitle height so it never bleeds into bottom zone
+    # Bottom safe zone for Shorts: keep everything above 78% of height
+    bottom_safe = int(height * 0.78) if not is_landscape else int(height * 0.88)
+    max_subtitle_h = bottom_safe - subtitle_y - 20  # 20px breathing room
 
     subtitle = TextClip(
         text=wrapped,
@@ -112,19 +116,20 @@ def _create_speaker_frame(
         text_align="center",
         stroke_color="black",
         stroke_width=1,
-        size=(width - 200, None),
+        size=(width - 200, max_subtitle_h),
     ).with_duration(duration).with_position(("center", subtitle_y))
 
-    # Show title / watermark — explicit height to prevent bottom clipping
+    # Show title / watermark — keep above YouTube Shorts bottom UI
     watermark_font_size = 20
     watermark_height = int(watermark_font_size * 2.0)
+    watermark_y = int(height * 0.90) if is_landscape else int(height * 0.80)
     title = TextClip(
         text="THE AI DAILY",
         font_size=watermark_font_size,
         color=(120, 120, 120),
         font=FONT_BOLD,
         size=(None, watermark_height),
-    ).with_duration(duration).with_position(("center", int(height * 0.90)))
+    ).with_duration(duration).with_position(("center", watermark_y))
 
     return CompositeVideoClip(
         [bg, speaker_bar, icon, speaker_label, subtitle, title], size=size
