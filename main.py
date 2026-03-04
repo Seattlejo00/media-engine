@@ -24,6 +24,7 @@ from pipeline.tts import synthesize_script
 from pipeline.audio import assemble_episode, get_episode_duration
 from pipeline.video import generate_landscape_video
 from pipeline.clips import identify_clip_segments, extract_clips
+from pipeline.thumbnail import generate_thumbnail
 from pipeline.cost_tracker import tracker
 from distribution.youtube import upload_episode, upload_clip
 from distribution.rss import generate_feed
@@ -157,6 +158,11 @@ def run_pipeline(
     )
     summary["episode_video"] = str(episode_video)
 
+    # --- Thumbnail ---
+    logger.info("Generating thumbnail...")
+    thumbnail_path = generate_thumbnail(script, topics, episode_dir, roster=roster)
+    summary["thumbnail"] = str(thumbnail_path)
+
     # === STEP 6: Generate Clips ===
     logger.info("=" * 60)
     logger.info("STEP 6: Generating short-form clips...")
@@ -171,8 +177,10 @@ def run_pipeline(
     logger.info("STEP 7: Distributing...")
     logger.info("=" * 60)
 
-    # YouTube - full episode
-    yt_episode_id = upload_episode(episode_video, script, date_str, roster=roster)
+    # YouTube - full episode (with custom thumbnail)
+    yt_episode_id = upload_episode(
+        episode_video, script, date_str, roster=roster, thumbnail_path=thumbnail_path,
+    )
     yt_url = f"https://youtube.com/watch?v={yt_episode_id}" if yt_episode_id else None
     summary["youtube_episode_id"] = yt_episode_id
 

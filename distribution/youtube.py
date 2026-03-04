@@ -104,6 +104,38 @@ def upload_video(
         return None
 
 
+def set_thumbnail(video_id: str, thumbnail_path: Path) -> bool:
+    """
+    Set a custom thumbnail for a YouTube video.
+
+    Requires the channel to be verified for custom thumbnails.
+    Returns True if successful, False otherwise.
+    """
+    if not video_id or not thumbnail_path or not thumbnail_path.exists():
+        return False
+
+    try:
+        youtube = _get_youtube_client()
+
+        media = MediaFileUpload(
+            str(thumbnail_path),
+            mimetype="image/png",
+            resumable=False,
+        )
+
+        youtube.thumbnails().set(
+            videoId=video_id,
+            media_body=media,
+        ).execute()
+
+        logger.info(f"Custom thumbnail set for video {video_id}")
+        return True
+
+    except Exception as e:
+        logger.warning(f"Failed to set custom thumbnail: {e}")
+        return False
+
+
 def _roster_tags(roster: list[str] | None = None) -> list[str]:
     """Build dynamic tags based on the episode roster."""
     base = ["AI", "podcast", "artificial intelligence", "tech news", "AI daily"]
@@ -127,10 +159,13 @@ def _roster_description(roster: list[str] | None = None) -> str:
 
 
 def upload_episode(
-    video_path: Path, script: dict, date_str: str, roster: list[str] | None = None,
+    video_path: Path, script: dict, date_str: str,
+    roster: list[str] | None = None,
+    thumbnail_path: Path | None = None,
 ) -> str | None:
-    """Upload a full episode."""
-    title = f"{script.get('title', 'The AI Daily')} | {date_str}"
+    """Upload a full episode with optional custom thumbnail."""
+    # Prefer YouTube-optimized title, fall back to script title
+    title = script.get("youtube_title") or f"{script.get('title', 'The AI Daily')} | {date_str}"
     hosted_by = _roster_description(roster)
     description = (
         f"{script.get('description', '')}\n\n"
@@ -140,7 +175,13 @@ def upload_episode(
         f"#AI #Podcast #TechNews"
     )
     tags = _roster_tags(roster)
-    return upload_video(video_path, title, description, tags=tags)
+    video_id = upload_video(video_path, title, description, tags=tags)
+
+    # Set custom thumbnail if available
+    if video_id and thumbnail_path:
+        set_thumbnail(video_id, thumbnail_path)
+
+    return video_id
 
 
 def upload_clip(

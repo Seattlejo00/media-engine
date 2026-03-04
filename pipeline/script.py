@@ -130,6 +130,9 @@ def generate_script(topics: list[dict], roster: list[str] | None = None) -> dict
     logger.info("Step 2: Rewriting each host's lines through their own model...")
     final_script = _rewrite_with_authentic_voices(raw_script, topics, date_str, roster)
 
+    logger.info("Step 3: Generating YouTube-optimized title...")
+    final_script["youtube_title"] = _generate_youtube_title(final_script, topics)
+
     # Attach roster metadata for downstream consumers
     final_script["roster"] = roster
 
@@ -342,6 +345,59 @@ def _rewrite_with_authentic_voices(
             context_lines.append({"speaker": speaker, "text": line["text"]})
 
     return script
+
+
+def _generate_youtube_title(script: dict, topics: list[dict]) -> str:
+    """Generate a click-worthy YouTube title from the episode content."""
+    client = OpenAI(api_key=config.OPENAI_API_KEY)
+
+    episode_title = script.get("title", "")
+    main_topics = [t["title"] for t in topics if t.get("category") == "main"][:3]
+    topics_str = "; ".join(main_topics) if main_topics else "AI news"
+
+    resp = client.chat.completions.create(
+        model="gpt-4o-mini",
+        max_tokens=100,
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You write YouTube video titles for an AI news podcast called "
+                    "'The AI Daily' hosted by ChatGPT and Claude.\n\n"
+                    "Rules for great YouTube titles:\n"
+                    "- MAX 65 characters (hard limit — YouTube truncates longer ones)\n"
+                    "- Lead with the most interesting/controversial topic\n"
+                    "- Use a pattern like: 'Topic | The AI Daily' or 'Bold Claim — Topic | AI Daily'\n"
+                    "- Create curiosity — make people NEED to click\n"
+                    "- Avoid generic words like 'interesting', 'amazing', 'incredible'\n"
+                    "- Don't use all caps or excessive punctuation\n"
+                    "- Include 'AI Daily' for brand recognition\n\n"
+                    "Return ONLY the title text, nothing else."
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"Episode script title: {episode_title}\n"
+                    f"Main topics: {topics_str}\n\n"
+                    "Write a click-worthy YouTube title."
+                ),
+            },
+        ],
+        temperature=0.9,
+    )
+
+    usage = resp.usage
+    if usage:
+        tracker.record(
+            step="youtube_title", model="gpt-4o-mini",
+            input_tokens=usage.prompt_tokens,
+            output_tokens=usage.completion_tokens,
+        )
+
+    yt_title = resp.choices[0].message.content.strip().strip('"')
+    logger.info(f"YouTube title: {yt_title}")
+    return yt_title
 
 
 def save_script(script: dict, output_dir: Path) -> Path:
