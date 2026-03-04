@@ -184,15 +184,21 @@ def run_pipeline(
     yt_url = f"https://youtube.com/watch?v={yt_episode_id}" if yt_episode_id else None
     summary["youtube_episode_id"] = yt_episode_id
 
-    # YouTube - clips
+    # YouTube - clips (capped to avoid daily upload limit)
+    max_yt_clips = config.MAX_CLIPS_UPLOAD
     yt_clip_ids = []
-    for i, clip_path in enumerate(clip_paths):
+    for i, clip_path in enumerate(clip_paths[:max_yt_clips]):
         clip_title = (
             clip_segments[i]["title"] if i < len(clip_segments) else f"Clip {i+1}"
         )
         clip_id = upload_clip(clip_path, clip_title, yt_episode_id, roster=roster)
         if clip_id:
             yt_clip_ids.append(clip_id)
+    if len(clip_paths) > max_yt_clips:
+        logger.info(
+            f"Uploaded {max_yt_clips}/{len(clip_paths)} clips to YouTube "
+            f"(MAX_CLIPS_UPLOAD={max_yt_clips})"
+        )
     summary["youtube_clip_ids"] = yt_clip_ids
 
     # Twitter/X - episode announcement

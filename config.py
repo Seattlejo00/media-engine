@@ -27,6 +27,7 @@ XAI_API_KEY = os.getenv("XAI_API_KEY", "")
 # --- Episode Settings ---
 EPISODE_DURATION_MINUTES = int(os.getenv("EPISODE_DURATION_MINUTES", "30"))
 CLIP_DURATION_SECONDS = int(os.getenv("CLIP_DURATION_SECONDS", "45"))
+MAX_CLIPS_UPLOAD = int(os.getenv("MAX_CLIPS_UPLOAD", "2"))  # YouTube daily limit safety
 DAILY_RUN_HOUR = int(os.getenv("DAILY_RUN_HOUR", "6"))
 TIMEZONE = os.getenv("TIMEZONE", "America/Los_Angeles")
 
