@@ -1,0 +1,107 @@
+THE AI DAILY — Platform Setup Checklist
+========================================
+
+Everything below is optional. The pipeline runs fine without any of
+this — YouTube uploads will keep working daily as-is. Set these up
+whenever you have time.
+
+
+1. TIKTOK (clips auto-post)
+----------------------------
+Status: Code is ready, just needs your token.
+
+[ ] Go to https://developers.tiktok.com
+[ ] Create an app
+[ ] Apply for "Content Posting API" access (they review it, may take a few days)
+[ ] Once approved, grab your access token
+[ ] Add to .env:
+      TIKTOK_ACCESS_TOKEN=your_token_here
+
+That's it. Next daily run will auto-upload clips to TikTok.
+
+
+2. CLOUDFLARE R2 — podcast audio hosting (~5 min, basically free)
+-----------------------------------------------------------------
+Status: Code is ready. This is needed before Spotify/Apple work.
+Cost: ~$0.01/month per episode. Free egress. First 10GB free.
+
+[ ] Sign up at https://cloudflare.com (free account works)
+[ ] Dashboard → R2 Object Storage → Create Bucket
+    - Name it something like "ai-daily-podcast"
+[ ] Bucket Settings → Public Access → Allow public access
+    - Note the public URL (looks like https://pub-abc123.r2.dev)
+[ ] Dashboard → R2 → Manage R2 API Tokens → Create Token
+    - Permissions: Object Read & Write
+    - Scope: just your bucket
+    - Save the Access Key ID and Secret Access Key
+[ ] Add to .env:
+      R2_ENDPOINT_URL=https://<your-account-id>.r2.cloudflarestorage.com
+      R2_ACCESS_KEY_ID=your_key
+      R2_SECRET_ACCESS_KEY=your_secret
+      R2_BUCKET_NAME=ai-daily-podcast
+      R2_PUBLIC_URL=https://pub-abc123.r2.dev
+
+Your account ID is in the Cloudflare dashboard URL or R2 overview page.
+
+
+3. SPOTIFY
+----------
+Status: Needs R2 set up first (step 2) so episodes have audio URLs.
+
+[ ] Complete step 2 above
+[ ] Host your feed.xml somewhere public:
+    - Option A: Upload output/feed.xml to your distomostech.com domain
+    - Option B: Use the R2 bucket (upload feed.xml there too)
+[ ] Go to https://podcasters.spotify.com
+[ ] Click "Get Started" → Add your RSS feed URL
+[ ] They usually approve within a few hours
+[ ] Update .env with the final feed URL:
+      RSS_FEED_URL=https://wherever-you-host-it/feed.xml
+
+
+4. APPLE PODCASTS
+-----------------
+Status: Needs R2 set up first (step 2). Same feed as Spotify.
+
+[ ] Complete steps 2 and 3 above (same RSS feed works for both)
+[ ] Go to https://podcastsconnect.apple.com (needs Apple ID)
+[ ] Click "+" → Submit RSS feed URL (same one as Spotify)
+[ ] Review takes 1-3 business days
+[ ] Once approved, your podcast appears on Apple Podcasts and gets
+    picked up by most other podcast apps automatically
+
+
+5. GUEST AI HOSTS (Gemini / Grok)
+----------------------------------
+Status: Code is ready. Guests auto-join on Fridays once keys are added.
+No key = they won't appear (no one speaks unless they write their own lines).
+
+[ ] For Gemini: https://aistudio.google.com/apikey
+    - Create an API key (free tier: 15 requests/min)
+    - Add to .env: GOOGLE_AI_API_KEY=your_key
+
+[ ] For Grok: https://console.x.ai
+    - Create an API key (requires xAI account)
+    - Add to .env: XAI_API_KEY=your_key
+
+Once added, the next Friday episode will automatically include a guest.
+Guests rotate weekly (week 1: Gemini, week 2: Grok, etc).
+Force a guest anytime: python main.py --guest Gemini
+Force all speakers:    python main.py --roundtable
+
+
+COST ESTIMATES (per month, daily episodes)
+==========================================
+Already paying:
+  - OpenAI API (script + TTS + topics):  ~$15-30/month
+  - Anthropic API (script + rewrites):   ~$10-20/month
+
+If you add everything:
+  - Cloudflare R2 storage:               ~$0.30/month (basically free)
+  - Google AI (Gemini guest, Fridays):    free tier
+  - xAI/Grok (Grok guest, Fridays):      ~$2-5/month
+  - TikTok:                              free
+  - Spotify/Apple hosting:               free (just RSS)
+
+Total with everything: ~$30-55/month for a fully automated daily
+podcast across YouTube, TikTok, Spotify, and Apple Podcasts.
