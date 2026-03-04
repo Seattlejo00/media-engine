@@ -27,7 +27,10 @@ from pipeline.clips import identify_clip_segments, extract_clips
 from pipeline.cost_tracker import tracker
 from distribution.youtube import upload_episode, upload_clip
 from distribution.rss import generate_feed
-from distribution.social import post_episode_to_twitter, post_clip_to_twitter
+from distribution.social import (
+    post_episode_to_twitter, post_clip_to_twitter, upload_to_tiktok,
+)
+from distribution.podcast_host import upload_episode_audio
 
 # --- Logging ---
 logging.basicConfig(
@@ -195,8 +198,25 @@ def run_pipeline(
         )
         post_clip_to_twitter(clip_path, clip_title, yt_url, roster=roster)
 
+    # TikTok - clips
+    tiktok_ids = []
+    for i, clip_path in enumerate(clip_paths):
+        clip_title = (
+            clip_segments[i]["title"] if i < len(clip_segments) else f"Clip {i+1}"
+        )
+        hashtags = " ".join(f"#{name}" for name in roster)
+        tiktok_title = f"{clip_title} | The AI Daily {hashtags} #AI #Podcast"
+        tiktok_id = upload_to_tiktok(clip_path, tiktok_title)
+        if tiktok_id:
+            tiktok_ids.append(tiktok_id)
+    summary["tiktok_ids"] = tiktok_ids
+
+    # Podcast hosting — upload MP3 for Spotify/Apple
+    audio_url = upload_episode_audio(episode_audio, date_str)
+    summary["podcast_audio_url"] = audio_url
+
     # RSS feed (append to existing)
-    _update_rss_feed(script, episode_audio, duration, date_str)
+    _update_rss_feed(script, episode_audio, duration, date_str, audio_url=audio_url)
 
     # === STEP 8: Cost Report ===
     cost_summary = tracker.save_report(episode_dir)
@@ -235,7 +255,10 @@ def _save_transcript(script: dict, episode_dir: Path, date_str: str):
     transcript_path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def _update_rss_feed(script: dict, audio_path: Path, duration: float, date_str: str):
+def _update_rss_feed(
+    script: dict, audio_path: Path, duration: float, date_str: str,
+    audio_url: str | None = None,
+):
     """Update the RSS feed with the new episode."""
     feed_data_path = config.OUTPUT_DIR / "feed_episodes.json"
 
@@ -251,7 +274,7 @@ def _update_rss_feed(script: dict, audio_path: Path, duration: float, date_str: 
             "title": script.get("title", f"The AI Daily — {date_str}"),
             "description": script.get("description", ""),
             "date": date_str,
-            "audio_url": "",  # Set this after hosting the MP3
+            "audio_url": audio_url or "",
             "duration_seconds": duration,
             "file_size_bytes": audio_path.stat().st_size,
         }

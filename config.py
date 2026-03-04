@@ -55,6 +55,13 @@ TWITTER_ACCESS_SECRET = os.getenv("TWITTER_ACCESS_SECRET", "")
 # --- TikTok ---
 TIKTOK_ACCESS_TOKEN = os.getenv("TIKTOK_ACCESS_TOKEN", "")
 
+# --- Podcast Hosting (Cloudflare R2 / S3-compatible) ---
+R2_ENDPOINT_URL = os.getenv("R2_ENDPOINT_URL", "")
+R2_ACCESS_KEY_ID = os.getenv("R2_ACCESS_KEY_ID", "")
+R2_SECRET_ACCESS_KEY = os.getenv("R2_SECRET_ACCESS_KEY", "")
+R2_BUCKET_NAME = os.getenv("R2_BUCKET_NAME", "")
+R2_PUBLIC_URL = os.getenv("R2_PUBLIC_URL", "")  # e.g. https://podcast.distomostech.com
+
 # --- Models ---
 CLAUDE_MODEL = "claude-sonnet-4-20250514"
 CHATGPT_MODEL = "gpt-4o"
