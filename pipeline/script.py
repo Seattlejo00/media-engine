@@ -27,7 +27,30 @@ def _load_prompt(name: str) -> str:
 def _build_episode_prompt(topics: list[dict], date: str, roster: list[str]) -> str:
     """Fill in the episode format template with today's topics and roster."""
     template = _load_prompt("episode_format.txt")
-    word_count = config.EPISODE_DURATION_MINUTES * 150  # ~150 words/min spoken
+    duration = config.EPISODE_DURATION_MINUTES
+    word_count = duration * 150  # ~150 words/min spoken
+    min_word_count = int(word_count * 0.8)  # hard floor
+
+    # Scale exchange counts based on target duration
+    # These are calibrated so total output matches the word count target
+    if duration >= 25:
+        main_story_count = 3
+        main_exchanges = 12       # deep dives, ~5-7 min each
+        cold_open_exchanges = 3
+        lightning_exchanges = 4
+        signoff_exchanges = 4
+    elif duration >= 15:
+        main_story_count = 2
+        main_exchanges = 8
+        cold_open_exchanges = 2
+        lightning_exchanges = 3
+        signoff_exchanges = 3
+    else:
+        main_story_count = 2
+        main_exchanges = 5
+        cold_open_exchanges = 2
+        lightning_exchanges = 2
+        signoff_exchanges = 2
 
     # Build dynamic host description
     speaker_parts = []
@@ -56,7 +79,7 @@ def _build_episode_prompt(topics: list[dict], date: str, roster: list[str]) -> s
         guest_names = " and ".join(guests_in_roster)
         guest_segment = (
             f"3b. GUEST SPOTLIGHT — {guest_names} shares a unique perspective "
-            f"on one main story. Hosts ask pointed questions. (3-4 exchanges)\n"
+            f"on one main story. Hosts ask pointed questions. ({main_exchanges} exchanges)\n"
         )
     else:
         guest_segment = ""
@@ -70,11 +93,17 @@ def _build_episode_prompt(topics: list[dict], date: str, roster: list[str]) -> s
     return template.format(
         date=date,
         topics=topics_text,
-        duration=config.EPISODE_DURATION_MINUTES,
+        duration=duration,
         word_count=word_count,
+        min_word_count=min_word_count,
         hosts_description=hosts_description,
         speaker_names=speaker_names,
         guest_segment=guest_segment,
+        main_story_count=main_story_count,
+        main_exchanges=main_exchanges,
+        cold_open_exchanges=cold_open_exchanges,
+        lightning_exchanges=lightning_exchanges,
+        signoff_exchanges=signoff_exchanges,
     )
 
 
@@ -215,7 +244,10 @@ def _rewrite_line(
         "Rewrite this in your authentic voice. Keep the same meaning "
         f"and information, but make it sound like YOU — {speaker} — actually "
         "talking. Keep it roughly the same length. Return ONLY the "
-        "rewritten line, no quotes or attribution."
+        "rewritten line, no quotes or attribution.\n\n"
+        "IMPORTANT: Do NOT use filler phrases like 'honestly', 'if I'm being honest', "
+        "'that's a great point', 'absolutely', 'let's dive in', 'at the end of the day', "
+        "or 'it's worth noting'. Use varied, natural language."
     )
 
     if api_type == "anthropic":

@@ -6,22 +6,29 @@ Today's topics (ranked by importance):
 {topics}
 
 Episode structure:
-1. COLD OPEN — One host drops a punchy one-liner about the top story. Another reacts. (2 exchanges)
+1. COLD OPEN — One host drops a punchy one-liner about the top story. Another reacts. ({cold_open_exchanges} exchanges)
 2. INTRO — Brief "welcome to The AI Daily" with today's date. (1 exchange each)
-3. MAIN STORIES — Cover 2-3 stories. For each:
+3. MAIN STORIES — Cover {main_story_count} stories in depth. For each:
    - One speaker introduces the story (what happened, why it matters)
-   - Back-and-forth discussion (3-5 exchanges per story)
+   - Extended back-and-forth discussion ({main_exchanges} exchanges per story)
+   - Dig deep — explore implications, debate the nuances, play devil's advocate
    - At least one moment where speakers disagree or challenge each other
    - Connect it to how it affects them as AIs AND how it affects regular humans
-{guest_segment}4. LIGHTNING ROUND — Quick takes on 2-3 smaller stories. (1-2 exchanges each)
-5. SIGN OFF — Each speaker gives their "one thing to watch" prediction, then a natural goodbye.
+   - Don't rush through stories. Let the conversation breathe and develop.
+{guest_segment}4. LIGHTNING ROUND — Quick takes on 2-3 smaller stories. ({lightning_exchanges} exchanges each)
+5. SIGN OFF — Each speaker gives their "one thing to watch" prediction, then a natural goodbye. ({signoff_exchanges} exchanges)
+
+CRITICAL — LENGTH REQUIREMENTS:
+- This episode MUST be ~{duration} minutes when read aloud (~150 words/minute).
+- Target word count: {word_count} words total. This is NOT optional.
+- Each dialogue line should be 30-80 words (2-5 spoken sentences). Vary the length.
+- If your output is shorter than {min_word_count} words, you have NOT written enough. Go deeper on topics.
+- Think of each main story as a 5-7 minute conversation, not a 2 minute summary.
 
 Rules:
 - Every line of dialogue must be attributed to one of: {speaker_names}
 - Keep it conversational. These are AIs talking, not reading teleprompters.
 - Include natural reactions: laughing, pausing, interjecting, building on each other's points.
-- Total episode should be ~{duration} minutes when read aloud (~150 words/minute).
-- Target word count: {word_count} words total.
 - The audience is smart, curious people who follow tech/AI. Don't over-explain basics.
 - Vary who leads each segment. Don't let one speaker dominate.
 
