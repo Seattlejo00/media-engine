@@ -91,16 +91,35 @@ def _create_speaker_frame(
     max_chars = 45 if is_landscape else 28
     wrapped = _wrap_text(text, max_chars)
 
-    # Cap lines to prevent overflow — portrait needs fewer lines because
-    # YouTube Shorts overlays UI on the bottom ~20% of the screen
+    # Scale font and line count based on text length so nothing gets cut off
     lines = wrapped.split("\n")
-    max_lines = 5 if is_landscape else 5
+    num_lines = len(lines)
+
+    if is_landscape:
+        if num_lines <= 5:
+            sub_font_size = 32
+            max_lines = 5
+        elif num_lines <= 7:
+            sub_font_size = 26
+            max_lines = 7
+        else:
+            sub_font_size = 22
+            max_lines = 9
+    else:
+        if num_lines <= 5:
+            sub_font_size = 28
+            max_lines = 5
+        elif num_lines <= 7:
+            sub_font_size = 22
+            max_lines = 7
+        else:
+            sub_font_size = 18
+            max_lines = 9
+
     if len(lines) > max_lines:
         lines = lines[:max_lines]
         lines[-1] = lines[-1].rstrip() + "..."
     wrapped = "\n".join(lines)
-
-    sub_font_size = 32 if is_landscape else 28
     subtitle_y = name_y + name_height + 40  # breathing room below name
 
     # For portrait, constrain subtitle height so it never bleeds into bottom zone

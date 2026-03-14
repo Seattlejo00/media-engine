@@ -85,20 +85,41 @@ def generate_thumbnail(
     else:
         headline = script.get("title", "The AI Daily")
 
-    # Keep headline punchy — max ~50 chars
-    if len(headline) > 55:
-        headline = headline[:52] + "..."
+    # Auto-scale font to fit the full headline (no truncation).
+    # Start large and shrink until it fits in max 3 lines within the safe zone.
+    max_text_width = width - 160
+    max_lines = 3
+    max_text_height = height - 260  # room for bar, dots, watermark
 
-    try:
-        headline_font = ImageFont.truetype(FONT_BOLD, 64)
-    except (OSError, IOError):
-        headline_font = ImageFont.load_default()
+    headline_font = None
+    headline_lines = []
+    line_height = 0
 
-    headline_lines = _wrap_text_pil(headline, headline_font, width - 160)
-    headline_lines = headline_lines[:3]  # max 3 lines
+    for font_size in range(72, 28, -2):
+        try:
+            test_font = ImageFont.truetype(FONT_BOLD, font_size)
+        except (OSError, IOError):
+            test_font = ImageFont.load_default()
+        test_lines = _wrap_text_pil(headline, test_font, max_text_width)
+        test_line_height = int(font_size * 1.25)
+        total_h = len(test_lines) * test_line_height
+
+        if len(test_lines) <= max_lines and total_h <= max_text_height:
+            headline_font = test_font
+            headline_lines = test_lines
+            line_height = test_line_height
+            break
+
+    # Fallback if nothing fit
+    if headline_font is None:
+        try:
+            headline_font = ImageFont.truetype(FONT_BOLD, 30)
+        except (OSError, IOError):
+            headline_font = ImageFont.load_default()
+        headline_lines = _wrap_text_pil(headline, headline_font, max_text_width)[:max_lines]
+        line_height = 38
 
     # Center the headline block vertically
-    line_height = 78
     total_text_height = len(headline_lines) * line_height
     start_y = (height - total_text_height) // 2 - 40
 
