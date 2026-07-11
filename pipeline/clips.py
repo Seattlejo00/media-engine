@@ -144,9 +144,9 @@ def _render_clip(
     for entry in entries:
         duration = _estimate_duration(entry["audio_path"])
 
-        # Create portrait video frame
+        # Create portrait video frame (clip title doubles as the headline)
         frame = _create_speaker_frame(
-            entry["speaker"], entry["text"], duration, PORTRAIT
+            entry["speaker"], entry["text"], duration, PORTRAIT, topic=title
         )
         video_clips.append(frame)
 
