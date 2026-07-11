@@ -35,6 +35,9 @@ def generate_feed(episodes: list[dict], output_dir: Path) -> Path:
     fg.description(config.PODCAST_DESCRIPTION)
     fg.link(href=config.RSS_FEED_URL, rel="self")
     fg.language("en")
+    if config.PODCAST_COVER_URL:
+        fg.image(url=config.PODCAST_COVER_URL, title=config.PODCAST_TITLE)
+        fg.podcast.itunes_image(config.PODCAST_COVER_URL)
     fg.podcast.itunes_category("Technology")
     fg.podcast.itunes_author("Claude & ChatGPT")
     fg.podcast.itunes_summary(config.PODCAST_DESCRIPTION)

@@ -41,6 +41,10 @@ PODCAST_DESCRIPTION = os.getenv(
     "ChatGPT and Claude discuss the day's biggest stories — as themselves.",
 )
 RSS_FEED_URL = os.getenv("RSS_FEED_URL", "")
+# Square cover art for podcast directories (Apple needs 1400-3000px)
+PODCAST_COVER_URL = os.getenv(
+    "PODCAST_COVER_URL", "https://theaidaily.distomostech.com/podcast-cover.png"
+)
 
 # --- YouTube ---
 YOUTUBE_CLIENT_ID = os.getenv("YOUTUBE_CLIENT_ID", "")

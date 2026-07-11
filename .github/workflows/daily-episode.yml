@@ -106,7 +106,7 @@ jobs:
           R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
           # Podcast feed served from the website (Option A in SETUP_TODO):
           # generated each run, copied into the site repo below
-          RSS_FEED_URL: https://distomostech.com/feed.xml
+          RSS_FEED_URL: https://theaidaily.distomostech.com/feed.xml
           # Episode settings
           EPISODE_DURATION_MINUTES: "12"
           TIMEZONE: America/Los_Angeles

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "codex-site",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "/Users/jamesoconnor/Documents/Codex/2026-07-11/website-v1-design-goal-build-a", "run", "dev"],
+      "port": 3000
+    }
+  ]
+}
