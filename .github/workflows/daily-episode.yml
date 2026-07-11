@@ -104,6 +104,9 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
           R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
+          # Podcast feed served from the website (Option A in SETUP_TODO):
+          # generated each run, copied into the site repo below
+          RSS_FEED_URL: https://distomostech.com/feed.xml
           # Episode settings
           EPISODE_DURATION_MINUTES: "12"
           TIMEZONE: America/Los_Angeles
@@ -111,7 +114,14 @@ jobs:
 
       - name: Publish article to website
         if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true
-        run: python publish_site.py --episode-dir "output/${{ steps.guard.outputs.today }}" --site-dir site
+        run: |
+          python publish_site.py --episode-dir "output/${{ steps.guard.outputs.today }}" --site-dir site
+          # Serve the podcast feed from the website domain (Spotify/Apple
+          # subscribe to https://distomostech.com/feed.xml)
+          if [ -f output/feed.xml ]; then
+            cp output/feed.xml site/feed.xml
+            echo "Copied feed.xml into the site"
+          fi
 
       - name: Push website update
         if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true

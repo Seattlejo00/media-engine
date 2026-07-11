@@ -60,17 +60,20 @@ Your account ID is in the Cloudflare dashboard URL or R2 overview page.
 
 3. SPOTIFY
 ----------
-Status: Needs R2 set up first (step 2) so episodes have audio URLs.
+Status: Feed hosting is AUTOMATIC now — the pipeline publishes feed.xml
+to the website repo every run, served at:
+      https://distomostech.com/feed.xml
+Audio still needs R2 (step 2) so episodes have playable URLs — without
+it the feed has no audio and Spotify will reject it.
 
-[ ] Complete step 2 above
-[ ] Host your feed.xml somewhere public:
-    - Option A: Upload output/feed.xml to your distomostech.com domain
-    - Option B: Use the R2 bucket (upload feed.xml there too)
+[ ] Complete step 2 above (R2 secrets)
+[ ] Wait for one successful daily run, then confirm
+    https://distomostech.com/feed.xml loads and has an <enclosure> tag
 [ ] Go to https://podcasters.spotify.com
-[ ] Click "Get Started" → Add your RSS feed URL
+[ ] Click "Get Started" → Add your RSS feed URL:
+      https://distomostech.com/feed.xml
 [ ] They usually approve within a few hours
-[ ] Update .env with the final feed URL:
-      RSS_FEED_URL=https://wherever-you-host-it/feed.xml
+    (Same feed works for Apple Podcasts — step 4)
 
 
 4. APPLE PODCASTS
