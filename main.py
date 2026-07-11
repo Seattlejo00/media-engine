@@ -276,11 +276,19 @@ def _update_rss_feed(
     """Update the RSS feed with the new episode."""
     feed_data_path = config.OUTPUT_DIR / "feed_episodes.json"
 
+    # CI runners have no local history — R2 is the source of truth
+    if not feed_data_path.exists():
+        from distribution.podcast_host import download_feed_state
+        download_feed_state(feed_data_path)
+
     # Load existing episodes
     if feed_data_path.exists():
         episodes = json.loads(feed_data_path.read_text(encoding="utf-8"))
     else:
         episodes = []
+
+    # Don't duplicate an episode if the pipeline re-runs for the same day
+    episodes = [ep for ep in episodes if ep.get("date") != date_str]
 
     # Add new episode
     episodes.append(
@@ -297,13 +305,23 @@ def _update_rss_feed(
     # Save updated list
     feed_data_path.write_text(json.dumps(episodes, indent=2), encoding="utf-8")
 
+    # Without a feed URL (i.e. R2 hosting unconfigured) feedgen has no
+    # required <link> and the feed would have no audio anyway — skip.
+    if not config.RSS_FEED_URL:
+        logger.warning("RSS_FEED_URL / R2 not configured — skipping podcast feed generation")
+        return
+
     # Regenerate feed
     # Convert date strings back to datetime for feedgen
     for ep in episodes:
         if isinstance(ep["date"], str):
             ep["date"] = datetime.strptime(ep["date"], "%Y-%m-%d")
 
-    generate_feed(episodes, config.OUTPUT_DIR)
+    feed_path = generate_feed(episodes, config.OUTPUT_DIR)
+
+    # Publish feed.xml + episode history to R2 so Spotify/Apple can poll it
+    from distribution.podcast_host import upload_feed
+    upload_feed(feed_path, feed_data_path)
 
 
 def run_scheduled():

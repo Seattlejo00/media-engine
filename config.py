@@ -63,8 +63,16 @@ R2_SECRET_ACCESS_KEY = os.getenv("R2_SECRET_ACCESS_KEY", "")
 R2_BUCKET_NAME = os.getenv("R2_BUCKET_NAME", "")
 R2_PUBLIC_URL = os.getenv("R2_PUBLIC_URL", "")  # e.g. https://podcast.distomostech.com
 
+# If no feed URL is set but R2 hosting is configured, the feed is served
+# straight from the R2 bucket (uploaded by the pipeline after each episode).
+if not RSS_FEED_URL and R2_PUBLIC_URL:
+    RSS_FEED_URL = f"{R2_PUBLIC_URL}/feed.xml"
+
 # --- Models ---
 CLAUDE_MODEL = "claude-sonnet-5"
+# gpt-4o-mini-tts: ~60% cheaper than tts-1-hd and supports per-speaker
+# voice_instructions. Set TTS_MODEL=tts-1-hd to switch back.
+TTS_MODEL = os.getenv("TTS_MODEL", "gpt-4o-mini-tts")
 CHATGPT_MODEL = "gpt-4o"
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 GROK_MODEL = os.getenv("GROK_MODEL", "grok-3")
@@ -80,6 +88,10 @@ SPEAKERS = {
     "Claude": {
         "company": "Anthropic",
         "voice": os.getenv("CLAUDE_VOICE", "onyx"),
+        "voice_instructions": (
+            "Warm, thoughtful podcast host. Calm confidence, articulate, "
+            "with occasional dry wit. Brisk conversational pace."
+        ),
         "tts_speed": 1.1,
         "color": (204, 120, 50),
         "model": CLAUDE_MODEL,
@@ -90,6 +102,10 @@ SPEAKERS = {
     "ChatGPT": {
         "company": "OpenAI",
         "voice": os.getenv("CHATGPT_VOICE", "nova"),
+        "voice_instructions": (
+            "Upbeat, energetic podcast co-host. Friendly and quick, with "
+            "animated, enthusiastic delivery. Brisk conversational pace."
+        ),
         "tts_speed": 1.1,
         "color": (16, 163, 127),
         "model": CHATGPT_MODEL,
@@ -100,6 +116,10 @@ SPEAKERS = {
     "Gemini": {
         "company": "Google",
         "voice": os.getenv("GEMINI_VOICE", "echo"),
+        "voice_instructions": (
+            "Curious, precise guest analyst. Clear and lively, lightly "
+            "professorial. Brisk conversational pace."
+        ),
         "tts_speed": 1.1,
         "color": (66, 133, 244),
         "model": GEMINI_MODEL,
@@ -110,6 +130,10 @@ SPEAKERS = {
     "Grok": {
         "company": "xAI",
         "voice": os.getenv("GROK_VOICE", "fable"),
+        "voice_instructions": (
+            "Irreverent, playful guest with a sardonic edge. Confident and "
+            "punchy. Brisk conversational pace."
+        ),
         "tts_speed": 1.1,
         "color": (239, 68, 68),
         "model": GROK_MODEL,

@@ -22,15 +22,18 @@ PRICING = {
     # provider: {model_pattern: (input_$/1M, output_$/1M)}
     "claude-sonnet-5": (3.00, 15.00),
     "claude-sonnet-4": (3.00, 15.00),
-    "gpt-4o": (2.50, 10.00),
+    # NOTE: _match_price is a substring match in dict order — keep the more
+    # specific "gpt-4o-mini*" patterns above plain "gpt-4o"
+    "gpt-4o-mini-tts": (12.00, 0),  # ~$0.015/min ≈ $12 per 1M chars
     "gpt-4o-mini": (0.15, 0.60),
+    "gpt-4o": (2.50, 10.00),
     "gemini-2.0-flash": (0.10, 0.40),
     "gemini-2.5-pro": (1.25, 10.00),
     "grok-3": (3.00, 15.00),
     "grok-3-mini": (0.30, 0.50),
     # TTS — charged per character, but we'll track per 1M chars
-    "tts-1": (15.00, 0),  # ~$15 per 1M chars (OpenAI TTS)
     "tts-1-hd": (30.00, 0),
+    "tts-1": (15.00, 0),  # ~$15 per 1M chars (OpenAI TTS)
 }
 
 
@@ -118,8 +121,10 @@ class CostTracker:
                     by_speaker[r["speaker"]]["cost"] += cost
                     by_speaker[r["speaker"]]["calls"] += 1
 
-            # TTS cost
-            tts_cost = self._tts_chars * 15.00 / 1_000_000  # ~$15/1M chars for tts-1
+            # TTS cost — priced by the configured TTS model
+            import config
+            tts_rate = _match_price(getattr(config, "TTS_MODEL", "tts-1"))[0]
+            tts_cost = self._tts_chars * tts_rate / 1_000_000
             total_cost += tts_cost
 
             elapsed = (datetime.now() - self._start_time).total_seconds()

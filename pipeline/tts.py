@@ -19,15 +19,28 @@ def synthesize_line(
 ) -> Path:
     """Convert a single line of dialogue to an MP3 file."""
     speaker_config = config.SPEAKERS.get(speaker, config.SPEAKERS["ChatGPT"])
-    voice_config = {"voice": speaker_config["voice"], "speed": speaker_config["tts_speed"]}
 
-    response = client.audio.speech.create(
-        model="tts-1-hd",
-        voice=voice_config["voice"],
-        input=text,
-        speed=voice_config["speed"],
-        response_format="mp3",
-    )
+    kwargs = {
+        "model": config.TTS_MODEL,
+        "voice": speaker_config["voice"],
+        "input": text,
+        "speed": speaker_config["tts_speed"],
+        "response_format": "mp3",
+    }
+    # instructions steer delivery but are rejected by the legacy tts-1 models
+    instructions = speaker_config.get("voice_instructions")
+    if instructions and not config.TTS_MODEL.startswith("tts-1"):
+        kwargs["instructions"] = instructions
+
+    try:
+        response = client.audio.speech.create(**kwargs)
+    except Exception as e:
+        if config.TTS_MODEL == "tts-1-hd":
+            raise
+        logger.warning(f"TTS with {config.TTS_MODEL} failed ({e}); retrying with tts-1-hd")
+        kwargs.pop("instructions", None)
+        kwargs["model"] = "tts-1-hd"
+        response = client.audio.speech.create(**kwargs)
 
     response.stream_to_file(str(output_path))
     tracker.record_tts(len(text))
