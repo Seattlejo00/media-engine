@@ -133,6 +133,19 @@ jobs:
           path: output
           key: episode-output-${{ steps.guard.outputs.today }}-${{ github.run_id }}-${{ github.run_attempt }}
 
+      # In test mode nothing is posted anywhere, so attach the rendered
+      # videos to the run for visual review.
+      - name: Upload rendered videos (test mode)
+        if: always() && inputs.test_mode == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: videos-${{ steps.guard.outputs.today }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            output/*/episode_landscape.mp4
+            output/*/clips/*.mp4
+
       - name: Upload logs and episode summary
         if: always()
         uses: actions/upload-artifact@v4

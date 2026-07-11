@@ -14,12 +14,10 @@ from pathlib import Path
 import numpy as np
 from moviepy import (
     AudioFileClip,
-    ColorClip,
-    CompositeVideoClip,
-    TextClip,
+    ImageClip,
     concatenate_videoclips,
 )
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 import config
 
@@ -44,115 +42,186 @@ TEXT_COLOR = (255, 255, 255)
 SUBTITLE_BG = (0, 0, 0)
 
 
+# Design palette
+BG_TOP = (11, 12, 24)       # near-black navy
+BG_BOTTOM = (24, 22, 48)    # deep indigo
+PANEL_FILL = (0, 0, 0, 150)  # subtitle panel (RGBA)
+MUTED_TEXT = (158, 160, 184)
+
+# Backgrounds are expensive (gaussian-blurred glow) but identical for every
+# line a speaker says — cache per (speaker, size).
+_BG_CACHE: dict = {}
+
+
+def _font(path: str, px: int) -> ImageFont.FreeTypeFont:
+    try:
+        return ImageFont.truetype(path, px)
+    except OSError:
+        return ImageFont.load_default(px)
+
+
+def _background(speaker: str, size: tuple[int, int]) -> Image.Image:
+    """Vertical gradient + soft glow in the speaker's color, cached."""
+    key = (speaker, size)
+    if key in _BG_CACHE:
+        return _BG_CACHE[key]
+
+    width, height = size
+    color = config.SPEAKERS.get(speaker, config.SPEAKERS["ChatGPT"])["color"]
+
+    img = Image.new("RGB", size)
+    # Vertical gradient, drawn row by row
+    for y in range(height):
+        t = y / max(height - 1, 1)
+        row = tuple(int(a + (b - a) * t) for a, b in zip(BG_TOP, BG_BOTTOM))
+        img.paste(row, (0, y, width, y + 1))
+
+    # Soft radial glow behind the speaker area, in their color
+    glow = Image.new("RGBA", size, (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glow)
+    is_landscape = width > height
+    cx, cy = width // 2, int(height * (0.24 if is_landscape else 0.26))
+    r = int(min(width, height) * 0.38)
+    gd.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(*color, 70))
+    glow = glow.filter(ImageFilter.GaussianBlur(radius=r // 2))
+    img = Image.alpha_composite(img.convert("RGBA"), glow).convert("RGB")
+
+    _BG_CACHE[key] = img
+    return img
+
+
+def _fit_text(draw: ImageDraw.ImageDraw, text: str, font_path: str,
+              px: int, max_width: int, min_px: int = 20) -> ImageFont.FreeTypeFont:
+    """Shrink font size until text fits max_width."""
+    font = _font(font_path, px)
+    while px > min_px and draw.textlength(text, font=font) > max_width:
+        px -= 2
+        font = _font(font_path, px)
+    return font
+
+
+def _render_frame_image(
+    speaker: str,
+    text: str,
+    size: tuple[int, int],
+    topic: str | None = None,
+) -> Image.Image:
+    """Draw one fully-styled still frame (PIL) for a spoken line."""
+    width, height = size
+    is_landscape = width > height
+    color = config.SPEAKERS.get(speaker, config.SPEAKERS["ChatGPT"])["color"]
+    company = config.SPEAKERS.get(speaker, {}).get("company", "")
+
+    img = _background(speaker, size).copy()
+    overlay = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+
+    margin = 80 if is_landscape else 56
+
+    # --- Topic banner (top) ---
+    banner_bottom = int(height * 0.06)
+    if topic:
+        eyebrow_font = _font(FONT_BOLD, 26 if is_landscape else 30)
+        draw.text((margin, banner_bottom), "TODAY'S STORY", font=eyebrow_font, fill=(*color, 255))
+        headline_y = banner_bottom + (40 if is_landscape else 46)
+        headline_font = _fit_text(
+            draw, topic, FONT_BOLD, 42 if is_landscape else 40, width - 2 * margin
+        )
+        draw.text((margin, headline_y), topic, font=headline_font, fill=(255, 255, 255, 255))
+        rule_y = headline_y + headline_font.size + 22
+        draw.rectangle([margin, rule_y, width - margin, rule_y + 3], fill=(*color, 160))
+        banner_bottom = rule_y
+
+    # --- Speaker avatar (colored circle + initial) ---
+    r = 70 if is_landscape else 84
+    cx = width // 2
+    cy = int(height * (0.24 if is_landscape else 0.26))
+    # outer ring
+    draw.ellipse([cx - r - 8, cy - r - 8, cx + r + 8, cy + r + 8],
+                 outline=(*color, 200), width=4)
+    draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(*color, 255))
+    initial_font = _font(FONT_BOLD, int(r * 1.1))
+    draw.text((cx, cy), speaker[0], font=initial_font, fill=(255, 255, 255, 255), anchor="mm")
+
+    # --- Name + company ---
+    name_font = _font(FONT_BOLD, 48 if is_landscape else 52)
+    name_y = cy + r + 36
+    draw.text((cx, name_y), speaker, font=name_font, fill=(255, 255, 255, 255), anchor="ma")
+    company_font = _font(FONT_REGULAR, 26 if is_landscape else 30)
+    draw.text((cx, name_y + name_font.size + 12), company,
+              font=company_font, fill=(*MUTED_TEXT, 255), anchor="ma")
+
+    # --- Subtitle panel ---
+    max_chars = 46 if is_landscape else 26
+    lines = _wrap_text(text, max_chars).split("\n")
+
+    if is_landscape:
+        sub_px, max_lines = (34, 5) if len(lines) <= 5 else (28, 7) if len(lines) <= 7 else (24, 9)
+    else:
+        sub_px, max_lines = (40, 6) if len(lines) <= 6 else (32, 8) if len(lines) <= 8 else (26, 10)
+    if len(lines) > max_lines:
+        lines = lines[:max_lines]
+        lines[-1] = lines[-1].rstrip() + "..."
+
+    sub_font = _font(FONT_REGULAR, sub_px)
+    line_h = int(sub_px * 1.4)
+    block_h = line_h * len(lines)
+    block_w = max((int(draw.textlength(l, font=sub_font)) for l in lines), default=0)
+
+    company_bottom = name_y + name_font.size + 12 + company_font.size
+    sub_top = company_bottom + 60
+    bottom_safe = int(height * (0.88 if is_landscape else 0.78))
+    # Pull up if the block would breach the safe zone, but never over the name
+    sub_top = max(min(sub_top, bottom_safe - block_h - 40), company_bottom + 36)
+
+    pad_x, pad_y = 44, 30
+    panel = [cx - block_w // 2 - pad_x, sub_top - pad_y,
+             cx + block_w // 2 + pad_x, sub_top + block_h + pad_y]
+    draw.rounded_rectangle(panel, radius=24, fill=PANEL_FILL)
+    # accent tick on the left edge of the panel
+    draw.rounded_rectangle([panel[0], panel[1] + 18, panel[0] + 6, panel[3] - 18],
+                           radius=3, fill=(*color, 220))
+    for i, line in enumerate(lines):
+        draw.text((cx, sub_top + i * line_h), line, font=sub_font,
+                  fill=(240, 240, 245, 255), anchor="ma")
+
+    # --- Watermark ---
+    wm_font = _font(FONT_BOLD, 24 if is_landscape else 28)
+    wm_y = int(height * (0.94 if is_landscape else 0.815))
+    draw.text((cx, wm_y), "THE AI DAILY", font=wm_font, fill=(*MUTED_TEXT, 200), anchor="ma")
+
+    return Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+
+
 def _create_speaker_frame(
     speaker: str,
     text: str,
     duration: float,
     size: tuple[int, int] = LANDSCAPE,
-) -> CompositeVideoClip:
+    topic: str | None = None,
+):
     """Create a single video frame showing who's speaking with subtitles."""
-    width, height = size
-    is_landscape = size == LANDSCAPE
+    frame = _render_frame_image(speaker, text, size, topic=topic)
+    return ImageClip(np.asarray(frame)).with_duration(duration)
 
-    # Background
-    bg = ColorClip(size=size, color=BG_COLOR).with_duration(duration)
 
-    # Speaker indicator bar at top — color from registry
-    color = config.SPEAKERS.get(speaker, config.SPEAKERS["ChatGPT"])["color"]
-    speaker_bar = ColorClip(
-        size=(width, 8), color=color
-    ).with_duration(duration).with_position((0, 0))
+def _topic_by_index(script: dict) -> dict[int, str | None]:
+    """
+    Map each global dialogue-line index to its segment's topic.
 
-    # Speaker icon (colored circle)
-    icon_size = 100 if is_landscape else 80
-    icon_y = int(height * 0.12) if is_landscape else int(height * 0.08)
-    icon = ColorClip(
-        size=(icon_size, icon_size), color=color
-    ).with_duration(duration).with_position(
-        ((width - icon_size) // 2, icon_y)
-    )
-
-    # Speaker name — explicit height prevents descender clipping (g, p, y in "ChatGPT")
-    name_y = icon_y + icon_size + 20
-    name_font_size = 44 if is_landscape else 36
-    name_height = int(name_font_size * 1.8)  # generous height for descenders + stroke
-    speaker_label = TextClip(
-        text=speaker,
-        font_size=name_font_size,
-        color="white",
-        font=FONT_BOLD,
-        stroke_color="black",
-        stroke_width=2,
-        text_align="center",
-        size=(None, name_height),
-    ).with_duration(duration).with_position(("center", name_y))
-
-    # Subtitle text — constrain width, limit lines, center in middle zone
-    max_chars = 45 if is_landscape else 28
-    wrapped = _wrap_text(text, max_chars)
-
-    # Scale font and line count based on text length so nothing gets cut off
-    lines = wrapped.split("\n")
-    num_lines = len(lines)
-
-    if is_landscape:
-        if num_lines <= 5:
-            sub_font_size = 32
-            max_lines = 5
-        elif num_lines <= 7:
-            sub_font_size = 26
-            max_lines = 7
-        else:
-            sub_font_size = 22
-            max_lines = 9
-    else:
-        if num_lines <= 5:
-            sub_font_size = 28
-            max_lines = 5
-        elif num_lines <= 7:
-            sub_font_size = 22
-            max_lines = 7
-        else:
-            sub_font_size = 18
-            max_lines = 9
-
-    if len(lines) > max_lines:
-        lines = lines[:max_lines]
-        lines[-1] = lines[-1].rstrip() + "..."
-    wrapped = "\n".join(lines)
-    subtitle_y = name_y + name_height + 40  # breathing room below name
-
-    # For portrait, constrain subtitle height so it never bleeds into bottom zone
-    # Bottom safe zone for Shorts: keep everything above 78% of height
-    bottom_safe = int(height * 0.78) if not is_landscape else int(height * 0.88)
-    max_subtitle_h = bottom_safe - subtitle_y - 20  # 20px breathing room
-
-    subtitle = TextClip(
-        text=wrapped,
-        font_size=sub_font_size,
-        color="white",
-        font=FONT_REGULAR,
-        text_align="center",
-        stroke_color="black",
-        stroke_width=1,
-        size=(width - 200, max_subtitle_h),
-    ).with_duration(duration).with_position(("center", subtitle_y))
-
-    # Show title / watermark — keep above YouTube Shorts bottom UI
-    watermark_font_size = 20
-    watermark_height = int(watermark_font_size * 2.0)
-    watermark_y = int(height * 0.90) if is_landscape else int(height * 0.80)
-    title = TextClip(
-        text="THE AI DAILY",
-        font_size=watermark_font_size,
-        color=(120, 120, 120),
-        font=FONT_BOLD,
-        size=(None, watermark_height),
-    ).with_duration(duration).with_position(("center", watermark_y))
-
-    return CompositeVideoClip(
-        [bg, speaker_bar, icon, speaker_label, subtitle, title], size=size
-    )
+    Mirrors the index assignment in tts.synthesize_script (skips empty
+    lines) so manifest entries line up with their story headline.
+    """
+    mapping: dict[int, str | None] = {}
+    idx = 0
+    for segment in script.get("segments", []):
+        topic = (segment.get("topic") or "").strip() or None
+        for line in segment.get("dialogue", []):
+            if not (line.get("text") or "").strip():
+                continue
+            mapping[idx] = topic
+            idx += 1
+    return mapping
 
 
 def _wrap_text(text: str, max_chars: int) -> str:
@@ -198,13 +267,16 @@ def generate_video(
     logger.info(f"Generating {'landscape' if size == LANDSCAPE else 'portrait'} video...")
 
     clips = []
+    topic_map = _topic_by_index(script)
 
     for entry in audio_manifest:
         duration = _estimate_duration(entry["audio_path"])
         speaker = entry["speaker"]
         text = entry["text"]
 
-        frame = _create_speaker_frame(speaker, text, duration, size)
+        frame = _create_speaker_frame(
+            speaker, text, duration, size, topic=topic_map.get(entry.get("index"))
+        )
         clips.append(frame)
 
     if not clips:
