@@ -31,8 +31,8 @@ if platform.system() == "Windows":
     FONT_BOLD = "C:/Windows/Fonts/arialbd.ttf"
     FONT_REGULAR = "C:/Windows/Fonts/arial.ttf"
 else:
-    FONT_BOLD = "Arial-Bold"
-    FONT_REGULAR = "Arial"
+    FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+    FONT_REGULAR = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 # Video dimensions
 LANDSCAPE = (1920, 1080)  # YouTube
