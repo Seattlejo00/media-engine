@@ -266,28 +266,65 @@ def generate_video(
     """
     logger.info(f"Generating {'landscape' if size == LANDSCAPE else 'portrait'} video...")
 
+    # The assembled episode audio inserts pauses between lines/segments
+    # (see pipeline.audio). Each frame must cover its line's audio PLUS the
+    # pause before it, or subtitles drift ahead of the audio and cut
+    # speakers off before they finish.
+    from pipeline.audio import (
+        INTRO_SILENCE,
+        PAUSE_BETWEEN_LINES,
+        PAUSE_BETWEEN_SEGMENTS,
+        PAUSE_WITHIN_SPEAKER,
+    )
+
     clips = []
     topic_map = _topic_by_index(script)
+    prev_speaker = None
+    prev_segment = None
 
     for entry in audio_manifest:
         duration = _estimate_duration(entry["audio_path"])
         speaker = entry["speaker"]
         text = entry["text"]
+        segment_type = entry.get("segment_type")
+
+        # Same pause rules as pipeline.audio.assemble_episode
+        if prev_segment is not None and segment_type != prev_segment:
+            pause_ms = PAUSE_BETWEEN_SEGMENTS
+        elif prev_speaker is not None and speaker != prev_speaker:
+            pause_ms = PAUSE_BETWEEN_LINES
+        elif prev_speaker is not None:
+            pause_ms = PAUSE_WITHIN_SPEAKER
+        else:
+            pause_ms = INTRO_SILENCE
 
         frame = _create_speaker_frame(
-            speaker, text, duration, size, topic=topic_map.get(entry.get("index"))
+            speaker,
+            text,
+            duration + pause_ms / 1000.0,
+            size,
+            topic=topic_map.get(entry.get("index")),
         )
         clips.append(frame)
+        prev_speaker = speaker
+        prev_segment = segment_type
 
     if not clips:
         raise ValueError("No video clips to assemble")
 
+    # Pad the last frame to the exact audio length — covers the outro
+    # silence plus any accumulated rounding drift.
+    audio = AudioFileClip(str(episode_audio_path))
+    total = sum(c.duration for c in clips)
+    if total < audio.duration:
+        clips[-1] = clips[-1].with_duration(
+            clips[-1].duration + (audio.duration - total)
+        )
+
     # Concatenate all clips
     video = concatenate_videoclips(clips, method="compose")
 
-    # Add the full episode audio
-    audio = AudioFileClip(str(episode_audio_path))
-    # Trim video to match audio length (may differ slightly due to pauses in audio assembly)
+    # Trim any residual overrun so video and audio end together
     if video.duration > audio.duration:
         video = video.subclipped(0, audio.duration)
     video = video.with_audio(audio)
