@@ -45,20 +45,47 @@ logging.basicConfig(
 logger = logging.getLogger("media-engine")
 
 
+def _load_checkpoint(path: Path):
+    """Load a JSON checkpoint file, or None if absent/corrupt."""
+    if path.exists():
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as e:
+            logger.warning(f"Ignoring corrupt checkpoint {path.name}: {e}")
+    return None
+
+
 def run_pipeline(
     script_only: bool = False,
     dry_run: bool = False,
     guest: str | None = None,
     roundtable: bool = False,
+    no_upload: bool = False,
+    fresh: bool = False,
 ) -> dict:
     """
     Execute the full episode generation pipeline.
+
+    Steps are checkpointed: any artifact already present in today's episode
+    directory (topics.json, script.json, audio segments, video, clips) is
+    reused instead of regenerated, so re-runs after a failure — or while
+    testing — only pay for the stages that haven't completed yet.
 
     Returns a summary dict with paths and IDs.
     """
     date_str = datetime.now().strftime("%Y-%m-%d")
     episode_dir = config.OUTPUT_DIR / date_str
     episode_dir.mkdir(parents=True, exist_ok=True)
+
+    if fresh:
+        # Wipe generated artifacts but KEEP the distribution ledger —
+        # forgetting past uploads would cause duplicate YouTube posts.
+        import shutil
+        for item in episode_dir.iterdir():
+            if item.name == "distribution_state.json":
+                continue
+            shutil.rmtree(item) if item.is_dir() else item.unlink()
+        logger.info("--fresh: cleared today's artifacts (kept distribution_state.json)")
 
     # Determine today's episode roster
     if roundtable:
@@ -91,17 +118,21 @@ def run_pipeline(
     logger.info("STEP 1: Discovering topics...")
     logger.info("=" * 60)
 
-    topics = discover_topics()
-
-    if not topics:
-        logger.error("No topics found. Aborting.")
-        summary["status"] = "failed"
-        summary["error"] = "no_topics"
-        return summary
-
-    # Save topics
     topics_path = episode_dir / "topics.json"
-    topics_path.write_text(json.dumps(topics, indent=2), encoding="utf-8")
+    topics = _load_checkpoint(topics_path)
+    if topics:
+        logger.info("Reusing existing topics.json (use --fresh to regenerate)")
+    else:
+        topics = discover_topics()
+
+        if not topics:
+            logger.error("No topics found. Aborting.")
+            summary["status"] = "failed"
+            summary["error"] = "no_topics"
+            return summary
+
+        # Save topics
+        topics_path.write_text(json.dumps(topics, indent=2), encoding="utf-8")
     summary["topics"] = [t["title"] for t in topics]
     logger.info(f"Topics: {[t['title'] for t in topics]}")
 
@@ -115,8 +146,13 @@ def run_pipeline(
     logger.info("STEP 2: Generating script...")
     logger.info("=" * 60)
 
-    script = generate_script(topics, roster=roster)
-    script_path = save_script(script, episode_dir)
+    script_path = episode_dir / "script.json"
+    script = _load_checkpoint(script_path)
+    if script:
+        logger.info("Reusing existing script.json (use --fresh to regenerate)")
+    else:
+        script = generate_script(topics, roster=roster)
+        script_path = save_script(script, episode_dir)
     summary["script_path"] = str(script_path)
     summary["episode_title"] = script.get("title", "Untitled")
     logger.info(f"Episode: {script.get('title', 'Untitled')}")
@@ -134,7 +170,23 @@ def run_pipeline(
     logger.info("STEP 3: Synthesizing speech...")
     logger.info("=" * 60)
 
-    audio_manifest = synthesize_script(script, episode_dir)
+    manifest_path = episode_dir / "audio_manifest.json"
+    audio_manifest = None
+    cached_manifest = _load_checkpoint(manifest_path)
+    if cached_manifest:
+        restored = [{**m, "audio_path": Path(m["audio_path"])} for m in cached_manifest]
+        if restored and all(m["audio_path"].exists() for m in restored):
+            audio_manifest = restored
+            logger.info(f"Reusing {len(restored)} synthesized audio segments")
+    if audio_manifest is None:
+        audio_manifest = synthesize_script(script, episode_dir)
+        manifest_path.write_text(
+            json.dumps(
+                [{**m, "audio_path": str(m["audio_path"])} for m in audio_manifest],
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
     summary["audio_segments"] = len(audio_manifest)
 
     # === STEP 4: Assemble Audio ===
@@ -142,7 +194,11 @@ def run_pipeline(
     logger.info("STEP 4: Assembling episode audio...")
     logger.info("=" * 60)
 
-    episode_audio = assemble_episode(audio_manifest, episode_dir, roster=roster)
+    episode_audio = episode_dir / "episode.mp3"
+    if episode_audio.exists():
+        logger.info("Reusing assembled episode.mp3")
+    else:
+        episode_audio = assemble_episode(audio_manifest, episode_dir, roster=roster)
     duration = get_episode_duration(episode_audio)
     summary["episode_audio"] = str(episode_audio)
     summary["duration_seconds"] = duration
@@ -153,14 +209,22 @@ def run_pipeline(
     logger.info("STEP 5: Generating video...")
     logger.info("=" * 60)
 
-    episode_video = generate_landscape_video(
-        audio_manifest, episode_audio, script, episode_dir
-    )
+    episode_video = episode_dir / "episode_landscape.mp4"
+    if episode_video.exists():
+        logger.info("Reusing rendered episode_landscape.mp4")
+    else:
+        episode_video = generate_landscape_video(
+            audio_manifest, episode_audio, script, episode_dir
+        )
     summary["episode_video"] = str(episode_video)
 
     # --- Thumbnail ---
-    logger.info("Generating thumbnail...")
-    thumbnail_path = generate_thumbnail(script, topics, episode_dir, roster=roster)
+    thumbnail_path = episode_dir / "thumbnail.png"
+    if thumbnail_path.exists():
+        logger.info("Reusing existing thumbnail.png")
+    else:
+        logger.info("Generating thumbnail...")
+        thumbnail_path = generate_thumbnail(script, topics, episode_dir, roster=roster)
     summary["thumbnail"] = str(thumbnail_path)
 
     # === STEP 6: Generate Clips ===
@@ -168,8 +232,22 @@ def run_pipeline(
     logger.info("STEP 6: Generating short-form clips...")
     logger.info("=" * 60)
 
-    clip_segments = identify_clip_segments(script)
-    clip_paths = extract_clips(clip_segments, audio_manifest, script, episode_dir)
+    clip_segments_path = episode_dir / "clip_segments.json"
+    clip_segments = _load_checkpoint(clip_segments_path)
+    if clip_segments is None:
+        clip_segments = identify_clip_segments(script)
+        clip_segments_path.write_text(json.dumps(clip_segments, indent=2), encoding="utf-8")
+
+    clips_dir = episode_dir / "clips"
+    existing_clips = sorted(
+        clips_dir.glob("clip_*.mp4"),
+        key=lambda p: int(p.name.split("_")[1]),
+    ) if clips_dir.exists() else []
+    if clip_segments and len(existing_clips) >= len(clip_segments):
+        clip_paths = existing_clips
+        logger.info(f"Reusing {len(clip_paths)} rendered clips")
+    else:
+        clip_paths = extract_clips(clip_segments, audio_manifest, script, episode_dir)
     summary["clips"] = [str(p) for p in clip_paths]
 
     # === STEP 7: Distribute ===
@@ -177,44 +255,83 @@ def run_pipeline(
     logger.info("STEP 7: Distributing...")
     logger.info("=" * 60)
 
+    if no_upload:
+        logger.info("--no-upload: skipping all distribution (YouTube, X, TikTok, podcast)")
+        summary["status"] = "complete_no_upload"
+        cost_summary = tracker.save_report(episode_dir)
+        summary["cost_usd"] = cost_summary["total_cost_usd"]
+        summary_path = episode_dir / "summary.json"
+        summary_path.write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
+        logger.info(f"Pipeline complete (no uploads)! Summary: {summary_path}")
+        return summary
+
+    # The distribution ledger records every successful upload so a re-run
+    # (after a crash, or while testing) never double-posts.
+    ledger_path = episode_dir / "distribution_state.json"
+    ledger = _load_checkpoint(ledger_path) or {}
+
+    def _save_ledger():
+        ledger_path.write_text(json.dumps(ledger, indent=2), encoding="utf-8")
+
     # YouTube - full episode (with custom thumbnail)
-    yt_episode_id = upload_episode(
-        episode_video, script, date_str, roster=roster, thumbnail_path=thumbnail_path,
-    )
+    if ledger.get("youtube_episode_id"):
+        yt_episode_id = ledger["youtube_episode_id"]
+        logger.info(f"Episode already on YouTube ({yt_episode_id}) — skipping upload")
+    else:
+        yt_episode_id = upload_episode(
+            episode_video, script, date_str, roster=roster, thumbnail_path=thumbnail_path,
+        )
+        if yt_episode_id:
+            ledger["youtube_episode_id"] = yt_episode_id
+            _save_ledger()
     yt_url = f"https://youtube.com/watch?v={yt_episode_id}" if yt_episode_id else None
     summary["youtube_episode_id"] = yt_episode_id
 
     # YouTube - clips (capped to avoid daily upload limit)
     max_yt_clips = config.MAX_CLIPS_UPLOAD
-    yt_clip_ids = []
+    yt_clip_ids = ledger.setdefault("youtube_clip_ids", {})
     for i, clip_path in enumerate(clip_paths[:max_yt_clips]):
+        if str(i) in yt_clip_ids:
+            continue
         clip_title = (
             clip_segments[i]["title"] if i < len(clip_segments) else f"Clip {i+1}"
         )
         clip_id = upload_clip(clip_path, clip_title, yt_episode_id, roster=roster)
         if clip_id:
-            yt_clip_ids.append(clip_id)
+            yt_clip_ids[str(i)] = clip_id
+            _save_ledger()
     if len(clip_paths) > max_yt_clips:
         logger.info(
             f"Uploaded {max_yt_clips}/{len(clip_paths)} clips to YouTube "
             f"(MAX_CLIPS_UPLOAD={max_yt_clips})"
         )
-    summary["youtube_clip_ids"] = yt_clip_ids
+    summary["youtube_clip_ids"] = list(yt_clip_ids.values())
 
     # Twitter/X - episode announcement
-    tweet_id = post_episode_to_twitter(script, yt_url, roster=roster)
+    if ledger.get("tweet_id"):
+        tweet_id = ledger["tweet_id"]
+    else:
+        tweet_id = post_episode_to_twitter(script, yt_url, roster=roster)
+        if tweet_id:
+            ledger["tweet_id"] = tweet_id
+            _save_ledger()
     summary["tweet_id"] = tweet_id
 
     # Twitter/X - clips
-    for i, clip_path in enumerate(clip_paths):
-        clip_title = (
-            clip_segments[i]["title"] if i < len(clip_segments) else f"Clip {i+1}"
-        )
-        post_clip_to_twitter(clip_path, clip_title, yt_url, roster=roster)
+    if not ledger.get("twitter_clips_posted"):
+        for i, clip_path in enumerate(clip_paths):
+            clip_title = (
+                clip_segments[i]["title"] if i < len(clip_segments) else f"Clip {i+1}"
+            )
+            post_clip_to_twitter(clip_path, clip_title, yt_url, roster=roster)
+        ledger["twitter_clips_posted"] = True
+        _save_ledger()
 
     # TikTok - clips
-    tiktok_ids = []
+    tiktok_ids = ledger.setdefault("tiktok_ids", {})
     for i, clip_path in enumerate(clip_paths):
+        if str(i) in tiktok_ids:
+            continue
         clip_title = (
             clip_segments[i]["title"] if i < len(clip_segments) else f"Clip {i+1}"
         )
@@ -222,14 +339,21 @@ def run_pipeline(
         tiktok_title = f"{clip_title} | The AI Daily {hashtags} #AI #Podcast"
         tiktok_id = upload_to_tiktok(clip_path, tiktok_title)
         if tiktok_id:
-            tiktok_ids.append(tiktok_id)
-    summary["tiktok_ids"] = tiktok_ids
+            tiktok_ids[str(i)] = tiktok_id
+            _save_ledger()
+    summary["tiktok_ids"] = list(tiktok_ids.values())
 
     # Podcast hosting — upload MP3 for Spotify/Apple
-    audio_url = upload_episode_audio(episode_audio, date_str)
+    if ledger.get("podcast_audio_url"):
+        audio_url = ledger["podcast_audio_url"]
+    else:
+        audio_url = upload_episode_audio(episode_audio, date_str)
+        if audio_url:
+            ledger["podcast_audio_url"] = audio_url
+            _save_ledger()
     summary["podcast_audio_url"] = audio_url
 
-    # RSS feed (append to existing)
+    # RSS feed (append to existing; same-day re-runs replace the entry)
     _update_rss_feed(script, episode_audio, duration, date_str, audio_url=audio_url)
 
     # === STEP 8: Cost Report ===
@@ -380,6 +504,16 @@ def main():
         "--roundtable", action="store_true",
         help="Force roundtable format with all speakers",
     )
+    parser.add_argument(
+        "--no-upload", action="store_true",
+        help="Generate everything but skip all distribution (YouTube, X, "
+             "TikTok, podcast) — safe for testing",
+    )
+    parser.add_argument(
+        "--fresh", action="store_true",
+        help="Regenerate today's artifacts from scratch instead of reusing "
+             "checkpoints (the upload ledger is preserved)",
+    )
 
     args = parser.parse_args()
 
@@ -391,11 +525,13 @@ def main():
             dry_run=args.dry_run,
             guest=args.guest,
             roundtable=args.roundtable,
+            no_upload=args.no_upload,
+            fresh=args.fresh,
         )
 
         if summary["status"] == "complete":
             logger.info("Episode published successfully!")
-        elif summary["status"] in ("dry_run_complete", "script_complete"):
+        elif summary["status"] in ("dry_run_complete", "script_complete", "complete_no_upload"):
             logger.info(f"Partial run complete ({summary['status']})")
         else:
             logger.error(f"Pipeline failed: {summary.get('error', 'unknown')}")

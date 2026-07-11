@@ -5,7 +5,12 @@ on:
     # 15:00 UTC = 8am PDT / 7am PST — matches the old run_daily.bat timing
     # ("Optimal YouTube posting: 8 AM Pacific")
     - cron: "0 15 * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: "Test mode: run the full pipeline but skip all uploads/publishing, even if today's episode already exists"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -33,7 +38,10 @@ jobs:
         run: |
           TODAY=$(TZ=America/Los_Angeles date +%F)
           echo "today=$TODAY" >> "$GITHUB_OUTPUT"
-          if python3 -c "import json,sys; eps=json.load(open('site/static/articles.json')); sys.exit(0 if any(e['date']=='$TODAY' for e in eps) else 1)"; then
+          if [ "${{ inputs.test_mode }}" = "true" ]; then
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Test mode — running regardless of published state."
+          elif python3 -c "import json,sys; eps=json.load(open('site/static/articles.json')); sys.exit(0 if any(e['date']=='$TODAY' for e in eps) else 1)"; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
             echo "Episode for $TODAY already published — skipping."
           else
@@ -80,14 +88,14 @@ jobs:
           # Episode settings
           EPISODE_DURATION_MINUTES: "12"
           TIMEZONE: America/Los_Angeles
-        run: python main.py
+        run: python main.py ${{ inputs.test_mode == true && '--no-upload' || '' }}
 
       - name: Publish article to website
-        if: steps.guard.outputs.exists == 'false'
+        if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true
         run: python publish_site.py --episode-dir "output/${{ steps.guard.outputs.today }}" --site-dir site
 
       - name: Push website update
-        if: steps.guard.outputs.exists == 'false'
+        if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true
         run: |
           cd site
           git config user.name "github-actions[bot]"
@@ -109,11 +117,8 @@ jobs:
           if-no-files-found: ignore
           path: |
             media_engine.log
-            output/*/summary.json
-            output/*/topics.json
-            output/*/script.json
+            output/*/*.json
             output/*/transcript.txt
             output/*/*.png
-            output/*/cost*.json
             !output/*/*.mp4
             !output/*/*.mp3
