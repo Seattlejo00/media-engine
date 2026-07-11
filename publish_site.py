@@ -100,6 +100,11 @@ def publish(episode_dir: Path, site_dir: Path) -> None:
     articles_path = site_dir / "static" / "articles.json"
     episodes = json.loads(articles_path.read_text(encoding="utf-8"))
 
+    scores = None
+    scores_path = episode_dir / "scores.json"
+    if scores_path.exists():
+        scores = json.loads(scores_path.read_text(encoding="utf-8"))
+
     entry = {
         "date": date_str,
         "title": script.get("title") or f"The AI Daily — {date_str}",
@@ -108,6 +113,17 @@ def publish(episode_dir: Path, site_dir: Path) -> None:
         "youtube_url": youtube_url,
         "podcast_url": podcast_url,
         "roster": script.get("roster") or ["Claude", "ChatGPT"],
+        "duration_seconds": summary.get("duration_seconds"),
+        "scores": scores,
+        "topics": [
+            {
+                "title": (t.get("title") or "").strip(),
+                "source": (t.get("source") or "").strip(),
+                "url": t.get("url"),
+                "category": t.get("category") or "news",
+            }
+            for t in topics
+        ],
     }
 
     existing = next((e for e in episodes if e.get("date") == date_str), None)

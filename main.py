@@ -141,6 +141,13 @@ def run_pipeline(
         summary["status"] = "dry_run_complete"
         return summary
 
+    # Daily "signal scores" for the website's scorecard (cheap, non-fatal)
+    scores_path = episode_dir / "scores.json"
+    if not scores_path.exists():
+        scores = _generate_signal_scores(topics)
+        if scores:
+            scores_path.write_text(json.dumps(scores, indent=2), encoding="utf-8")
+
     # === STEP 2: Generate Script ===
     logger.info("=" * 60)
     logger.info("STEP 2: Generating script...")
@@ -367,6 +374,54 @@ def run_pipeline(
     logger.info(f"Pipeline complete! Summary: {summary_path}")
 
     return summary
+
+
+def _generate_signal_scores(topics: list[dict]) -> dict | None:
+    """
+    Score today's news signal per category (0-10) for the website scorecard.
+
+    Returns e.g. {"overall": 8.7, "label": "High signal day",
+                  "categories": {"Models": 9.1, "Research": 7.2, ...}}
+    """
+    try:
+        from openai import OpenAI
+
+        client = OpenAI(api_key=config.OPENAI_API_KEY)
+        headlines = "\n".join(
+            f"- [{t.get('category', 'news')}] {t['title']}: {t.get('description', '')[:150]}"
+            for t in topics
+        )
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            max_tokens=300,
+            response_format={"type": "json_object"},
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You rate the significance of a day's AI news for a "
+                        "podcast scorecard. Score 0-10 by impact, novelty and "
+                        "reach. Be discriminating: most days are 5-7, reserve "
+                        "9+ for landmark news. Return ONLY JSON: "
+                        '{"overall": float, "label": "<2-4 word day summary>", '
+                        '"categories": {"Models": float, "Research": float, '
+                        '"Industry": float, "Startups": float}}'
+                    ),
+                },
+                {"role": "user", "content": f"Today's stories:\n{headlines}"},
+            ],
+        )
+        scores = json.loads(resp.choices[0].message.content)
+        tracker.record(
+            step="signal_scores", model="gpt-4o-mini",
+            input_tokens=resp.usage.prompt_tokens,
+            output_tokens=resp.usage.completion_tokens,
+        )
+        logger.info(f"Signal scores: {scores}")
+        return scores
+    except Exception as e:
+        logger.warning(f"Signal score generation failed (non-fatal): {e}")
+        return None
 
 
 def _save_transcript(script: dict, episode_dir: Path, date_str: str):
