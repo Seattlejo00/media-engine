@@ -54,7 +54,15 @@ TWITTER_ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN", "")
 TWITTER_ACCESS_SECRET = os.getenv("TWITTER_ACCESS_SECRET", "")
 
 # --- TikTok ---
-TIKTOK_ACCESS_TOKEN = os.getenv("TIKTOK_ACCESS_TOKEN", "")
+TIKTOK_ACCESS_TOKEN = os.getenv("TIKTOK_ACCESS_TOKEN", "")  # legacy: static token (expires in 24h)
+# Preferred: refresh-token flow — the pipeline mints a fresh access token
+# each run. Mint the refresh token once with get_tiktok_token.py.
+TIKTOK_CLIENT_KEY = os.getenv("TIKTOK_CLIENT_KEY", "")
+TIKTOK_CLIENT_SECRET = os.getenv("TIKTOK_CLIENT_SECRET", "")
+TIKTOK_REFRESH_TOKEN = os.getenv("TIKTOK_REFRESH_TOKEN", "")
+# Unaudited TikTok apps may only post privately — flip to PUBLIC_TO_EVERYONE
+# once TikTok approves the app's audit.
+TIKTOK_PRIVACY_LEVEL = os.getenv("TIKTOK_PRIVACY_LEVEL", "SELF_ONLY")
 
 # --- Podcast Hosting (Cloudflare R2 / S3-compatible) ---
 R2_ENDPOINT_URL = os.getenv("R2_ENDPOINT_URL", "")

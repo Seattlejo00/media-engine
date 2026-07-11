@@ -92,7 +92,7 @@ Used for: letting the workflow push the article to the `ai-daily-site` repo.
 | `GOOGLE_AI_API_KEY` | Gemini as Friday guest host | https://aistudio.google.com → Get API key |
 | `XAI_API_KEY` | Grok as Friday guest host | https://console.x.ai |
 | `TWITTER_API_KEY` / `TWITTER_API_SECRET` / `TWITTER_ACCESS_TOKEN` / `TWITTER_ACCESS_SECRET` | Auto-tweet episodes + clips | https://developer.x.com (see SETUP_TODO.txt) |
-| `TIKTOK_ACCESS_TOKEN` | Auto-post clips to TikTok | https://developers.tiktok.com (see SETUP_TODO.txt) |
+| `TIKTOK_CLIENT_KEY` / `TIKTOK_CLIENT_SECRET` / `TIKTOK_REFRESH_TOKEN` | Auto-post clips to TikTok | https://developers.tiktok.com — app with Login Kit + Content Posting API; mint the refresh token once with `get_tiktok_token.py` (see SETUP_TODO.txt). Posts stay private (SELF_ONLY) until TikTok's app audit passes — then set repo **variable** `TIKTOK_PRIVACY_LEVEL=PUBLIC_TO_EVERYONE`. |
 | `R2_ENDPOINT_URL` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET_NAME` / `R2_PUBLIC_URL` | Podcast audio hosting (Spotify/Apple) | https://cloudflare.com (see SETUP_TODO.txt) |
 
 ---

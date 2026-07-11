@@ -8,16 +8,30 @@ whenever you have time.
 
 1. TIKTOK (clips auto-post)
 ----------------------------
-Status: Code is ready, just needs your token.
+Status: Code is ready (refresh-token flow — access tokens only live 24h,
+so the pipeline mints a fresh one each run).
 
-[ ] Go to https://developers.tiktok.com
-[ ] Create an app
-[ ] Apply for "Content Posting API" access (they review it, may take a few days)
-[ ] Once approved, grab your access token
-[ ] Add to .env:
-      TIKTOK_ACCESS_TOKEN=your_token_here
+[ ] Go to https://developers.tiktok.com, sign up, create an app
+[ ] Add BOTH products: "Login Kit" and "Content Posting API" (Direct Post)
+[ ] Register a Redirect URI under Login Kit (any URL you control — your
+    website works; nothing needs to be deployed there)
+[ ] Request scopes: user.info.basic, video.upload, video.publish
+[ ] Submit for review (may take a few days; they often ask for a short
+    demo recording of the integration)
+[ ] Copy Client key + Client secret. Add to .env:
+      TIKTOK_CLIENT_KEY=...
+      TIKTOK_CLIENT_SECRET=...
+      TIKTOK_REDIRECT_URI=...   (exactly as registered)
+[ ] Run: python get_tiktok_token.py
+    Sign in with the account that should post, approve, paste the URL
+    you land on. It prints TIKTOK_REFRESH_TOKEN.
+[ ] Add TIKTOK_CLIENT_KEY / TIKTOK_CLIENT_SECRET / TIKTOK_REFRESH_TOKEN
+    as repo secrets.
 
-That's it. Next daily run will auto-upload clips to TikTok.
+NOTE: until TikTok audits the app, API posts can only be private
+(SELF_ONLY) — the pipeline defaults to that. After the audit passes,
+add a repo *variable* TIKTOK_PRIVACY_LEVEL=PUBLIC_TO_EVERYONE
+(Settings → Secrets and variables → Actions → Variables tab).
 
 
 2. CLOUDFLARE R2 — podcast audio hosting (~5 min, basically free)

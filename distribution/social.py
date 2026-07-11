@@ -102,24 +102,63 @@ def post_clip_to_twitter(
 
 # --- TikTok ---
 
+def _get_tiktok_access_token() -> str | None:
+    """
+    Get a usable TikTok access token.
+
+    Preferred: exchange the long-lived refresh token for a fresh access
+    token (access tokens only live 24h, so a stored one goes stale between
+    daily runs). Falls back to the static TIKTOK_ACCESS_TOKEN if no
+    refresh credentials are configured.
+    """
+    if all([config.TIKTOK_CLIENT_KEY, config.TIKTOK_CLIENT_SECRET, config.TIKTOK_REFRESH_TOKEN]):
+        import requests
+
+        try:
+            resp = requests.post(
+                "https://open.tiktokapis.com/v2/oauth/token/",
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                data={
+                    "client_key": config.TIKTOK_CLIENT_KEY,
+                    "client_secret": config.TIKTOK_CLIENT_SECRET,
+                    "grant_type": "refresh_token",
+                    "refresh_token": config.TIKTOK_REFRESH_TOKEN,
+                },
+                timeout=30,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            new_refresh = data.get("refresh_token")
+            if new_refresh and new_refresh != config.TIKTOK_REFRESH_TOKEN:
+                logger.warning(
+                    "TikTok issued a NEW refresh token — update the "
+                    "TIKTOK_REFRESH_TOKEN repo secret or uploads will stop "
+                    "working when the old one expires."
+                )
+            return data["access_token"]
+        except Exception as e:
+            logger.error(f"TikTok token refresh failed: {e}")
+            return None
+
+    return config.TIKTOK_ACCESS_TOKEN or None
+
+
 def upload_to_tiktok(
     video_path: Path,
     title: str,
 ) -> str | None:
     """
-    Upload video to TikTok.
+    Upload video to TikTok via the Content Posting API (Direct Post).
 
-    Note: TikTok's API for direct video upload requires
-    Creator Tools access. This is a placeholder that logs
-    the intent — actual implementation depends on your
-    TikTok developer access level.
+    Requires Content Posting API access (apply at developers.tiktok.com).
+    Until the app passes TikTok's audit, only SELF_ONLY (private) posts
+    are allowed — controlled by TIKTOK_PRIVACY_LEVEL.
     """
-    if not config.TIKTOK_ACCESS_TOKEN:
+    access_token = _get_tiktok_access_token()
+    if not access_token:
         logger.warning("TikTok credentials not configured, skipping upload")
         return None
 
-    # TikTok direct publish API
-    # Requires: Content Posting API access (apply at developers.tiktok.com)
     try:
         import requests
 
@@ -127,13 +166,13 @@ def upload_to_tiktok(
         resp = requests.post(
             "https://open.tiktokapis.com/v2/post/publish/video/init/",
             headers={
-                "Authorization": f"Bearer {config.TIKTOK_ACCESS_TOKEN}",
+                "Authorization": f"Bearer {access_token}",
                 "Content-Type": "application/json",
             },
             json={
                 "post_info": {
                     "title": title[:150],
-                    "privacy_level": "PUBLIC_TO_EVERYONE",
+                    "privacy_level": config.TIKTOK_PRIVACY_LEVEL,
                     "disable_comment": False,
                     "disable_duet": False,
                     "disable_stitch": False,
