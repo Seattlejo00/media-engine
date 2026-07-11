@@ -11,3 +11,4 @@ youtube_credentials.json
 token.json
 media_engine.log
 test_frame_*.png
+.env_new

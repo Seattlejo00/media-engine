@@ -11,6 +11,10 @@ on:
         description: "Test mode: run the full pipeline but skip all uploads/publishing, even if today's episode already exists"
         type: boolean
         default: false
+      fresh:
+        description: "Regenerate all of today's artifacts instead of reusing cached checkpoints (upload ledger is preserved)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -103,7 +107,7 @@ jobs:
           # Episode settings
           EPISODE_DURATION_MINUTES: "12"
           TIMEZONE: America/Los_Angeles
-        run: python main.py ${{ inputs.test_mode == true && '--no-upload' || '' }}
+        run: python main.py ${{ inputs.test_mode == true && '--no-upload' || '' }} ${{ inputs.fresh == true && '--fresh' || '' }}
 
       - name: Publish article to website
         if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true
