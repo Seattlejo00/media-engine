@@ -154,6 +154,9 @@ def _generate_initial_script(episode_prompt: str, roster: list[str]) -> dict:
     response = client.messages.create(
         model=config.CLAUDE_MODEL,
         max_tokens=16000,
+        # Keep thinking off — Sonnet 5 enables it by default, which spends
+        # output tokens and adds non-text blocks to response.content
+        thinking={"type": "disabled"},
         messages=[{"role": "user", "content": episode_prompt}],
         system=system_msg,
     )
@@ -167,7 +170,7 @@ def _generate_initial_script(episode_prompt: str, roster: list[str]) -> dict:
         speaker="Claude",
     )
 
-    text = response.content[0].text
+    text = next(b.text for b in response.content if b.type == "text")
 
     # Extract JSON from the response (handle markdown code blocks)
     if "```json" in text:
@@ -257,6 +260,7 @@ def _rewrite_line(
         response = client.messages.create(
             model=model,
             max_tokens=500,
+            thinking={"type": "disabled"},
             system=persona,
             messages=[{"role": "user", "content": user_content}],
         )
@@ -265,7 +269,7 @@ def _rewrite_line(
             input_tokens=response.usage.input_tokens,
             output_tokens=response.usage.output_tokens,
         )
-        return response.content[0].text.strip()
+        return next(b.text for b in response.content if b.type == "text").strip()
 
     elif api_type in ("openai", "xai"):
         response = client.chat.completions.create(

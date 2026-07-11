@@ -64,7 +64,7 @@ R2_BUCKET_NAME = os.getenv("R2_BUCKET_NAME", "")
 R2_PUBLIC_URL = os.getenv("R2_PUBLIC_URL", "")  # e.g. https://podcast.distomostech.com
 
 # --- Models ---
-CLAUDE_MODEL = "claude-sonnet-4-20250514"
+CLAUDE_MODEL = "claude-sonnet-5"
 CHATGPT_MODEL = "gpt-4o"
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 GROK_MODEL = os.getenv("GROK_MODEL", "grok-3")

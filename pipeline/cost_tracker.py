@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 PRICING = {
     # provider: {model_pattern: (input_$/1M, output_$/1M)}
+    "claude-sonnet-5": (3.00, 15.00),
     "claude-sonnet-4": (3.00, 15.00),
     "gpt-4o": (2.50, 10.00),
     "gpt-4o-mini": (0.15, 0.60),
