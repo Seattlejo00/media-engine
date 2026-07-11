@@ -48,6 +48,18 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # Restore checkpoints from an earlier run of today's episode, so a
+      # retry after a failure skips the stages (and uploads) that already
+      # completed instead of regenerating everything.
+      - name: Restore today's checkpoints
+        if: steps.guard.outputs.exists == 'false'
+        uses: actions/cache/restore@v4
+        with:
+          path: output
+          key: episode-output-${{ steps.guard.outputs.today }}-${{ github.run_id }}
+          restore-keys: |
+            episode-output-${{ steps.guard.outputs.today }}-
+
       - uses: actions/setup-python@v5
         if: steps.guard.outputs.exists == 'false'
         with:
@@ -107,6 +119,16 @@ jobs:
             git commit -m "Add AI Daily article for ${{ steps.guard.outputs.today }}"
             git push
           fi
+
+      # Save checkpoints even when the run fails — that's exactly when the
+      # next attempt needs them. Keys are immutable, so each attempt saves
+      # under a unique suffix and restore picks the newest by prefix.
+      - name: Save today's checkpoints
+        if: always() && steps.guard.outputs.exists == 'false'
+        uses: actions/cache/save@v4
+        with:
+          path: output
+          key: episode-output-${{ steps.guard.outputs.today }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Upload logs and episode summary
         if: always()
