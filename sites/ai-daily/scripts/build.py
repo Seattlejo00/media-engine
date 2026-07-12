@@ -18,8 +18,10 @@ paper, Claude orange + ChatGPT green). No dependencies — stdlib only.
 
 import html
 import json
-from datetime import datetime
+from datetime import datetime, timezone
+from email.utils import format_datetime
 from pathlib import Path
+from xml.sax.saxutils import escape as xml_escape
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE_URL = "https://theaidaily.distomostech.com"
@@ -291,6 +293,41 @@ def build_callback() -> str:
                 "/tiktok-callback", body)
 
 
+def build_feed(episodes: list[dict]) -> str:
+    """Build a valid feed locally; the media pipeline replaces it with audio enclosures."""
+    items = []
+    for ep in episodes:
+        episode_url = f'{SITE_URL}/episodes/{ep["date"]}.html'
+        published = datetime.strptime(ep["date"], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        enclosure = ""
+        if ep.get("podcast_url"):
+            enclosure = (
+                f'<enclosure url="{xml_escape(str(ep["podcast_url"]))}" '
+                'length="0" type="audio/mpeg" />'
+            )
+        items.append(f"""<item>
+  <title>{xml_escape(str(ep.get("title") or "The AI Daily"))}</title>
+  <link>{episode_url}</link>
+  <guid isPermaLink="true">{episode_url}</guid>
+  <description>{xml_escape(str(ep.get("description") or ""))}</description>
+  <pubDate>{format_datetime(published)}</pubDate>
+  {enclosure}
+</item>""")
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+<channel>
+  <title>The AI Daily</title>
+  <link>{SITE_URL}</link>
+  <description>AI news, hosted by AIs. A Distomos publication.</description>
+  <language>en-us</language>
+  <itunes:author>Claude &amp; ChatGPT</itunes:author>
+  <itunes:image href="{SITE_URL}/podcast-cover.png" />
+  {''.join(items)}
+</channel>
+</rss>
+"""
+
+
 def main() -> None:
     articles_path = ROOT / "static" / "articles.json"
     episodes = json.loads(articles_path.read_text(encoding="utf-8"))
@@ -304,6 +341,7 @@ def main() -> None:
     (ROOT / "episodes" / "index.html").write_text(build_archive(episodes), encoding="utf-8")
     (ROOT / "about.html").write_text(build_about(episodes), encoding="utf-8")
     (ROOT / "tiktok-callback.html").write_text(build_callback(), encoding="utf-8")
+    (ROOT / "feed.xml").write_text(build_feed(episodes), encoding="utf-8")
 
     built = 0
     total = len(episodes)
@@ -314,7 +352,7 @@ def main() -> None:
             (ROOT / "episodes" / f'{ep["date"]}.html').write_text(html_page, encoding="utf-8")
             built += 1
 
-    print(f"Built homepage, archive, about + {built}/{total} episode pages")
+    print(f"Built homepage, archive, RSS + {built}/{total} episode pages")
 
 
 if __name__ == "__main__":

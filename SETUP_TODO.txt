@@ -62,16 +62,16 @@ Your account ID is in the Cloudflare dashboard URL or R2 overview page.
 ----------
 Status: Feed hosting is AUTOMATIC now — the pipeline publishes feed.xml
 to sites/ai-daily in this repository every run, served at:
-      https://distomostech.com/feed.xml
+      https://theaidaily.distomostech.com/feed.xml
 Audio still needs R2 (step 2) so episodes have playable URLs — without
 it the feed has no audio and Spotify will reject it.
 
 [ ] Complete step 2 above (R2 secrets)
 [ ] Wait for one successful daily run, then confirm
-    https://distomostech.com/feed.xml loads and has an <enclosure> tag
+    https://theaidaily.distomostech.com/feed.xml loads and has an <enclosure> tag
 [ ] Go to https://podcasters.spotify.com
 [ ] Click "Get Started" → Add your RSS feed URL:
-      https://distomostech.com/feed.xml
+      https://theaidaily.distomostech.com/feed.xml
 [ ] They usually approve within a few hours
     (Same feed works for Apple Podcasts — step 4)
 

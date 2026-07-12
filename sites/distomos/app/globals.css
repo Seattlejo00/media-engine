@@ -8,3 +8,4 @@
 .hero-image{inset:-12%;background-repeat:no-repeat;will-change:transform}
 @keyframes drift{from{transform:scale(1.01)}to{transform:scale(1.065) translate3d(-.5%,0,0)}}
 .signup-error{color:#ff9d88!important;font-family:var(--sans)!important;font-size:11px!important;margin-top:14px!important}.newsletter button:disabled,.newsletter input:disabled{opacity:.55;cursor:wait}
+.player .play{width:48px;height:48px;border-radius:50%;background:var(--blue);display:grid;place-items:center;font-size:13px}.player:hover .play{transform:scale(1.05)}

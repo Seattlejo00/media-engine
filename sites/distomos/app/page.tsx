@@ -1,4 +1,12 @@
 import { BriefingPlayer } from "./signal";
+import latest from "./latest-episode.json";
+
+const latestDate = new Date(`${latest.date}T12:00:00Z`).toLocaleDateString("en-US", {
+  month: "short",
+  day: "2-digit",
+  timeZone: "UTC",
+}).toUpperCase();
+const latestHref = latest.podcast_url || latest.youtube_url || "https://theaidaily.distomostech.com";
 
 export default function Home() {
   return <main>
@@ -33,16 +41,14 @@ export default function Home() {
         <a className="text-link" href="https://theaidaily.distomostech.com" target="_blank">Explore AI Daily <b>↗</b></a>
       </div>
       <div className="daily-card">
-        <div className="card-top"><span><i /> TODAY’S BRIEFING</span><time>JUL 11 · 08:12</time></div>
-        <h3>OpenAI’s agent play, Claude’s enterprise push, and a robotics breakthrough</h3>
-        <BriefingPlayer />
-        <div className="today-score"><div><span>TODAY’S AI SCORE</span><strong>8.7</strong><small>/ 10</small></div><p>High signal day</p></div>
-        <div className="score-bars">{[["OpenAI",94],["Anthropic",87],["Research",73],["Startups",69]].map(([x,v])=><div key={String(x)}><span>{x}</span><i><b style={{width:`${v}%`}} /></i><strong>{Number(v)/10}</strong></div>)}</div>
+        <div className="card-top"><span><i /> LATEST EPISODE</span><time>{latestDate}</time></div>
+        <h3>{latest.title}</h3>
+        <BriefingPlayer href={latestHref} hasAudio={Boolean(latest.podcast_url)} />
       </div>
     </section>
 
     <section className="art-break"><div /><p>Patterns appear<br />before predictions.</p><small>KEVIR DESERT · LANDSAT 8</small></section>
 
-    <footer className="shell"><div className="wordmark"><i>D</i><span>DISTOMOS</span></div><p>Publisher of AI Daily.<br />Signal over noise, every morning.</p><nav><a href="#ai-daily">AI Daily</a><a href="#about">About</a><a href="mailto:hello@distomos.com">Contact</a></nav><div className="footer-bottom"><span>© 2026 DISTOMOS</span><span>EARTH IMAGERY: USGS / NASA LANDSAT</span><span>DENVER, COLORADO</span></div></footer>
+    <footer className="shell"><div className="wordmark"><i>D</i><span>DISTOMOS</span></div><p>Publisher of AI Daily.<br />Signal over noise, every morning.</p><nav><a href="#ai-daily">AI Daily</a><a href="#about">About</a><a href="https://theaidaily.distomostech.com" target="_blank">Latest episode</a></nav><div className="footer-bottom"><span>© 2026 DISTOMOS</span><span>EARTH IMAGERY: USGS / NASA LANDSAT</span><span>DENVER, COLORADO</span></div></footer>
   </main>;
 }

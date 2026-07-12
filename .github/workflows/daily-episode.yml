@@ -110,18 +110,22 @@ jobs:
         run: |
           python publish_site.py --episode-dir "output/${{ steps.guard.outputs.today }}" --site-dir sites/ai-daily
           # Serve the podcast feed from the website domain (Spotify/Apple
-          # subscribe to https://distomostech.com/feed.xml)
+          # subscribe to https://theaidaily.distomostech.com/feed.xml)
           if [ -f output/feed.xml ]; then
             cp output/feed.xml sites/ai-daily/feed.xml
             echo "Copied feed.xml into the site"
           fi
+
+      - name: Validate website links
+        if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true
+        run: python scripts/check_site_links.py sites/ai-daily
 
       - name: Push website update
         if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add sites/ai-daily
+          git add sites/ai-daily sites/distomos/app/latest-episode.json
           if git diff --cached --quiet; then
             echo "Nothing to publish."
           else

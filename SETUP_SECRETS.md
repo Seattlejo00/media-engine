@@ -25,8 +25,6 @@ Used for: script structure + Claude's dialogue lines.
 - https://console.anthropic.com → API Keys → Create Key.
 - Needs billing configured on the account.
 - Secret name: `ANTHROPIC_API_KEY`.
-- (The same key also goes in the **ai-daily-site** repo's secrets under the
-  same name, for the text-only fallback workflow there.)
 
 ### 3. `NEWS_API_KEY`
 Used for: topic discovery (free tier, 100 requests/day is plenty).
@@ -71,19 +69,6 @@ A browser opens — **sign in with the Google account that owns the
 @TheAIDaily26 channel** and approve. The script prints
 `YOUTUBE_REFRESH_TOKEN=...` — copy the value into a secret named
 `YOUTUBE_REFRESH_TOKEN`, then delete the local `.env`.
-
-### 7. `SITE_PUSH_TOKEN`
-Used for: letting the workflow push the article to the `ai-daily-site` repo.
-(New requirement — on the old PC this was your regular git login.)
-
-- GitHub → your avatar → Settings → Developer settings →
-  Personal access tokens → **Fine-grained tokens** → Generate new token.
-- Repository access: **Only select repositories → ai-daily-site**.
-- Permissions: Repository permissions → **Contents → Read and write**. Nothing else.
-- Expiration: 1 year (put a calendar reminder to rotate it).
-- Secret name: `SITE_PUSH_TOKEN`.
-
----
 
 ## Tier 2 — optional (features are skipped automatically if unset)
 

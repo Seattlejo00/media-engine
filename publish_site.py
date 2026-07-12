@@ -75,6 +75,30 @@ def build_fragment(script: dict, topics: list[dict]) -> str:
     return "\n".join(parts) + "\n"
 
 
+def sync_distomos_latest(episodes: list[dict], site_dir: Path) -> None:
+    """Keep the Distomos feature card aligned with the newest real episode."""
+    if not episodes:
+        return
+    target = site_dir.parent / "distomos" / "app" / "latest-episode.json"
+    if not target.parent.exists():
+        return
+    latest = episodes[0]
+    payload = {
+        "date": latest.get("date"),
+        "title": latest.get("title"),
+        "description": latest.get("description"),
+        "youtube_url": latest.get("youtube_url"),
+        "podcast_url": latest.get("podcast_url"),
+        "duration_seconds": latest.get("duration_seconds"),
+        "scores": latest.get("scores"),
+    }
+    target.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    print(f"Synced Distomos latest episode: {target}")
+
+
 def publish(episode_dir: Path, site_dir: Path) -> None:
     script = json.loads((episode_dir / "script.json").read_text(encoding="utf-8"))
     topics = json.loads((episode_dir / "topics.json").read_text(encoding="utf-8"))
@@ -138,6 +162,7 @@ def publish(episode_dir: Path, site_dir: Path) -> None:
     articles_path.write_text(
         json.dumps(episodes, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
+    sync_distomos_latest(episodes, site_dir)
 
     # 3. Rebuild the site (episode pages, homepage list, RSS feed)
     build_script = site_dir / "scripts" / "build.py"
@@ -156,7 +181,7 @@ def main() -> None:
     if not (args.episode_dir / "script.json").exists():
         sys.exit(f"No script.json in {args.episode_dir} — did main.py run?")
     if not (args.site_dir / "static" / "articles.json").exists():
-        sys.exit(f"{args.site_dir} doesn't look like the ai-daily-site repo")
+        sys.exit(f"{args.site_dir} doesn't look like the integrated AI Daily site")
 
     publish(args.episode_dir, args.site_dir)
 

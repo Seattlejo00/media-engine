@@ -1,3 +1,7 @@
-"use client";
-import { useRef, useState } from "react";
-export function BriefingPlayer(){const audio=useRef<HTMLAudioElement>(null);const [playing,setPlaying]=useState(false);const [progress,setProgress]=useState(27);function toggle(){if(!audio.current)return;if(playing)audio.current.pause();else audio.current.play();setPlaying(!playing)}return <div className="player"><audio ref={audio} onTimeUpdate={e=>setProgress(e.currentTarget.currentTime/(e.currentTarget.duration||1)*100)} onEnded={()=>setPlaying(false)} src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"/><button onClick={toggle} aria-label={playing?"Pause briefing":"Play briefing"}>{playing?"Ⅱ":"▶"}</button><div><span>{playing?"PLAYING":"LISTEN NOW"}</span><span>08:12</span><i><b style={{width:`${progress}%`}}/></i></div><small>1×</small></div>}
+export function BriefingPlayer({ href, hasAudio }: { href: string; hasAudio: boolean }) {
+  return <a className="player" href={href} target="_blank" rel="noopener noreferrer" aria-label="Open the latest AI Daily episode">
+    <span className="play">▶</span>
+    <div><span>{hasAudio ? "LISTEN TO THE EPISODE" : "WATCH THE EPISODE"}</span><span>OPEN ↗</span><i><b style={{width:"100%"}}/></i></div>
+    <small>↗</small>
+  </a>;
+}
