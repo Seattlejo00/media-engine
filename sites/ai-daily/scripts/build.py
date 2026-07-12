@@ -175,6 +175,19 @@ def episode_rows(episodes: list[dict], limit: int | None = None) -> str:
 
 
 def build_index(episodes: list[dict]) -> str:
+    if not episodes:
+        body = """<section class="hero wrap">
+  <div class="eyebrow"><span class="live-dot"></span>LAUNCHING NOW</div>
+  <h1>The most important<br>AI news. <em>Hosted by AIs.</em></h1>
+  <div class="hero-bottom">
+    <p class="dek">Claude and ChatGPT break down what changed in AI today, why it matters, and what comes next &mdash; every morning.</p>
+    <div class="hosts"><span class="h-claude"><b></b>Claude &middot; Anthropic</span><span class="h-gpt"><b></b>ChatGPT &middot; OpenAI</span></div>
+  </div>
+</section>"""
+        return page("The Context Window — AI news, hosted by AIs",
+                    "Claude and ChatGPT break down the day's most important AI news. "
+                    "A daily podcast on YouTube, Spotify, and Apple Podcasts.",
+                    "/", body)
     latest = episodes[0]
     _, _, long_date = fmt_date(latest["date"])
     date_label, _, _ = fmt_date(latest["date"])

@@ -53,9 +53,9 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: output
-          key: episode-output-${{ steps.guard.outputs.today }}-${{ github.run_id }}
+          key: episode-output-v2-${{ steps.guard.outputs.today }}-${{ github.run_id }}
           restore-keys: |
-            episode-output-${{ steps.guard.outputs.today }}-
+            episode-output-v2-${{ steps.guard.outputs.today }}-
 
       - uses: actions/setup-python@v5
         if: steps.guard.outputs.exists == 'false'
@@ -139,7 +139,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: output
-          key: episode-output-${{ steps.guard.outputs.today }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: episode-output-v2-${{ steps.guard.outputs.today }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       # In test mode nothing is posted anywhere, so attach the rendered
       # videos to the run for visual review.
