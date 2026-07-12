@@ -61,7 +61,7 @@ Your account ID is in the Cloudflare dashboard URL or R2 overview page.
 3. SPOTIFY
 ----------
 Status: Feed hosting is AUTOMATIC now — the pipeline publishes feed.xml
-to the website repo every run, served at:
+to sites/ai-daily in this repository every run, served at:
       https://distomostech.com/feed.xml
 Audio still needs R2 (step 2) so episodes have playable URLs — without
 it the feed has no audio and Spotify will reject it.

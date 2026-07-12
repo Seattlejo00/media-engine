@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-Publish an episode as a text article to the ai-daily-site repo.
+Publish an episode as a text article to the integrated AI Daily site.
 
 Reads the episode artifacts produced by main.py (script.json, topics.json,
 summary.json) and writes the website's article fragment + articles.json entry,
-then runs the site's build script. Git commit/push is handled by the caller
-(the GitHub Actions workflow).
+then runs the site's build script. The site lives at sites/ai-daily in this
+repository; Git commit/push is handled by the GitHub Actions workflow.
 
 Usage:
-    python publish_site.py --episode-dir output/2026-07-11 --site-dir ../ai-daily-site
+    python publish_site.py --episode-dir output/2026-07-11 --site-dir sites/ai-daily
 """
 
 import argparse
