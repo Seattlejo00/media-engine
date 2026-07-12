@@ -17,7 +17,7 @@ on:
         default: false
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: daily-episode
@@ -30,13 +30,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check out website repo
-        uses: actions/checkout@v4
-        with:
-          repository: Seattlejo00/ai-daily-site
-          token: ${{ secrets.SITE_PUSH_TOKEN }}
-          path: site
-
       - name: Skip if today's episode already exists
         id: guard
         run: |
@@ -45,7 +38,7 @@ jobs:
           if [ "${{ inputs.test_mode }}" = "true" ]; then
             echo "exists=false" >> "$GITHUB_OUTPUT"
             echo "Test mode — running regardless of published state."
-          elif python3 -c "import json,sys; eps=json.load(open('site/static/articles.json')); sys.exit(0 if any(e['date']=='$TODAY' for e in eps) else 1)"; then
+          elif python3 -c "import json,sys; eps=json.load(open('sites/ai-daily/static/articles.json')); sys.exit(0 if any(e['date']=='$TODAY' for e in eps) else 1)"; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
             echo "Episode for $TODAY already published — skipping."
           else
@@ -104,9 +97,6 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
           R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
-          # Podcast feed served from the website (Option A in SETUP_TODO):
-          # generated each run, copied into the site repo below
-          RSS_FEED_URL: https://theaidaily.distomostech.com/feed.xml
           # Episode settings
           EPISODE_DURATION_MINUTES: "12"
           TIMEZONE: America/Los_Angeles
@@ -115,21 +105,18 @@ jobs:
       - name: Publish article to website
         if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true
         run: |
-          python publish_site.py --episode-dir "output/${{ steps.guard.outputs.today }}" --site-dir site
-          # Serve the podcast feed from the website domain (Spotify/Apple
-          # subscribe to https://distomostech.com/feed.xml)
-          if [ -f output/feed.xml ]; then
-            cp output/feed.xml site/feed.xml
-            echo "Copied feed.xml into the site"
-          fi
+          python publish_site.py --episode-dir "output/${{ steps.guard.outputs.today }}" --site-dir sites/ai-daily
+
+      - name: Validate website links
+        if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true
+        run: python scripts/check_site_links.py sites/ai-daily
 
       - name: Push website update
         if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true
         run: |
-          cd site
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add sites/ai-daily sites/distomos/app/latest-episode.json
           if git diff --cached --quiet; then
             echo "Nothing to publish."
           else
