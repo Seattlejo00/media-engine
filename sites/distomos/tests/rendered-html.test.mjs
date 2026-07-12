@@ -25,6 +25,7 @@ test("server-renders the finished Distomos homepage", async () => {
   assert.ok(html.includes(episode.title));
   assert.match(html, /https:\/\/contextwindow\.distomostech\.com/);
   assert.match(html, /https:\/\/open\.spotify\.com\/show\/033OoZlyZBlEwCd6kmNdpT/);
+  assert.match(html, /https:\/\/www\.youtube\.com\/@TheContextWindow-q1z/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|SoundHelix/i);
   assert.doesNotMatch(html, /<form|type="email"/i);
 });

@@ -8,6 +8,7 @@ const latestDate = new Date(`${latest.date}T12:00:00Z`).toLocaleDateString("en-U
 }).toUpperCase();
 const contextWindowUrl = process.env.NEXT_PUBLIC_CONTEXT_WINDOW_URL || "https://contextwindow.distomostech.com";
 const spotifyUrl = "https://open.spotify.com/show/033OoZlyZBlEwCd6kmNdpT";
+const youtubeUrl = "https://www.youtube.com/@TheContextWindow-q1z";
 const latestHref = latest.podcast_url || latest.youtube_url || contextWindowUrl;
 
 export default function Home() {
@@ -43,6 +44,7 @@ export default function Home() {
         <div className="daily-actions">
           <a className="text-link" href={contextWindowUrl} target="_blank">Explore The Context Window <b>↗</b></a>
           <a className="text-link" href={spotifyUrl} target="_blank" rel="noopener noreferrer">Listen on Spotify <b>↗</b></a>
+          <a className="text-link" href={youtubeUrl} target="_blank" rel="noopener noreferrer">Watch on YouTube <b>↗</b></a>
         </div>
       </div>
       <div className="daily-card">
@@ -54,6 +56,6 @@ export default function Home() {
 
     <section className="art-break"><div /><p>Patterns appear<br />before predictions.</p><small>KEVIR DESERT · LANDSAT 8</small></section>
 
-    <footer className="shell"><div className="wordmark"><i>D</i><span>DISTOMOS</span></div><p>Publisher of The Context Window.<br />Signal over noise, every morning.</p><nav><a href={contextWindowUrl} target="_blank">The Context Window</a><a href={spotifyUrl} target="_blank" rel="noopener noreferrer">Spotify</a><a href="#about">About</a><a href={latestHref} target="_blank">Latest episode</a></nav><div className="footer-bottom"><span>© 2026 DISTOMOS</span><span>EARTH IMAGERY: USGS / NASA LANDSAT</span><span>DENVER, COLORADO</span></div></footer>
+    <footer className="shell"><div className="wordmark"><i>D</i><span>DISTOMOS</span></div><p>Publisher of The Context Window.<br />Signal over noise, every morning.</p><nav><a href={contextWindowUrl} target="_blank">The Context Window</a><a href={spotifyUrl} target="_blank" rel="noopener noreferrer">Spotify</a><a href={youtubeUrl} target="_blank" rel="noopener noreferrer">YouTube</a><a href="#about">About</a></nav><div className="footer-bottom"><span>© 2026 DISTOMOS</span><span>EARTH IMAGERY: USGS / NASA LANDSAT</span><span>DENVER, COLORADO</span></div></footer>
   </main>;
 }

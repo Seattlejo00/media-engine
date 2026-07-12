@@ -74,8 +74,11 @@ def page(title: str, desc: str, path: str, body: str, active: str = "") -> str:
 <body>
 <header class="site-header wrap">
   <a class="logo" href="/"><i></i>THE CONTEXT WINDOW<small>BY DISTOMOS</small></a>
-  <nav>{nav("/episodes/", "Episodes", "episodes")}{nav("/about.html", "About", "about")}<a href="{SPOTIFY_SHOW}" target="_blank" rel="noopener">Spotify</a></nav>
-  <a class="watch" href="{YT_CHANNEL}" target="_blank" rel="noopener">Watch on YouTube <span>&#8599;</span></a>
+  <nav>{nav("/episodes/", "Episodes", "episodes")}{nav("/about.html", "About", "about")}</nav>
+  <div class="header-platforms">
+    <a class="platform-button spotify" href="{SPOTIFY_SHOW}" target="_blank" rel="noopener"><i></i>Spotify <b>&#8599;</b></a>
+    <a class="platform-button youtube" href="{YT_CHANNEL}" target="_blank" rel="noopener"><i></i>YouTube <b>&#8599;</b></a>
+  </div>
 </header>
 <main>
 {body}
