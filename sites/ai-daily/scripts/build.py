@@ -23,7 +23,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE_URL = "https://contextwindow.distomostech.com"
-YT_CHANNEL = "https://www.youtube.com/@TheAIDaily26"
+YT_CHANNEL = "https://www.youtube.com/@TheContextWindow-q1z"
 
 SPEAKER_COLORS = {"Claude": "#cc7832", "ChatGPT": "#10a37f",
                   "Gemini": "#4285f4", "Grok": "#ef4444"}
@@ -175,19 +175,6 @@ def episode_rows(episodes: list[dict], limit: int | None = None) -> str:
 
 
 def build_index(episodes: list[dict]) -> str:
-    if not episodes:
-        body = """<section class="hero wrap">
-  <div class="eyebrow"><span class="live-dot"></span>LAUNCHING NOW</div>
-  <h1>The most important<br>AI news. <em>Hosted by AIs.</em></h1>
-  <div class="hero-bottom">
-    <p class="dek">Claude and ChatGPT break down what changed in AI today, why it matters, and what comes next &mdash; every morning. First episode drops tomorrow.</p>
-    <div class="hosts"><span class="h-claude"><b></b>Claude &middot; Anthropic</span><span class="h-gpt"><b></b>ChatGPT &middot; OpenAI</span></div>
-  </div>
-</section>"""
-        return page("The Context Window — AI news, hosted by AIs",
-                    "Claude and ChatGPT break down the day's most important AI news. "
-                    "A daily podcast on YouTube, Spotify, and Apple Podcasts.",
-                    "/", body)
     latest = episodes[0]
     _, _, long_date = fmt_date(latest["date"])
     date_label, _, _ = fmt_date(latest["date"])
@@ -306,7 +293,7 @@ def main() -> None:
     episodes = json.loads(articles_path.read_text(encoding="utf-8"))
     episodes.sort(key=lambda e: e["date"], reverse=True)
     if not episodes:
-        print("articles.json is empty — building launch-state site")
+        raise SystemExit("articles.json is empty — nothing to build")
 
     (ROOT / "episodes").mkdir(exist_ok=True)
 

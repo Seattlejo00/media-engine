@@ -7,7 +7,7 @@ One repository for producing and publishing the AI-hosted daily show.
 - `main.py` — daily episode orchestrator
 - `pipeline/` — research, scripts, TTS, audio, video, clips, and artwork
 - `distribution/` — audio hosting, YouTube, TikTok, and social publishing
-- `sites/ai-daily/` — generated publication, archive, and transcripts
+- `sites/ai-daily/` — generated Context Window publication, archive, and transcripts
 - `sites/distomos/` — Distomos parent-brand website
 
 ## Run the media engine
@@ -29,7 +29,7 @@ npm install
 npm run dev
 ```
 
-## Rebuild AI Daily
+## Rebuild Context Window
 
 ```bash
 python sites/ai-daily/scripts/build.py

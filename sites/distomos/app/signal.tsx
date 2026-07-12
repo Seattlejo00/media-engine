@@ -1,5 +1,5 @@
 export function BriefingPlayer({ href, hasAudio }: { href: string; hasAudio: boolean }) {
-  return <a className="player" href={href} target="_blank" rel="noopener noreferrer" aria-label="Open the latest The Context Window episode">
+  return <a className="player" href={href} target="_blank" rel="noopener noreferrer" aria-label="Open the latest episode of The Context Window">
     <span className="play">▶</span>
     <div>
       <span>{hasAudio ? "LISTEN TO THE EPISODE" : "WATCH THE EPISODE"}</span>
