@@ -24,6 +24,7 @@ test("server-renders the finished Distomos homepage", async () => {
   const episode = JSON.parse(await readFile(new URL("../app/latest-episode.json", import.meta.url), "utf8"));
   assert.ok(html.includes(episode.title));
   assert.match(html, /https:\/\/contextwindow\.distomostech\.com/);
+  assert.match(html, /https:\/\/open\.spotify\.com\/show\/033OoZlyZBlEwCd6kmNdpT/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|SoundHelix/i);
   assert.doesNotMatch(html, /<form|type="email"/i);
 });

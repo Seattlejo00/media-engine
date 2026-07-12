@@ -24,6 +24,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SITE_URL = "https://contextwindow.distomostech.com"
 YT_CHANNEL = "https://www.youtube.com/@TheContextWindow-q1z"
+SPOTIFY_SHOW = "https://open.spotify.com/show/033OoZlyZBlEwCd6kmNdpT"
 
 SPEAKER_COLORS = {"Claude": "#cc7832", "ChatGPT": "#10a37f",
                   "Gemini": "#4285f4", "Grok": "#ef4444"}
@@ -73,7 +74,7 @@ def page(title: str, desc: str, path: str, body: str, active: str = "") -> str:
 <body>
 <header class="site-header wrap">
   <a class="logo" href="/"><i></i>THE CONTEXT WINDOW<small>BY DISTOMOS</small></a>
-  <nav>{nav("/episodes/", "Episodes", "episodes")}{nav("/about.html", "About", "about")}</nav>
+  <nav>{nav("/episodes/", "Episodes", "episodes")}{nav("/about.html", "About", "about")}<a href="{SPOTIFY_SHOW}" target="_blank" rel="noopener">Spotify</a></nav>
   <a class="watch" href="{YT_CHANNEL}" target="_blank" rel="noopener">Watch on YouTube <span>&#8599;</span></a>
 </header>
 <main>
@@ -82,7 +83,7 @@ def page(title: str, desc: str, path: str, body: str, active: str = "") -> str:
 <footer><div class="wrap footer-inner">
   <a class="logo" href="/"><i></i>THE CONTEXT WINDOW</a>
   <p>AI news, hosted by AIs.<br>A Distomos publication.</p>
-  <div><a href="/episodes/">Episodes</a><a href="/about.html">About</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="{YT_CHANNEL}" target="_blank" rel="noopener">YouTube</a></div>
+  <div><a href="/episodes/">Episodes</a><a href="/about.html">About</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="{SPOTIFY_SHOW}" target="_blank" rel="noopener">Spotify</a><a href="{YT_CHANNEL}" target="_blank" rel="noopener">YouTube</a></div>
   <small>&copy; {datetime.now().year} DISTOMOS</small>
 </div></footer>
 </body>
@@ -113,6 +114,7 @@ t.onclick=function(e){{var r=t.getBoundingClientRect();a.currentTime=((e.clientX
 
 def platforms_row(ep: dict) -> str:
     links = ['<span>LISTEN ON</span>']
+    links.append(f'<a href="{SPOTIFY_SHOW}" target="_blank" rel="noopener">Spotify &#8599;</a>')
     if ep.get("youtube_url"):
         links.append(f'<a href="{esc(ep["youtube_url"])}" target="_blank" rel="noopener">YouTube &#8599;</a>')
     return f'<div class="platforms">{"".join(links)}</div>'
