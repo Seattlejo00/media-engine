@@ -69,7 +69,7 @@ def page(title: str, desc: str, path: str, body: str, active: str = "") -> str:
 <meta property="og:image" content="{SITE_URL}/podcast-cover.png">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="/podcast-cover.png">
-<link rel="stylesheet" href="/static/site.css">
+<link rel="stylesheet" href="/static/site.css?v=2">
 </head>
 <body>
 <header class="site-header wrap">
