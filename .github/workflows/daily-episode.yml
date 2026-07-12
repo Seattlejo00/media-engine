@@ -97,9 +97,6 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
           R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
-          # Podcast feed served from the website (Option A in SETUP_TODO):
-          # generated each run, copied into the site repo below
-          RSS_FEED_URL: https://theaidaily.distomostech.com/feed.xml
           # Episode settings
           EPISODE_DURATION_MINUTES: "12"
           TIMEZONE: America/Los_Angeles
@@ -109,12 +106,6 @@ jobs:
         if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true
         run: |
           python publish_site.py --episode-dir "output/${{ steps.guard.outputs.today }}" --site-dir sites/ai-daily
-          # Serve the podcast feed from the website domain (Spotify/Apple
-          # subscribe to https://theaidaily.distomostech.com/feed.xml)
-          if [ -f output/feed.xml ]; then
-            cp output/feed.xml sites/ai-daily/feed.xml
-            echo "Copied feed.xml into the site"
-          fi
 
       - name: Validate website links
         if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true

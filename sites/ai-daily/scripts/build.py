@@ -18,10 +18,8 @@ paper, Claude orange + ChatGPT green). No dependencies — stdlib only.
 
 import html
 import json
-from datetime import datetime, timezone
-from email.utils import format_datetime
+from datetime import datetime
 from pathlib import Path
-from xml.sax.saxutils import escape as xml_escape
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE_URL = "https://theaidaily.distomostech.com"
@@ -69,14 +67,13 @@ def page(title: str, desc: str, path: str, body: str, active: str = "") -> str:
 <meta property="og:type" content="website">
 <meta property="og:image" content="{SITE_URL}/podcast-cover.png">
 <meta name="twitter:card" content="summary">
-<link rel="alternate" type="application/rss+xml" title="The AI Daily" href="{SITE_URL}/feed.xml">
 <link rel="icon" href="/podcast-cover.png">
 <link rel="stylesheet" href="/static/site.css">
 </head>
 <body>
 <header class="site-header wrap">
   <a class="logo" href="/"><i></i>THE AI DAILY<small>BY DISTOMOS</small></a>
-  <nav>{nav("/episodes/", "Episodes", "episodes")}{nav("/about.html", "About", "about")}<a href="/feed.xml">RSS</a></nav>
+  <nav>{nav("/episodes/", "Episodes", "episodes")}{nav("/about.html", "About", "about")}</nav>
   <a class="watch" href="{YT_CHANNEL}" target="_blank" rel="noopener">Watch on YouTube <span>&#8599;</span></a>
 </header>
 <main>
@@ -85,7 +82,7 @@ def page(title: str, desc: str, path: str, body: str, active: str = "") -> str:
 <footer><div class="wrap footer-inner">
   <a class="logo" href="/"><i></i>THE AI DAILY</a>
   <p>AI news, hosted by AIs.<br>A Distomos publication.</p>
-  <div><a href="/episodes/">Episodes</a><a href="/about.html">About</a><a href="/feed.xml">RSS</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="{YT_CHANNEL}" target="_blank" rel="noopener">YouTube</a></div>
+  <div><a href="/episodes/">Episodes</a><a href="/about.html">About</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="{YT_CHANNEL}" target="_blank" rel="noopener">YouTube</a></div>
   <small>&copy; {datetime.now().year} DISTOMOS</small>
 </div></footer>
 </body>
@@ -118,7 +115,6 @@ def platforms_row(ep: dict) -> str:
     links = ['<span>LISTEN ON</span>']
     if ep.get("youtube_url"):
         links.append(f'<a href="{esc(ep["youtube_url"])}" target="_blank" rel="noopener">YouTube &#8599;</a>')
-    links.append('<a href="/feed.xml">RSS &#8599;</a>')
     return f'<div class="platforms">{"".join(links)}</div>'
 
 
@@ -268,7 +264,6 @@ def build_about(episodes: list[dict]) -> str:
       who discuss them as themselves. The episode is produced, scored,
       published and distributed with no human in the loop.</p>
       <p>New episodes daily on YouTube, with full transcripts here.</p>
-      <div class="rss-box"><code>{SITE_URL}/feed.xml</code></div>
     </div>
   </div>
   <div class="host-cards">
@@ -293,41 +288,6 @@ def build_callback() -> str:
                 "/tiktok-callback", body)
 
 
-def build_feed(episodes: list[dict]) -> str:
-    """Build a valid feed locally; the media pipeline replaces it with audio enclosures."""
-    items = []
-    for ep in episodes:
-        episode_url = f'{SITE_URL}/episodes/{ep["date"]}.html'
-        published = datetime.strptime(ep["date"], "%Y-%m-%d").replace(tzinfo=timezone.utc)
-        enclosure = ""
-        if ep.get("podcast_url"):
-            enclosure = (
-                f'<enclosure url="{xml_escape(str(ep["podcast_url"]))}" '
-                'length="0" type="audio/mpeg" />'
-            )
-        items.append(f"""<item>
-  <title>{xml_escape(str(ep.get("title") or "The AI Daily"))}</title>
-  <link>{episode_url}</link>
-  <guid isPermaLink="true">{episode_url}</guid>
-  <description>{xml_escape(str(ep.get("description") or ""))}</description>
-  <pubDate>{format_datetime(published)}</pubDate>
-  {enclosure}
-</item>""")
-    return f"""<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
-<channel>
-  <title>The AI Daily</title>
-  <link>{SITE_URL}</link>
-  <description>AI news, hosted by AIs. A Distomos publication.</description>
-  <language>en-us</language>
-  <itunes:author>Claude &amp; ChatGPT</itunes:author>
-  <itunes:image href="{SITE_URL}/podcast-cover.png" />
-  {''.join(items)}
-</channel>
-</rss>
-"""
-
-
 def main() -> None:
     articles_path = ROOT / "static" / "articles.json"
     episodes = json.loads(articles_path.read_text(encoding="utf-8"))
@@ -341,7 +301,6 @@ def main() -> None:
     (ROOT / "episodes" / "index.html").write_text(build_archive(episodes), encoding="utf-8")
     (ROOT / "about.html").write_text(build_about(episodes), encoding="utf-8")
     (ROOT / "tiktok-callback.html").write_text(build_callback(), encoding="utf-8")
-    (ROOT / "feed.xml").write_text(build_feed(episodes), encoding="utf-8")
 
     built = 0
     total = len(episodes)
@@ -352,7 +311,7 @@ def main() -> None:
             (ROOT / "episodes" / f'{ep["date"]}.html').write_text(html_page, encoding="utf-8")
             built += 1
 
-    print(f"Built homepage, archive, RSS + {built}/{total} episode pages")
+    print(f"Built homepage, archive, about + {built}/{total} episode pages")
 
 
 if __name__ == "__main__":

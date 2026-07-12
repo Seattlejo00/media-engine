@@ -6,8 +6,8 @@ One repository for producing and publishing the AI-hosted daily show.
 
 - `main.py` — daily episode orchestrator
 - `pipeline/` — research, scripts, TTS, audio, video, clips, and artwork
-- `distribution/` — podcast hosting, RSS, YouTube, TikTok, and social publishing
-- `sites/ai-daily/` — generated publication, archive, transcripts, and RSS feed
+- `distribution/` — audio hosting, YouTube, TikTok, and social publishing
+- `sites/ai-daily/` — generated publication, archive, and transcripts
 - `sites/distomos/` — Distomos parent-brand website
 
 ## Run the media engine

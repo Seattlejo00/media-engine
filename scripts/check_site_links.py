@@ -48,7 +48,7 @@ def main() -> None:
             if target is not None and not target.exists():
                 errors.append(f"{page.relative_to(root)}: {attr}={value} -> missing {target.relative_to(root)}")
 
-    for required in ("index.html", "feed.xml", "podcast-cover.png", "static/site.css"):
+    for required in ("index.html", "podcast-cover.png", "static/site.css"):
         if not (root / required).exists():
             errors.append(f"missing required site file: {required}")
 

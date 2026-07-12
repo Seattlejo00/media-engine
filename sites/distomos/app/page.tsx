@@ -50,6 +50,6 @@ export default function Home() {
 
     <section className="art-break"><div /><p>Patterns appear<br />before predictions.</p><small>KEVIR DESERT · LANDSAT 8</small></section>
 
-    <footer className="shell"><div className="wordmark"><i>D</i><span>DISTOMOS</span></div><p>Publisher of AI Daily.<br />Signal over noise, every morning.</p><nav><a href={aiDailyUrl} target="_blank">AI Daily</a><a href="#about">About</a><a href={`${aiDailyUrl}/feed.xml`} target="_blank">RSS</a></nav><div className="footer-bottom"><span>© 2026 DISTOMOS</span><span>EARTH IMAGERY: USGS / NASA LANDSAT</span><span>DENVER, COLORADO</span></div></footer>
+    <footer className="shell"><div className="wordmark"><i>D</i><span>DISTOMOS</span></div><p>Publisher of AI Daily.<br />Signal over noise, every morning.</p><nav><a href={aiDailyUrl} target="_blank">AI Daily</a><a href="#about">About</a><a href={latestHref} target="_blank">Latest episode</a></nav><div className="footer-bottom"><span>© 2026 DISTOMOS</span><span>EARTH IMAGERY: USGS / NASA LANDSAT</span><span>DENVER, COLORADO</span></div></footer>
   </main>;
 }
