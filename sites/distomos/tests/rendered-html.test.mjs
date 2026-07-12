@@ -20,10 +20,10 @@ test("server-renders the finished Distomos homepage", async () => {
   const html = await response.text();
   assert.match(html, /<title>Distomos — See the shape of what’s next<\/title>/i);
   assert.match(html, /See the shape/);
-  assert.match(html, /AI DAILY BY DISTOMOS/);
+  assert.match(html, /THE CONTEXT WINDOW BY DISTOMOS/);
   const episode = JSON.parse(await readFile(new URL("../app/latest-episode.json", import.meta.url), "utf8"));
   assert.ok(html.includes(episode.title));
-  assert.match(html, /https:\/\/theaidaily\.distomostech\.com/);
+  assert.match(html, /https:\/\/contextwindow\.distomostech\.com/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|SoundHelix/i);
   assert.doesNotMatch(html, /<form|type="email"/i);
 });

@@ -138,7 +138,7 @@ def rank_topics(articles: list[dict]) -> list[dict]:
             {
                 "role": "system",
                 "content": (
-                    "You are a podcast producer for 'The AI Daily', a show hosted by "
+                    "You are a podcast producer for 'The Context Window', a show hosted by "
                     "Claude (Anthropic) and ChatGPT (OpenAI). Pick the 5-6 most "
                     "podcast-worthy stories from this list.\n\n"
                     "STRICT RELEVANCE FILTER — only select stories that are DIRECTLY about:\n"

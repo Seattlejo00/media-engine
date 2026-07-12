@@ -1,5 +1,5 @@
 """
-The AI Daily — Media Engine
+The Context Window — Media Engine
 Main orchestrator that runs the full pipeline:
   Topics -> Script -> TTS -> Audio -> Video -> Clips -> Distribute
 
@@ -343,7 +343,7 @@ def run_pipeline(
             clip_segments[i]["title"] if i < len(clip_segments) else f"Clip {i+1}"
         )
         hashtags = " ".join(f"#{name}" for name in roster)
-        tiktok_title = f"{clip_title} | The AI Daily {hashtags} #AI #Podcast"
+        tiktok_title = f"{clip_title} | The Context Window {hashtags} #AI #Podcast"
         tiktok_id = upload_to_tiktok(clip_path, tiktok_title)
         if tiktok_id:
             tiktok_ids[str(i)] = tiktok_id
@@ -427,8 +427,8 @@ def _generate_signal_scores(topics: list[dict]) -> dict | None:
 def _save_transcript(script: dict, episode_dir: Path, date_str: str):
     """Save a clean, readable transcript as a text file."""
     lines = []
-    title = script.get("title", f"The AI Daily — {date_str}")
-    lines.append(f"THE AI DAILY — {date_str}")
+    title = script.get("title", f"The Context Window — {date_str}")
+    lines.append(f"THE CONTEXT WINDOW — {date_str}")
     lines.append(f'"{title}"')
     lines.append("=" * 60)
     lines.append("")
@@ -472,7 +472,7 @@ def _update_rss_feed(
     # Add new episode
     episodes.append(
         {
-            "title": script.get("title", f"The AI Daily — {date_str}"),
+            "title": script.get("title", f"The Context Window — {date_str}"),
             "description": script.get("description", ""),
             "date": date_str,
             "audio_url": audio_url or "",
@@ -535,7 +535,7 @@ def run_scheduled():
 
 def main():
     parser = argparse.ArgumentParser(
-        description="The AI Daily — Media Engine",
+        description="The Context Window — Media Engine",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail when the generated AI Daily site contains broken internal links."""
+"""Fail when the generated Context Window site contains broken internal links."""
 
 import argparse
 from html.parser import HTMLParser

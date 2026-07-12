@@ -77,7 +77,7 @@ def post_episode_to_twitter(
 ) -> str | None:
     """Post episode announcement to Twitter."""
     title = script.get("title", "New Episode")
-    text = f"🎙️ New episode of The AI Daily\n\n{title}\n\n"
+    text = f"🎙️ New episode of The Context Window\n\n{title}\n\n"
 
     if youtube_url:
         text += f"Watch: {youtube_url}\n\n"
@@ -92,7 +92,7 @@ def post_clip_to_twitter(
     roster: list[str] | None = None,
 ) -> str | None:
     """Post a clip to Twitter with video."""
-    text = f"🔥 {clip_title}\n\nFrom today's AI Daily"
+    text = f"🔥 {clip_title}\n\nFrom today's Context Window"
     if episode_url:
         text += f"\n\nFull ep: {episode_url}"
     text += f"\n\n{_roster_hashtags(roster)}"

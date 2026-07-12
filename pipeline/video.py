@@ -188,7 +188,7 @@ def _render_frame_image(
     # --- Watermark ---
     wm_font = _font(FONT_BOLD, 24 if is_landscape else 28)
     wm_y = int(height * (0.94 if is_landscape else 0.815))
-    draw.text((cx, wm_y), "THE AI DAILY", font=wm_font, fill=(*MUTED_TEXT, 200), anchor="ma")
+    draw.text((cx, wm_y), "THE CONTEXT WINDOW", font=wm_font, fill=(*MUTED_TEXT, 200), anchor="ma")
 
     return Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
 

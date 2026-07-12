@@ -35,7 +35,7 @@ TIMEZONE = os.getenv("TIMEZONE", "America/Los_Angeles")
 TTS_PROVIDER = os.getenv("TTS_PROVIDER", "openai")
 
 # --- Podcast Metadata ---
-PODCAST_TITLE = os.getenv("PODCAST_TITLE", "The AI Daily")
+PODCAST_TITLE = os.getenv("PODCAST_TITLE", "The Context Window")
 PODCAST_DESCRIPTION = os.getenv(
     "PODCAST_DESCRIPTION",
     "ChatGPT and Claude discuss the day's biggest stories — as themselves.",
@@ -43,7 +43,7 @@ PODCAST_DESCRIPTION = os.getenv(
 RSS_FEED_URL = os.getenv("RSS_FEED_URL", "")
 # Square cover art for podcast directories (Apple needs 1400-3000px)
 PODCAST_COVER_URL = os.getenv(
-    "PODCAST_COVER_URL", "https://theaidaily.distomostech.com/podcast-cover.png"
+    "PODCAST_COVER_URL", "https://contextwindow.distomostech.com/podcast-cover.png"
 )
 
 # --- YouTube ---

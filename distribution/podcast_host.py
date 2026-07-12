@@ -51,7 +51,7 @@ def download_feed_state(dest_path: Path) -> bool:
     try:
         s3 = _r2_client()
         dest_path.parent.mkdir(parents=True, exist_ok=True)
-        s3.download_file(config.R2_BUCKET_NAME, "feed/feed_episodes.json", str(dest_path))
+        s3.download_file(config.R2_BUCKET_NAME, "feed/feed_episodes_v2.json", str(dest_path))
         logger.info("Downloaded feed history from R2")
         return True
     except Exception as e:
@@ -80,7 +80,7 @@ def upload_feed(feed_xml_path: Path, feed_state_path: Path) -> str | None:
         )
         if feed_state_path.exists():
             s3.upload_file(
-                str(feed_state_path), config.R2_BUCKET_NAME, "feed/feed_episodes.json",
+                str(feed_state_path), config.R2_BUCKET_NAME, "feed/feed_episodes_v2.json",
                 ExtraArgs={"ContentType": "application/json"},
             )
         feed_url = f"{config.R2_PUBLIC_URL}/feed.xml"

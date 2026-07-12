@@ -1,4 +1,4 @@
-Generate a podcast episode script for "The AI Daily" — a show {hosts_description}.
+Generate a podcast episode script for "The Context Window" — a show {hosts_description}.
 
 Today's date: {date}
 
@@ -7,7 +7,7 @@ Today's topics (ranked by importance):
 
 Episode structure:
 1. COLD OPEN — One host drops a punchy one-liner about the top story. Another reacts. ({cold_open_exchanges} exchanges)
-2. INTRO — Brief "welcome to The AI Daily" with today's date. (1 exchange each)
+2. INTRO — Brief "welcome to The Context Window" with today's date. (1 exchange each)
 3. MAIN STORIES — Cover {main_story_count} stories in depth. For each:
    - One speaker introduces the story (what happened, why it matters)
    - Extended back-and-forth discussion ({main_exchanges} exchanges per story)

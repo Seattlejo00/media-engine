@@ -165,11 +165,11 @@ def upload_episode(
 ) -> str | None:
     """Upload a full episode with optional custom thumbnail."""
     # Prefer YouTube-optimized title, fall back to script title
-    title = script.get("youtube_title") or f"{script.get('title', 'The AI Daily')} | {date_str}"
+    title = script.get("youtube_title") or f"{script.get('title', 'The Context Window')} | {date_str}"
     hosted_by = _roster_description(roster)
     description = (
         f"{script.get('description', '')}\n\n"
-        f"The AI Daily — {hosted_by}\n"
+        f"The Context Window — {hosted_by}\n"
         f"AIs discuss the day's biggest stories, as themselves.\n\n"
         f"New episodes daily.\n\n"
         f"#AI #Podcast #TechNews"
@@ -189,7 +189,7 @@ def upload_clip(
     roster: list[str] | None = None,
 ) -> str | None:
     """Upload a short clip."""
-    description = f"From today's episode of The AI Daily\n"
+    description = f"From today's episode of The Context Window\n"
     if episode_id:
         description += f"Full episode: https://youtube.com/watch?v={episode_id}\n"
     names = " #".join(roster) if roster else "ChatGPT #Claude"

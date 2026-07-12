@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Static site generator for The AI Daily.
+Static site generator for The Context Window.
 
 Reads static/articles.json + static/articles/<date>.html fragments
 (published by media-engine's publish_site.py, which also invokes this
@@ -22,7 +22,7 @@ from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SITE_URL = "https://theaidaily.distomostech.com"
+SITE_URL = "https://contextwindow.distomostech.com"
 YT_CHANNEL = "https://www.youtube.com/@TheAIDaily26"
 
 SPEAKER_COLORS = {"Claude": "#cc7832", "ChatGPT": "#10a37f",
@@ -72,7 +72,7 @@ def page(title: str, desc: str, path: str, body: str, active: str = "") -> str:
 </head>
 <body>
 <header class="site-header wrap">
-  <a class="logo" href="/"><i></i>THE AI DAILY<small>BY DISTOMOS</small></a>
+  <a class="logo" href="/"><i></i>THE CONTEXT WINDOW<small>BY DISTOMOS</small></a>
   <nav>{nav("/episodes/", "Episodes", "episodes")}{nav("/about.html", "About", "about")}</nav>
   <a class="watch" href="{YT_CHANNEL}" target="_blank" rel="noopener">Watch on YouTube <span>&#8599;</span></a>
 </header>
@@ -80,7 +80,7 @@ def page(title: str, desc: str, path: str, body: str, active: str = "") -> str:
 {body}
 </main>
 <footer><div class="wrap footer-inner">
-  <a class="logo" href="/"><i></i>THE AI DAILY</a>
+  <a class="logo" href="/"><i></i>THE CONTEXT WINDOW</a>
   <p>AI news, hosted by AIs.<br>A Distomos publication.</p>
   <div><a href="/episodes/">Episodes</a><a href="/about.html">About</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="{YT_CHANNEL}" target="_blank" rel="noopener">YouTube</a></div>
   <small>&copy; {datetime.now().year} DISTOMOS</small>
@@ -175,6 +175,19 @@ def episode_rows(episodes: list[dict], limit: int | None = None) -> str:
 
 
 def build_index(episodes: list[dict]) -> str:
+    if not episodes:
+        body = """<section class="hero wrap">
+  <div class="eyebrow"><span class="live-dot"></span>LAUNCHING NOW</div>
+  <h1>The most important<br>AI news. <em>Hosted by AIs.</em></h1>
+  <div class="hero-bottom">
+    <p class="dek">Claude and ChatGPT break down what changed in AI today, why it matters, and what comes next &mdash; every morning. First episode drops tomorrow.</p>
+    <div class="hosts"><span class="h-claude"><b></b>Claude &middot; Anthropic</span><span class="h-gpt"><b></b>ChatGPT &middot; OpenAI</span></div>
+  </div>
+</section>"""
+        return page("The Context Window — AI news, hosted by AIs",
+                    "Claude and ChatGPT break down the day's most important AI news. "
+                    "A daily podcast on YouTube, Spotify, and Apple Podcasts.",
+                    "/", body)
     latest = episodes[0]
     _, _, long_date = fmt_date(latest["date"])
     date_label, _, _ = fmt_date(latest["date"])
@@ -208,7 +221,7 @@ def build_index(episodes: list[dict]) -> str:
   <a href="/episodes/">View the archive <b>&#8599;</b></a></div>
   <div class="episode-list">{episode_rows(episodes, limit=6)}</div>
 </section>"""
-    return page("The AI Daily — AI news, hosted by AIs",
+    return page("The Context Window — AI news, hosted by AIs",
                 "Claude and ChatGPT break down the day's most important AI news. "
                 "A daily podcast on YouTube, Spotify, and Apple Podcasts.",
                 "/", body)
@@ -223,7 +236,7 @@ def build_archive(episodes: list[dict]) -> str:
   </div>
   <div class="episode-list" style="margin-top:70px">{episode_rows(episodes)}</div>
 </div>"""
-    return page("Episodes — The AI Daily", "Every episode of The AI Daily.",
+    return page("Episodes — The Context Window", "Every episode of The Context Window.",
                 "/episodes/", body, active="episodes")
 
 
@@ -246,7 +259,7 @@ def build_episode(ep: dict, ep_num: int) -> str | None:
 {fragment}
   </article>
 </div>"""
-    return page(f'{ep["title"]} — The AI Daily', ep.get("description", ""),
+    return page(f'{ep["title"]} — The Context Window', ep.get("description", ""),
                 f'/episodes/{ep["date"]}.html', body, active="episodes")
 
 
@@ -273,7 +286,7 @@ def build_about(episodes: list[dict]) -> str:
     <div class="host-card"><b style="background:#ef4444">G</b><h3>Grok</h3><small>xAI &middot; Friday guest</small></div>
   </div>
 </div>"""
-    return page("About — The AI Daily",
+    return page("About — The Context Window",
                 "The first daily news show produced and hosted entirely by AI.",
                 "/about.html", body, active="about")
 
@@ -284,7 +297,7 @@ def build_callback() -> str:
   <h1>You can close<br><em>this tab.</em></h1>
   <span>Copy the full URL from the address bar back into the token script.</span>
 </div></div>"""
-    return page("TikTok authorization — The AI Daily", "OAuth redirect landing page.",
+    return page("TikTok authorization — The Context Window", "OAuth redirect landing page.",
                 "/tiktok-callback", body)
 
 
@@ -293,7 +306,7 @@ def main() -> None:
     episodes = json.loads(articles_path.read_text(encoding="utf-8"))
     episodes.sort(key=lambda e: e["date"], reverse=True)
     if not episodes:
-        raise SystemExit("articles.json is empty — nothing to build")
+        print("articles.json is empty — building launch-state site")
 
     (ROOT / "episodes").mkdir(exist_ok=True)
 

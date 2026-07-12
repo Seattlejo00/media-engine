@@ -2,9 +2,9 @@ name: Daily Episode
 
 on:
   schedule:
-    # 15:00 UTC = 8am PDT / 7am PST — matches the old run_daily.bat timing
-    # ("Optimal YouTube posting: 8 AM Pacific")
-    - cron: "0 15 * * *"
+    # 10:00 UTC = 6am ET / 3am PT — live by ~6:30-7am ET, in the US East
+    # Coast commute window and ahead of the morning news cycle
+    - cron: "0 10 * * *"
   workflow_dispatch:
     inputs:
       test_mode:
@@ -98,7 +98,7 @@ jobs:
           R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
           R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
           # Podcast feed is served from the website
-          RSS_FEED_URL: https://theaidaily.distomostech.com/feed.xml
+          RSS_FEED_URL: https://contextwindow.distomostech.com/feed.xml
           # Episode settings
           EPISODE_DURATION_MINUTES: "12"
           TIMEZONE: America/Los_Angeles
@@ -127,26 +127,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "Nothing to publish."
           else
-            git commit -m "Add AI Daily article for ${{ steps.guard.outputs.today }}"
-            git push
-          fi
-
-      # TEMPORARY: Vercel still deploys the old ai-daily-site repo, so
-      # mirror sites/ai-daily there after publishing. Remove this step once
-      # the Vercel project is repointed at THIS repo (root: sites/ai-daily).
-      - name: Mirror site to ai-daily-site repo (Vercel deploy source)
-        if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true
-        run: |
-          git clone --depth 1 "https://x-access-token:${{ secrets.SITE_PUSH_TOKEN }}@github.com/Seattlejo00/ai-daily-site.git" /tmp/site-mirror
-          rsync -a --delete --exclude .git sites/ai-daily/ /tmp/site-mirror/
-          cd /tmp/site-mirror
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "Mirror already up to date."
-          else
-            git commit -m "Sync from media-engine sites/ai-daily (${{ steps.guard.outputs.today }})"
+            git commit -m "Add Context Window article for ${{ steps.guard.outputs.today }}"
             git push
           fi
 

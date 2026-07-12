@@ -1,4 +1,4 @@
-THE AI DAILY — Platform Setup Checklist
+THE CONTEXT WINDOW — Platform Setup Checklist
 ========================================
 
 Everything below is optional. The pipeline runs fine without any of

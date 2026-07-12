@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Publish an episode as a text article to the integrated AI Daily site.
+Publish an episode as a text article to the integrated Context Window site.
 
 Reads the episode artifacts produced by main.py (script.json, topics.json,
 summary.json) and writes the website's article fragment + articles.json entry,
@@ -131,7 +131,7 @@ def publish(episode_dir: Path, site_dir: Path) -> None:
 
     entry = {
         "date": date_str,
-        "title": script.get("title") or f"The AI Daily — {date_str}",
+        "title": script.get("title") or f"The Context Window — {date_str}",
         "description": script.get("description") or "",
         "article_file": f"{date_str}.html",
         "youtube_url": youtube_url,
@@ -181,7 +181,7 @@ def main() -> None:
     if not (args.episode_dir / "script.json").exists():
         sys.exit(f"No script.json in {args.episode_dir} — did main.py run?")
     if not (args.site_dir / "static" / "articles.json").exists():
-        sys.exit(f"{args.site_dir} doesn't look like the integrated AI Daily site")
+        sys.exit(f"{args.site_dir} doesn't look like the integrated Context Window site")
 
     publish(args.episode_dir, args.site_dir)
 

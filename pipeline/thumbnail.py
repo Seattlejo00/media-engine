@@ -83,7 +83,7 @@ def generate_thumbnail(
     if main_topics:
         headline = main_topics[0]["title"]
     else:
-        headline = script.get("title", "The AI Daily")
+        headline = script.get("title", "The Context Window")
 
     # Auto-scale font to fit the full headline (no truncation).
     # Start large and shrink until it fits in max 3 lines within the safe zone.
@@ -166,7 +166,7 @@ def generate_thumbnail(
 
     draw.text(
         (width - 250, height - 50),
-        "THE AI DAILY",
+        "THE CONTEXT WINDOW",
         font=brand_font,
         fill=(100, 100, 120),
     )

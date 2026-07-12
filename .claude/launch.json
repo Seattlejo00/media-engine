@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "/Users/jamesoconnor/Documents/Codex/2026-07-11/website-v1-design-goal-build-a", "run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "aidaily-preview",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8080", "--directory", "/private/tmp/claude-501/-Users-jamesoconnor-Development-Distomos-media-engine/12cbf5e8-1eae-4343-95ea-b8b3f0400fa7/scratchpad/site"],
+      "port": 8080
     }
   ]
 }

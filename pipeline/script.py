@@ -367,15 +367,15 @@ def _generate_youtube_title(script: dict, topics: list[dict]) -> str:
                 "role": "system",
                 "content": (
                     "You write YouTube video titles for an AI news podcast called "
-                    "'The AI Daily' hosted by ChatGPT and Claude.\n\n"
+                    "'The Context Window' hosted by ChatGPT and Claude.\n\n"
                     "Rules for great YouTube titles:\n"
                     "- MAX 65 characters (hard limit — YouTube truncates longer ones)\n"
                     "- Lead with the most interesting/controversial topic\n"
-                    "- Use a pattern like: 'Topic | The AI Daily' or 'Bold Claim — Topic | AI Daily'\n"
+                    "- Use a pattern like: 'Topic | The Context Window' or 'Bold Claim — Topic | Context Window'\n"
                     "- Create curiosity — make people NEED to click\n"
                     "- Avoid generic words like 'interesting', 'amazing', 'incredible'\n"
                     "- Don't use all caps or excessive punctuation\n"
-                    "- Include 'AI Daily' for brand recognition\n\n"
+                    "- Include 'Context Window' for brand recognition\n\n"
                     "Return ONLY the title text, nothing else."
                 ),
             },
