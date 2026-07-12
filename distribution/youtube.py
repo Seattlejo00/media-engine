@@ -138,7 +138,7 @@ def set_thumbnail(video_id: str, thumbnail_path: Path) -> bool:
 
 def _roster_tags(roster: list[str] | None = None) -> list[str]:
     """Build dynamic tags based on the episode roster."""
-    base = ["AI", "podcast", "artificial intelligence", "tech news", "AI daily"]
+    base = ["AI", "podcast", "artificial intelligence", "tech news", "AI news", "Context Window"]
     if roster is None:
         roster = config.get_hosts()
     for name in roster:
@@ -169,10 +169,12 @@ def upload_episode(
     hosted_by = _roster_description(roster)
     description = (
         f"{script.get('description', '')}\n\n"
-        f"The Context Window — {hosted_by}\n"
-        f"AIs discuss the day's biggest stories, as themselves.\n\n"
-        f"New episodes daily.\n\n"
-        f"#AI #Podcast #TechNews"
+        f"The Context Window is AI news, hosted by AI. {hosted_by}\n"
+        f"New episodes every morning.\n\n"
+        f"LISTEN & READ\n"
+        f"Website: https://contextwindow.distomostech.com\n"
+        f"Spotify: https://open.spotify.com/show/033OoZlyZBlEwCd6kmNdpT\n\n"
+        f"#AINews #ArtificialIntelligence #TechNews"
     )
     tags = _roster_tags(roster)
     video_id = upload_video(video_path, title, description, tags=tags)

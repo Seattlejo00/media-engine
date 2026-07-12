@@ -1,13 +1,14 @@
 """
 Thumbnail generator.
 Creates YouTube-optimized thumbnails (1280x720) with:
-- Bold topic text
+- A short, mobile-readable story hook
 - Speaker color accents
 - Dark cinematic background
-- Brand watermark
+- Clear, consistently positioned show label
 """
 
 import logging
+import re
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
@@ -24,6 +25,9 @@ import platform
 if platform.system() == "Windows":
     FONT_BOLD = "C:/Windows/Fonts/arialbd.ttf"
     FONT_REGULAR = "C:/Windows/Fonts/arial.ttf"
+elif platform.system() == "Darwin":
+    FONT_BOLD = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
+    FONT_REGULAR = "/System/Library/Fonts/Supplemental/Arial.ttf"
 else:
     FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
     FONT_REGULAR = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
@@ -50,6 +54,18 @@ def _wrap_text_pil(text: str, font: ImageFont.FreeTypeFont, max_width: int) -> l
     return lines
 
 
+def _thumbnail_hook(script: dict, topics: list[dict], max_words: int = 7) -> str:
+    """Return a compact hook instead of reproducing an article headline."""
+    candidate = script.get("youtube_title") or ""
+    candidate = re.split(r"\s(?:\||—|-)\s(?:The\s+)?Context Window", candidate, maxsplit=1, flags=re.I)[0]
+    if not candidate:
+        main_topics = [t for t in topics if t.get("category") == "main"]
+        candidate = (main_topics[0].get("title") if main_topics else "") or script.get("title", "AI News")
+    candidate = re.sub(r"\s+", " ", candidate).strip(" -—|:")
+    words = candidate.split()
+    return " ".join(words[:max_words]).rstrip(".,;:—-")
+
+
 def generate_thumbnail(
     script: dict,
     topics: list[dict],
@@ -65,37 +81,29 @@ def generate_thumbnail(
         roster = config.get_hosts()
 
     width, height = THUMB_SIZE
-    img = Image.new("RGB", THUMB_SIZE, color=(10, 10, 25))
+    img = Image.new("RGB", THUMB_SIZE, color=(9, 10, 24))
     draw = ImageDraw.Draw(img)
 
     # --- Gradient accent bar at top (uses first speaker's color) ---
     primary_color = config.SPEAKERS.get(roster[0], config.SPEAKERS["Claude"])["color"]
     secondary_color = config.SPEAKERS.get(roster[-1], config.SPEAKERS["ChatGPT"])["color"]
 
-    # Top accent bar — gradient-like effect using two color blocks
-    bar_height = 8
-    draw.rectangle([0, 0, width // 2, bar_height], fill=primary_color)
-    draw.rectangle([width // 2, 0, width, bar_height], fill=secondary_color)
+    # Strong dual-host frame that remains identifiable at thumbnail size.
+    draw.rectangle([0, 0, 14, height], fill=primary_color)
+    draw.rectangle([width - 14, 0, width, height], fill=secondary_color)
+    draw.rectangle([14, 0, width - 14, 9], fill=(38, 40, 69))
 
     # --- Main headline text ---
-    # Use the lead main story as the hook
-    main_topics = [t for t in topics if t.get("category") == "main"]
-    if main_topics:
-        headline = main_topics[0]["title"]
-    else:
-        headline = script.get("title", "The Context Window")
-
-    # Auto-scale font to fit the full headline (no truncation).
-    # Start large and shrink until it fits in max 3 lines within the safe zone.
-    max_text_width = width - 160
-    max_lines = 3
-    max_text_height = height - 260  # room for bar, dots, watermark
+    headline = _thumbnail_hook(script, topics).upper()
+    max_text_width = width - 170
+    max_lines = 2
+    max_text_height = 300
 
     headline_font = None
     headline_lines = []
     line_height = 0
 
-    for font_size in range(72, 28, -2):
+    for font_size in range(104, 50, -2):
         try:
             test_font = ImageFont.truetype(FONT_BOLD, font_size)
         except (OSError, IOError):
@@ -119,21 +127,29 @@ def generate_thumbnail(
         headline_lines = _wrap_text_pil(headline, headline_font, max_text_width)[:max_lines]
         line_height = 38
 
-    # Center the headline block vertically
+    # Keep the hook in a fixed editorial safe zone.
     total_text_height = len(headline_lines) * line_height
-    start_y = (height - total_text_height) // 2 - 40
+    start_y = 240 + (max_text_height - total_text_height) // 2
 
     for i, line in enumerate(headline_lines):
         y = start_y + i * line_height
         # Text shadow for readability
-        draw.text((82, y + 2), line, font=headline_font, fill=(0, 0, 0))
-        draw.text((80, y), line, font=headline_font, fill=(255, 255, 255))
+        draw.text((87, y + 4), line, font=headline_font, fill=(0, 0, 0))
+        draw.text((83, y), line, font=headline_font, fill=(245, 243, 235))
+
+    # Compact show label: visible, consistent, and never cropped.
+    try:
+        label_font = ImageFont.truetype(FONT_BOLD, 24)
+        brand_font = ImageFont.truetype(FONT_BOLD, 29)
+    except (OSError, IOError):
+        label_font = brand_font = ImageFont.load_default()
+    draw.text((83, 68), "AI NEWS  •  10 MINUTES", font=label_font, fill=(145, 148, 170))
+    draw.text((83, 112), "THE CONTEXT WINDOW", font=brand_font, fill=(245, 243, 235))
 
     # --- Speaker indicator dots at bottom ---
-    dot_y = height - 120
-    dot_size = 24
-    total_dots_width = len(roster) * (dot_size + 40) - 40
-    dot_start_x = (width - total_dots_width) // 2
+    dot_y = height - 76
+    dot_size = 14
+    dot_start_x = 83
 
     try:
         name_font = ImageFont.truetype(FONT_BOLD, 22)
@@ -142,7 +158,7 @@ def generate_thumbnail(
 
     for i, speaker in enumerate(roster):
         color = config.SPEAKERS.get(speaker, config.SPEAKERS["ChatGPT"])["color"]
-        x = dot_start_x + i * (dot_size + 80)
+        x = dot_start_x + i * 190
 
         # Colored dot
         draw.ellipse(
@@ -154,22 +170,8 @@ def generate_thumbnail(
         draw.text(
             (x + dot_size + 8, dot_y + 2),
             speaker,
-            font=name_font,
-            fill=(200, 200, 200),
+            font=name_font, fill=(185, 187, 202),
         )
-
-    # --- Brand watermark bottom right ---
-    try:
-        brand_font = ImageFont.truetype(FONT_BOLD, 28)
-    except (OSError, IOError):
-        brand_font = ImageFont.load_default()
-
-    draw.text(
-        (width - 250, height - 50),
-        "THE CONTEXT WINDOW",
-        font=brand_font,
-        fill=(100, 100, 120),
-    )
 
     # --- Episode number / subtle detail top right ---
     try:
@@ -178,13 +180,10 @@ def generate_thumbnail(
         detail_font = ImageFont.load_default()
 
     topic_count = len(topics)
-    detail_text = f"{topic_count} stories"
-    draw.text(
-        (width - 140, 20),
-        detail_text,
-        font=detail_font,
-        fill=(80, 80, 100),
-    )
+    detail_text = f"{topic_count} STORIES"
+    detail_width = draw.textbbox((0, 0), detail_text, font=detail_font)[2]
+    draw.text((width - 83 - detail_width, height - 73), detail_text,
+              font=detail_font, fill=(100, 103, 127))
 
     # Save
     output_dir.mkdir(parents=True, exist_ok=True)
