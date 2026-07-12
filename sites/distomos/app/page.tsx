@@ -6,7 +6,8 @@ const latestDate = new Date(`${latest.date}T12:00:00Z`).toLocaleDateString("en-U
   day: "2-digit",
   timeZone: "UTC",
 }).toUpperCase();
-const latestHref = latest.podcast_url || latest.youtube_url || "https://theaidaily.distomostech.com";
+const aiDailyUrl = process.env.NEXT_PUBLIC_AI_DAILY_URL || "https://theaidaily.distomostech.com";
+const latestHref = latest.podcast_url || latest.youtube_url || aiDailyUrl;
 
 export default function Home() {
   return <main>
@@ -38,7 +39,7 @@ export default function Home() {
         <div className="daily-lockup"><i /> <span>AI DAILY<small>BY DISTOMOS</small></span></div>
         <h2>The most important AI news.<br /><em>Every morning.</em></h2>
         <p>An eight-minute briefing on what changed, why it matters, and what comes next. No hype. Just signal.</p>
-        <a className="text-link" href="https://theaidaily.distomostech.com" target="_blank">Explore AI Daily <b>↗</b></a>
+        <a className="text-link" href={aiDailyUrl} target="_blank">Explore AI Daily <b>↗</b></a>
       </div>
       <div className="daily-card">
         <div className="card-top"><span><i /> LATEST EPISODE</span><time>{latestDate}</time></div>
@@ -49,6 +50,6 @@ export default function Home() {
 
     <section className="art-break"><div /><p>Patterns appear<br />before predictions.</p><small>KEVIR DESERT · LANDSAT 8</small></section>
 
-    <footer className="shell"><div className="wordmark"><i>D</i><span>DISTOMOS</span></div><p>Publisher of AI Daily.<br />Signal over noise, every morning.</p><nav><a href="#ai-daily">AI Daily</a><a href="#about">About</a><a href="https://theaidaily.distomostech.com" target="_blank">Latest episode</a></nav><div className="footer-bottom"><span>© 2026 DISTOMOS</span><span>EARTH IMAGERY: USGS / NASA LANDSAT</span><span>DENVER, COLORADO</span></div></footer>
+    <footer className="shell"><div className="wordmark"><i>D</i><span>DISTOMOS</span></div><p>Publisher of AI Daily.<br />Signal over noise, every morning.</p><nav><a href={aiDailyUrl} target="_blank">AI Daily</a><a href="#about">About</a><a href={`${aiDailyUrl}/feed.xml`} target="_blank">RSS</a></nav><div className="footer-bottom"><span>© 2026 DISTOMOS</span><span>EARTH IMAGERY: USGS / NASA LANDSAT</span><span>DENVER, COLORADO</span></div></footer>
   </main>;
 }
