@@ -97,6 +97,8 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
           R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
+          # Podcast feed is served from the website
+          RSS_FEED_URL: https://theaidaily.distomostech.com/feed.xml
           # Episode settings
           EPISODE_DURATION_MINUTES: "12"
           TIMEZONE: America/Los_Angeles
@@ -106,6 +108,11 @@ jobs:
         if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true
         run: |
           python publish_site.py --episode-dir "output/${{ steps.guard.outputs.today }}" --site-dir sites/ai-daily
+          # Podcast feed rides along with the site (Spotify/Apple poll it)
+          if [ -f output/feed.xml ]; then
+            cp output/feed.xml sites/ai-daily/feed.xml
+            echo "Copied feed.xml into the site"
+          fi
 
       - name: Validate website links
         if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true
@@ -121,6 +128,25 @@ jobs:
             echo "Nothing to publish."
           else
             git commit -m "Add AI Daily article for ${{ steps.guard.outputs.today }}"
+            git push
+          fi
+
+      # TEMPORARY: Vercel still deploys the old ai-daily-site repo, so
+      # mirror sites/ai-daily there after publishing. Remove this step once
+      # the Vercel project is repointed at THIS repo (root: sites/ai-daily).
+      - name: Mirror site to ai-daily-site repo (Vercel deploy source)
+        if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true
+        run: |
+          git clone --depth 1 "https://x-access-token:${{ secrets.SITE_PUSH_TOKEN }}@github.com/Seattlejo00/ai-daily-site.git" /tmp/site-mirror
+          rsync -a --delete --exclude .git sites/ai-daily/ /tmp/site-mirror/
+          cd /tmp/site-mirror
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Mirror already up to date."
+          else
+            git commit -m "Sync from media-engine sites/ai-daily (${{ steps.guard.outputs.today }})"
             git push
           fi
 
