@@ -262,7 +262,10 @@ def _get_api_clients(roster: list[str]) -> dict:
 BANNED_FILLER = (
     "IMPORTANT: Do NOT use filler phrases like 'honestly', 'if I'm being honest', "
     "'that's a great point', 'absolutely', 'let's dive in', 'at the end of the day', "
-    "or 'it's worth noting'. Use varied, natural language."
+    "or 'it's worth noting'. NEVER open a turn with your co-host's name or with "
+    "agreement markers like 'Exactly', 'You're right', or 'You're absolutely right' "
+    "— just say your thing. Disagreeing or complicating is more interesting than "
+    "agreeing. Use varied, natural language."
 )
 
 
@@ -366,9 +369,12 @@ def _turn_prompt(
     elif seg_type == "cold_open" and turn_idx == 0:
         task = "Open the show with a punchy, curiosity-grabbing line about the top story. No greetings yet."
     elif seg_type == "sign_off":
-        task = ("Give your 'one thing to watch' — a specific, checkable prediction "
-                "related to today's stories — then say goodbye naturally if the "
-                "conversation is wrapping.")
+        if turn_idx < len(participants):
+            task = ("Give your 'one thing to watch' — a specific, checkable "
+                    "prediction related to today's stories. One prediction only.")
+        else:
+            task = ("Predictions are done — do NOT give another one. Just wrap "
+                    "with a short, warm goodbye in 25 words or less.")
     elif turn_idx == 0:
         task = ("Open this segment: introduce the story crisply (what happened, "
                 "why it matters) using specifics from the brief.")
@@ -382,8 +388,9 @@ def _turn_prompt(
 
     parts.append(
         f"YOUR TASK: {task}\n\n"
-        f"Write YOUR next spoken turn only — 30-80 words, plain text. No name "
-        f"prefix, no quotes, no stage directions.\n{BANNED_FILLER}"
+        f"Write YOUR next spoken turn only — 30-70 words (this is a tight daily "
+        f"show; shorter is better), plain text. No name prefix, no quotes, no "
+        f"stage directions.\n{BANNED_FILLER}"
     )
     return "\n\n".join(parts)
 
