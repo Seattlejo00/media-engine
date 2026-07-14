@@ -102,15 +102,28 @@ def fetch_from_google_rss() -> list[dict]:
 
 
 def deduplicate(articles: list[dict]) -> list[dict]:
-    """Remove near-duplicate articles by title similarity."""
-    seen_titles = set()
+    """
+    Remove near-duplicate articles by title similarity.
+
+    Duplicates aren't discarded outright — other outlets covering the same
+    story are kept on the primary as corroborating sources for the
+    research stage.
+    """
+    seen: dict[str, dict] = {}
     unique = []
     for a in articles:
         # Simple dedup: normalize and check first 50 chars
         key = a["title"].lower().strip()[:50]
-        if key not in seen_titles:
-            seen_titles.add(key)
+        if key not in seen:
+            a.setdefault("alt_sources", [])
+            seen[key] = a
             unique.append(a)
+        else:
+            primary = seen[key]
+            if a.get("url") and a["url"] != primary.get("url"):
+                primary["alt_sources"].append(
+                    {"source": a.get("source", ""), "url": a["url"]}
+                )
     return unique
 
 
@@ -157,7 +170,8 @@ def rank_topics(articles: list[dict]) -> list[dict]:
                     "2. Stories that directly affect AI systems or the AI industry\n"
                     "3. Stories with real human impact worth debating\n"
                     "4. Variety — don't pick 5 stories about the same thing\n\n"
-                    "Return JSON: {\"stories\": [{\"rank\": 1, \"title\": \"...\", "
+                    "Return JSON: {\"stories\": [{\"rank\": 1, \"index\": <the "
+                    "article's number in the list>, \"title\": \"...\", "
                     "\"summary\": \"1-2 sentence summary\", \"angle\": \"why this is "
                     "good for the podcast\", \"category\": \"main|lightning\"}]}\n"
                     "Mark 2-3 as 'main' (deep discussion) and the rest as 'lightning' "
@@ -182,7 +196,26 @@ def rank_topics(articles: list[dict]) -> list[dict]:
 
     try:
         result = json.loads(resp.choices[0].message.content)
-        return result.get("stories", [])
+        stories = result.get("stories", [])
+        # Link each ranked story back to its source article so the
+        # research stage can fetch the full text
+        for s in stories:
+            idx = s.get("index")
+            src = None
+            if isinstance(idx, int) and 1 <= idx <= len(articles):
+                src = articles[idx - 1]
+            else:
+                # Fallback: match by title prefix
+                key = (s.get("title") or "").lower().strip()[:40]
+                src = next(
+                    (a for a in articles if a["title"].lower().strip().startswith(key)),
+                    None,
+                )
+            if src:
+                s["url"] = src.get("url", "")
+                s["source"] = src.get("source", "")
+                s["alt_sources"] = src.get("alt_sources", [])[:2]
+        return stories
     except (json.JSONDecodeError, IndexError) as e:
         logger.error(f"Failed to parse ranked topics: {e}")
         # Fallback: return first 5 articles as-is
@@ -193,6 +226,9 @@ def rank_topics(articles: list[dict]) -> list[dict]:
                 "summary": a["description"],
                 "angle": "",
                 "category": "main" if i < 3 else "lightning",
+                "url": a.get("url", ""),
+                "source": a.get("source", ""),
+                "alt_sources": a.get("alt_sources", [])[:2],
             }
             for i, a in enumerate(articles[:5])
         ]

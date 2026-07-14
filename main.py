@@ -148,6 +148,23 @@ def run_pipeline(
         if scores:
             scores_path.write_text(json.dumps(scores, indent=2), encoding="utf-8")
 
+    # === STEP 1b: Research the stories ===
+    logger.info("=" * 60)
+    logger.info("STEP 1b: Researching stories (full articles)...")
+    logger.info("=" * 60)
+
+    research_path = episode_dir / "research.json"
+    researched = _load_checkpoint(research_path)
+    if researched:
+        topics = researched
+        logger.info("Reusing existing research.json")
+    else:
+        from pipeline.research import research_topics
+        topics = research_topics(topics)
+        research_path.write_text(
+            json.dumps(topics, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+
     # === STEP 2: Generate Script ===
     logger.info("=" * 60)
     logger.info("STEP 2: Generating script...")
