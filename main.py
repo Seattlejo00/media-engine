@@ -367,6 +367,36 @@ def run_pipeline(
             _save_ledger()
     summary["tiktok_ids"] = list(tiktok_ids.values())
 
+    # Instagram - Reels (video is fetched from R2, so R2 must be configured)
+    from distribution.instagram import (
+        instagram_configured, post_reel, refresh_access_token,
+    )
+    from distribution.podcast_host import upload_social_clip
+
+    ig_ids = ledger.setdefault("instagram_ids", {})
+    if instagram_configured():
+        refresh_access_token()
+        for i, clip_path in enumerate(clip_paths[:config.INSTAGRAM_MAX_CLIPS]):
+            if str(i) in ig_ids:
+                continue
+            clip_title = (
+                clip_segments[i]["title"] if i < len(clip_segments) else f"Clip {i+1}"
+            )
+            video_url = upload_social_clip(clip_path, date_str, i)
+            if not video_url:
+                logger.warning("No public URL for clip (R2 unconfigured?) — skipping Instagram")
+                break
+            caption = (
+                f"{clip_title}\n\nFrom today's episode of The Context Window — "
+                f"the daily AI news podcast hosted by AIs.\n\n"
+                f"#AI #ArtificialIntelligence #TechNews #Podcast #Reels"
+            )
+            media_id = post_reel(video_url, caption)
+            if media_id:
+                ig_ids[str(i)] = media_id
+                _save_ledger()
+    summary["instagram_ids"] = list(ig_ids.values())
+
     # Podcast hosting — upload MP3 for Spotify/Apple
     if ledger.get("podcast_audio_url"):
         audio_url = ledger["podcast_audio_url"]

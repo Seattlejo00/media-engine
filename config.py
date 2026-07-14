@@ -68,6 +68,13 @@ TIKTOK_REFRESH_TOKEN = os.getenv("TIKTOK_REFRESH_TOKEN", "")
 # once TikTok approves the app's audit.
 TIKTOK_PRIVACY_LEVEL = os.getenv("TIKTOK_PRIVACY_LEVEL", "SELF_ONLY")
 
+# --- Instagram (Reels via the Instagram API with Instagram Login) ---
+INSTAGRAM_USER_ID = os.getenv("INSTAGRAM_USER_ID", "")
+INSTAGRAM_ACCESS_TOKEN = os.getenv("INSTAGRAM_ACCESS_TOKEN", "")
+# Reels posted per day (IG allows 25 API posts/day, but a daily show
+# shouldn't flood followers' feeds)
+INSTAGRAM_MAX_CLIPS = int(os.getenv("INSTAGRAM_MAX_CLIPS", "2"))
+
 # --- Podcast Hosting (Cloudflare R2 / S3-compatible) ---
 R2_ENDPOINT_URL = os.getenv("R2_ENDPOINT_URL", "")
 R2_ACCESS_KEY_ID = os.getenv("R2_ACCESS_KEY_ID", "")

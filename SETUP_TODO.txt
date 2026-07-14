@@ -58,6 +58,36 @@ Cost: ~$0.01/month per episode. Free egress. First 10GB free.
 Your account ID is in the Cloudflare dashboard URL or R2 overview page.
 
 
+2b. INSTAGRAM (Reels auto-post)
+-------------------------------
+Status: Code is ready. Needs a Meta app + two secrets. Requires R2
+(step 2) because Instagram fetches the video from a public URL.
+
+[ ] Make the show's Instagram account a Professional account
+    (Instagram app -> Settings -> Account type -> switch to Creator)
+[ ] Go to https://developers.facebook.com -> My Apps -> Create App
+    (use case: "Other" -> type "Business")
+[ ] In the app dashboard: Add product -> "Instagram" -> set up
+    "API with Instagram Login"
+[ ] Under Instagram -> API setup with Instagram login:
+    - Add the show's Instagram account
+    - Generate a long-lived access token (approve the
+      instagram_business_basic + instagram_business_content_publish scopes)
+    - Copy the token AND the Instagram user ID shown next to the account
+[ ] Add repo secrets:
+      INSTAGRAM_USER_ID=...
+      INSTAGRAM_ACCESS_TOKEN=...
+[ ] Recommended: also add GH_SECRETS_PAT — a fine-grained PAT for THIS
+    repo with "Secrets: read and write" — so the pipeline can persist
+    refreshed tokens. Instagram tokens expire after 60 days and TikTok
+    rotates refresh tokens; without the PAT you'll need to re-issue
+    them manually.
+
+Posts INSTAGRAM_MAX_CLIPS Reels per day (default 2). Your own app
+posting to your own account works in dev mode — no Meta app review
+needed.
+
+
 3. GUEST AI HOSTS (Gemini / Grok)
 ----------------------------------
 Status: Code is ready. Guests auto-join on Fridays once keys are added.

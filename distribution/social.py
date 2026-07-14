@@ -130,11 +130,13 @@ def _get_tiktok_access_token() -> str | None:
             data = resp.json()
             new_refresh = data.get("refresh_token")
             if new_refresh and new_refresh != config.TIKTOK_REFRESH_TOKEN:
-                logger.warning(
-                    "TikTok issued a NEW refresh token — update the "
-                    "TIKTOK_REFRESH_TOKEN repo secret or uploads will stop "
-                    "working when the old one expires."
-                )
+                from distribution.gh_secrets import persist_secret
+                if not persist_secret("TIKTOK_REFRESH_TOKEN", new_refresh):
+                    logger.warning(
+                        "TikTok issued a NEW refresh token that could not be "
+                        "persisted — add a GH_SECRETS_PAT secret or update "
+                        "TIKTOK_REFRESH_TOKEN manually before the old one expires."
+                    )
             return data["access_token"]
         except Exception as e:
             logger.error(f"TikTok token refresh failed: {e}")

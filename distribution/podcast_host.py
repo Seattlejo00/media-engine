@@ -91,6 +91,29 @@ def upload_feed(feed_xml_path: Path, feed_state_path: Path) -> str | None:
         return None
 
 
+def upload_social_clip(clip_path: Path, date_str: str, idx: int) -> str | None:
+    """
+    Stage a clip in R2 and return its public URL.
+
+    Instagram's API fetches videos from a URL rather than accepting
+    uploads, so clips get a public home here first.
+    """
+    if not hosting_configured():
+        return None
+    try:
+        s3 = _r2_client()
+        object_key = f"social/{date_str}/clip_{idx}.mp4"
+        s3.upload_file(
+            str(clip_path), config.R2_BUCKET_NAME, object_key,
+            ExtraArgs={"ContentType": "video/mp4",
+                       "CacheControl": "public, max-age=86400"},
+        )
+        return f"{config.R2_PUBLIC_URL}/{object_key}"
+    except Exception as e:
+        logger.error(f"Social clip upload failed: {e}")
+        return None
+
+
 def upload_episode_audio(
     audio_path: Path,
     date_str: str,
