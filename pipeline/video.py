@@ -105,6 +105,7 @@ def _render_frame_image(
     text: str,
     size: tuple[int, int],
     topic: str | None = None,
+    page_lines: list[str] | None = None,
 ) -> Image.Image:
     """Draw one fully-styled still frame (PIL) for a spoken line."""
     width, height = size
@@ -152,16 +153,18 @@ def _render_frame_image(
               font=company_font, fill=(*MUTED_TEXT, 255), anchor="ma")
 
     # --- Subtitle panel ---
-    max_chars = 46 if is_landscape else 26
-    lines = _wrap_text(text, max_chars).split("\n")
+    # page_lines comes from pagination: long lines are split across several
+    # timed frames instead of being truncated with "..."
+    if page_lines is not None:
+        lines = page_lines
+    else:
+        max_chars = 46 if is_landscape else 26
+        lines = _wrap_text(text, max_chars).split("\n")
 
     if is_landscape:
-        sub_px, max_lines = (34, 5) if len(lines) <= 5 else (28, 7) if len(lines) <= 7 else (24, 9)
+        sub_px = 34 if len(lines) <= 5 else 28 if len(lines) <= 7 else 24
     else:
-        sub_px, max_lines = (40, 6) if len(lines) <= 6 else (32, 8) if len(lines) <= 8 else (26, 10)
-    if len(lines) > max_lines:
-        lines = lines[:max_lines]
-        lines[-1] = lines[-1].rstrip() + "..."
+        sub_px = 40 if len(lines) <= 6 else 32 if len(lines) <= 8 else 26
 
     sub_font = _font(FONT_REGULAR, sub_px)
     line_h = int(sub_px * 1.4)
@@ -193,6 +196,48 @@ def _render_frame_image(
     return Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
 
 
+# Lines per subtitle page before splitting onto a new frame
+_PAGE_LINES_LANDSCAPE = 7
+_PAGE_LINES_PORTRAIT = 8
+
+
+def _create_speaker_frames(
+    speaker: str,
+    text: str,
+    duration: float,
+    size: tuple[int, int] = LANDSCAPE,
+    topic: str | None = None,
+) -> list:
+    """
+    Create the video frame(s) for one spoken line.
+
+    A line too long for the subtitle panel is paginated across several
+    frames, each shown for a share of the audio proportional to its word
+    count — nothing gets truncated.
+    """
+    is_landscape = size[0] > size[1]
+    max_chars = 46 if is_landscape else 26
+    per_page = _PAGE_LINES_LANDSCAPE if is_landscape else _PAGE_LINES_PORTRAIT
+
+    lines = _wrap_text(text, max_chars).split("\n")
+    pages = [lines[i:i + per_page] for i in range(0, len(lines), per_page)]
+
+    weights = [sum(len(l.split()) for l in page) for page in pages]
+    total_words = sum(weights) or 1
+
+    frames = []
+    allocated = 0.0
+    for i, page in enumerate(pages):
+        if i == len(pages) - 1:
+            page_duration = max(duration - allocated, 0.5)
+        else:
+            page_duration = duration * (weights[i] / total_words)
+            allocated += page_duration
+        frame = _render_frame_image(speaker, text, size, topic=topic, page_lines=page)
+        frames.append(ImageClip(np.asarray(frame)).with_duration(page_duration))
+    return frames
+
+
 def _create_speaker_frame(
     speaker: str,
     text: str,
@@ -200,9 +245,8 @@ def _create_speaker_frame(
     size: tuple[int, int] = LANDSCAPE,
     topic: str | None = None,
 ):
-    """Create a single video frame showing who's speaking with subtitles."""
-    frame = _render_frame_image(speaker, text, size, topic=topic)
-    return ImageClip(np.asarray(frame)).with_duration(duration)
+    """Single-frame variant kept for callers that concatenate their own lists."""
+    return _create_speaker_frames(speaker, text, duration, size, topic=topic)
 
 
 def _topic_by_index(script: dict) -> dict[int, str | None]:
@@ -298,14 +342,15 @@ def generate_video(
         else:
             pause_ms = INTRO_SILENCE
 
-        frame = _create_speaker_frame(
-            speaker,
-            text,
-            duration + pause_ms / 1000.0,
-            size,
-            topic=topic_map.get(entry.get("index")),
+        clips.extend(
+            _create_speaker_frames(
+                speaker,
+                text,
+                duration + pause_ms / 1000.0,
+                size,
+                topic=topic_map.get(entry.get("index")),
+            )
         )
-        clips.append(frame)
         prev_speaker = speaker
         prev_segment = segment_type
 

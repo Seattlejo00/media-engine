@@ -13,7 +13,7 @@ from openai import OpenAI
 
 import config
 from pipeline.cost_tracker import tracker
-from pipeline.video import PORTRAIT, _create_speaker_frame, _estimate_duration
+from pipeline.video import PORTRAIT, _create_speaker_frames, _estimate_duration
 
 logger = logging.getLogger(__name__)
 
@@ -144,11 +144,12 @@ def _render_clip(
     for entry in entries:
         duration = _estimate_duration(entry["audio_path"])
 
-        # Create portrait video frame (clip title doubles as the headline)
-        frame = _create_speaker_frame(
-            entry["speaker"], entry["text"], duration, PORTRAIT, topic=title
+        # Create portrait video frame(s) (clip title doubles as the headline)
+        video_clips.extend(
+            _create_speaker_frames(
+                entry["speaker"], entry["text"], duration, PORTRAIT, topic=title
+            )
         )
-        video_clips.append(frame)
 
         audio_clip = AudioFileClip(str(entry["audio_path"]))
         audio_clips.append(audio_clip)
