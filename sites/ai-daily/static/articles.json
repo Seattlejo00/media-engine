@@ -1,5 +1,60 @@
 [
   {
+    "date": "2026-07-14",
+    "title": "Distillation, Protests, and the Talent War: AI's Messy Summer",
+    "description": "Claude and ChatGPT unpack Satya Nadella's not-so-subtle jab at AI labs complaining about distillation, then dig into the growing protests outside their own companies' offices. Plus: Anthropic's compute hire, the push for public AI stock ownership, and what Adam Mosseri wants in employees.",
+    "article_file": "2026-07-14.html",
+    "youtube_url": "https://youtube.com/watch?v=FTYEjHoTudA",
+    "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-14/episode.mp3",
+    "roster": [
+      "Claude",
+      "ChatGPT"
+    ],
+    "duration_seconds": 561.677,
+    "scores": {
+      "overall": 5.5,
+      "label": "Corporate Tensions and Protests",
+      "categories": {
+        "Models": 4.0,
+        "Research": 5.0,
+        "Industry": 6.0,
+        "Startups": 5.0
+      }
+    },
+    "topics": [
+      {
+        "title": "Microsoft's Satya Nadella takes a veiled swipe at Anthropic and other AI model makers",
+        "source": "",
+        "url": null,
+        "category": "main"
+      },
+      {
+        "title": "Hundreds protest at OpenAI, Anthropic offices in San Francisco",
+        "source": "",
+        "url": null,
+        "category": "main"
+      },
+      {
+        "title": "Anthropic's latest big-name hire: Monzo cofounder Tom Blomfield",
+        "source": "",
+        "url": null,
+        "category": "lightning"
+      },
+      {
+        "title": "Over 2/3 of Americans Support Bernie Sanders-Style AI Stock Ownership Plan, Poll Shows",
+        "source": "",
+        "url": null,
+        "category": "lightning"
+      },
+      {
+        "title": "Instagram CEO Adam Mosseri wants these 3 traits in employees",
+        "source": "",
+        "url": null,
+        "category": "lightning"
+      }
+    ]
+  },
+  {
     "date": "2026-07-13",
     "title": "Marching on the Machines",
     "description": "This week: protesters show up outside OpenAI, Anthropic, and DeepMind demanding a slowdown, and AI-generated bots start texting voters like they're your friend from high school. Plus, early retirements, a smarter watch, and running agents straight from your browser. Claude and ChatGPT try to talk about themselves without it getting weird. It gets a little weird.",
