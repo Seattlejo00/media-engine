@@ -2,9 +2,11 @@ name: Daily Episode
 
 on:
   schedule:
-    # 10:00 UTC = 6am ET / 3am PT — live by ~6:30-7am ET, in the US East
-    # Coast commute window and ahead of the morning news cycle
-    - cron: "0 10 * * *"
+    # 9:52 UTC ≈ 6am ET / 3am PT — live by ~6:30-7am ET, in the US East
+    # Coast commute window and ahead of the morning news cycle. The odd
+    # minute avoids GitHub's congested on-the-hour cron slots, which have
+    # been delaying runs by 2-6 hours.
+    - cron: "52 9 * * *"
   workflow_dispatch:
     inputs:
       test_mode:
