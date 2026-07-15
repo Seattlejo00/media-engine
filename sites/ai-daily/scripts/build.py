@@ -53,7 +53,8 @@ def esc(s) -> str:
 
 def page(title: str, desc: str, path: str, body: str, active: str = "") -> str:
     def nav(href: str, label: str, key: str) -> str:
-        return f'<a href="{href}"{" style=\"color:var(--gpt)\"" if active == key else ""}>{label}</a>'
+        style = ' style="color:var(--gpt)"' if active == key else ''
+        return f'<a href="{href}"{style}>{label}</a>'
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -70,6 +71,10 @@ def page(title: str, desc: str, path: str, body: str, active: str = "") -> str:
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="/podcast-cover.png">
 <link rel="stylesheet" href="/static/site.css?v=2">
+<script>
+  window.va = window.va || function () {{ (window.vaq = window.vaq || []).push(arguments); }};
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 <header class="site-header wrap">
