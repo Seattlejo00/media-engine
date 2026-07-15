@@ -14,7 +14,7 @@ import argparse
 import json
 import logging
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import config
@@ -522,6 +522,7 @@ def _update_rss_feed(
             "title": script.get("title", f"The Context Window — {date_str}"),
             "description": script.get("description", ""),
             "date": date_str,
+            "published_at": datetime.now(timezone.utc).isoformat(),
             "audio_url": audio_url or "",
             "duration_seconds": duration,
             "file_size_bytes": audio_path.stat().st_size,
