@@ -14,6 +14,20 @@ import config
 
 logger = logging.getLogger(__name__)
 
+# Fallback publish hour for episodes recorded before actual publish
+# timestamps were stored. Midnight UTC renders as the previous evening in
+# US timezones, making every episode display as a day old; 11:00 UTC
+# (~7am ET) matches when the show actually goes out.
+FALLBACK_PUBLISH_HOUR_UTC = 11
+
+
+def _pub_date(ep: dict) -> datetime | str:
+    if ep.get("published_at"):
+        return datetime.fromisoformat(ep["published_at"])
+    if isinstance(ep["date"], datetime):
+        return ep["date"].replace(hour=FALLBACK_PUBLISH_HOUR_UTC, tzinfo=timezone.utc)
+    return ep["date"]
+
 
 def generate_feed(episodes: list[dict], output_dir: Path) -> Path:
     """
@@ -50,7 +64,7 @@ def generate_feed(episodes: list[dict], output_dir: Path) -> Path:
         fe.id(ep.get("audio_url", ep["title"]))
         fe.title(ep["title"])
         fe.description(ep["description"])
-        fe.published(ep["date"].replace(tzinfo=timezone.utc) if isinstance(ep["date"], datetime) else ep["date"])
+        fe.published(_pub_date(ep))
 
         if ep.get("audio_url"):
             fe.enclosure(
