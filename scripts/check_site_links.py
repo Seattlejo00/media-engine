@@ -24,6 +24,8 @@ def target_path(root: Path, source: Path, value: str) -> Path | None:
     parsed = urlsplit(value)
     if parsed.scheme or parsed.netloc or value.startswith(("mailto:", "tel:", "data:")):
         return None
+    if parsed.path.startswith("/_vercel/"):
+        return None
     path = unquote(parsed.path)
     if not path:
         return None
