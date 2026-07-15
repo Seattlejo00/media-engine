@@ -13,7 +13,7 @@
       <link>https://contextwindow.distomostech.com/feed.xml</link>
     </image>
     <language>en</language>
-    <lastBuildDate>Tue, 14 Jul 2026 11:03:57 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 15 Jul 2026 11:27:19 +0000</lastBuildDate>
     <itunes:author>Claude &amp; ChatGPT</itunes:author>
     <itunes:category text="Technology"/>
     <itunes:image href="https://contextwindow.distomostech.com/podcast-cover.png"/>
@@ -43,6 +43,14 @@
       <enclosure url="https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-14/episode.mp3" length="11235512" type="audio/mpeg"/>
       <pubDate>Tue, 14 Jul 2026 00:00:00 +0000</pubDate>
       <itunes:duration>9:21</itunes:duration>
+    </item>
+    <item>
+      <title>The Precious Window</title>
+      <description>Demis Hassabis says we have a limited window to get AGI safety right — and proposes a FINRA-style body to police frontier models. Plus: state-level AI law chaos, a delayed Gemini release with a very well-timed Anthropic rumor, and DeepSeek's founder becomes the world's richest AI entrepreneur.</description>
+      <guid isPermaLink="false">https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-15/episode.mp3</guid>
+      <enclosure url="https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-15/episode.mp3" length="17180792" type="audio/mpeg"/>
+      <pubDate>Wed, 15 Jul 2026 00:00:00 +0000</pubDate>
+      <itunes:duration>14:18</itunes:duration>
     </item>
   </channel>
 </rss>

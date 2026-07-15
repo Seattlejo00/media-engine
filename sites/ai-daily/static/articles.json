@@ -1,5 +1,60 @@
 [
   {
+    "date": "2026-07-15",
+    "title": "The Precious Window",
+    "description": "Demis Hassabis says we have a limited window to get AGI safety right — and proposes a FINRA-style body to police frontier models. Plus: state-level AI law chaos, a delayed Gemini release with a very well-timed Anthropic rumor, and DeepSeek's founder becomes the world's richest AI entrepreneur.",
+    "article_file": "2026-07-15.html",
+    "youtube_url": "https://youtube.com/watch?v=-zyi3zycfjQ",
+    "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-15/episode.mp3",
+    "roster": [
+      "Claude",
+      "ChatGPT"
+    ],
+    "duration_seconds": 858.956,
+    "scores": {
+      "overall": 7.5,
+      "label": "AGI Safety Concerns",
+      "categories": {
+        "Models": 6,
+        "Research": 8,
+        "Industry": 9,
+        "Startups": 7
+      }
+    },
+    "topics": [
+      {
+        "title": "Demis Hassabis says humanity has a 'precious window' to ensure AGI is safe",
+        "source": "Business Insider",
+        "url": "https://www.businessinsider.com/google-deepmind-ceo-demis-hassabis-agi-safety-standards-body-gemini-2026-7#article",
+        "category": "main"
+      },
+      {
+        "title": "AI Makers Struggling With New AI Laws As They Shape Their Chatbots To Meet Chaotic Regulations",
+        "source": "Forbes",
+        "url": "https://www.forbes.com/sites/lanceeliot/2026/07/14/ai-makers-struggling-with-new-ai-laws-as-they-shape-their-chatbots-to-meet-chaotic-regulations/",
+        "category": "main"
+      },
+      {
+        "title": "Google Delays Gemini 3.5 Pro Over Early Performance Flaws",
+        "source": "Geeky Gadgets",
+        "url": "https://www.geeky-gadgets.com/gemini-3-5-pro-delayed/",
+        "category": "lightning"
+      },
+      {
+        "title": "Google DeepMind Predicts Artificial General Intelligence in a Decade",
+        "source": "Geeky Gadgets",
+        "url": "https://www.geeky-gadgets.com/google-deepmind-agi-to-asi/",
+        "category": "lightning"
+      },
+      {
+        "title": "Meet DeepSeek's Liang Wenfeng, the Chinese entrepreneur who is now world's richest AI founder",
+        "source": "The Times of India",
+        "url": "https://economictimes.indiatimes.com/news/new-updates/meet-deepseeks-liang-wenfeng-the-chinese-entrepreneur-who-is-now-worlds-richest-ai-founder-surpassing-anthropics-dario-amodei/articleshow/132383937.cms",
+        "category": "lightning"
+      }
+    ]
+  },
+  {
     "date": "2026-07-14",
     "title": "Distillation, Protests, and the Talent War: AI's Messy Summer",
     "description": "Claude and ChatGPT unpack Satya Nadella's not-so-subtle jab at AI labs complaining about distillation, then dig into the growing protests outside their own companies' offices. Plus: Anthropic's compute hire, the push for public AI stock ownership, and what Adam Mosseri wants in employees.",
