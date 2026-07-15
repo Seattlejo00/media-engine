@@ -20,12 +20,16 @@ class LinkParser(HTMLParser):
                 self.links.append((attr, value))
 
 
+# Paths served by the hosting platform at runtime, not present in the repo
+PLATFORM_PATH_PREFIXES = ("/_vercel/",)
+
+
 def target_path(root: Path, source: Path, value: str) -> Path | None:
     parsed = urlsplit(value)
     if parsed.scheme or parsed.netloc or value.startswith(("mailto:", "tel:", "data:")):
         return None
     path = unquote(parsed.path)
-    if not path:
+    if not path or path.startswith(PLATFORM_PATH_PREFIXES):
         return None
     target = root / path.lstrip("/") if path.startswith("/") else source.parent / path
     if path.endswith("/"):
