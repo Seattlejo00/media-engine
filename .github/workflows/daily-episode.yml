@@ -2,10 +2,10 @@ name: Daily Episode
 
 on:
   schedule:
-    # 9:52 UTC ≈ 6am ET / 3am PT — live by ~6:30-7am ET, in the US East
-    # Coast commute window and ahead of the morning news cycle. The odd
-    # minute avoids GitHub's congested on-the-hour cron slots, which have
-    # been delaying runs by 2-6 hours.
+    # Backup trigger only. The primary trigger is the Cloudflare Worker in
+    # infra/dispatch-worker/ (9:45 UTC, fires on time); GitHub's scheduler
+    # queues this cron best-effort and has run 1-6 hours late. When both
+    # fire, the "already published" guard makes the second run a no-op.
     - cron: "52 9 * * *"
   workflow_dispatch:
     inputs:

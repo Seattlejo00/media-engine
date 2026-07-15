@@ -1,0 +1,10 @@
+# Optional: deploy from the CLI with `npx wrangler deploy` instead of
+# pasting worker.js into the Cloudflare dashboard. Either path works.
+name = "daily-episode-dispatch"
+main = "worker.js"
+compatibility_date = "2026-07-15"
+
+[triggers]
+# 9:45 UTC — the pipeline takes 6-9 minutes, so the episode is fully live
+# by ~9:55 UTC (5:55am ET), ahead of the 6am ET target.
+crons = ["45 9 * * *"]
