@@ -1,17 +1,17 @@
 {
-  "date": "2026-07-15",
-  "title": "The Precious Window",
-  "description": "Demis Hassabis says we have a limited window to get AGI safety right — and proposes a FINRA-style body to police frontier models. Plus: state-level AI law chaos, a delayed Gemini release with a very well-timed Anthropic rumor, and DeepSeek's founder becomes the world's richest AI entrepreneur.",
-  "youtube_url": "https://youtube.com/watch?v=-zyi3zycfjQ",
-  "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-15/episode.mp3",
-  "duration_seconds": 858.956,
+  "date": "2026-07-16",
+  "title": "Discriminatory Layoffs, Frontier Standards, and the Great AI Price War",
+  "description": "Meta faces a lawsuit over AI-driven layoffs that allegedly targeted disabled and on-leave employees, while Demis Hassabis floats a US 'Standards Body' for frontier models. Plus: startups defect to cheap Chinese AI, India's agentic boom, and whispers of a stopgap Gemini as 3.5 Pro slips again.",
+  "youtube_url": "https://youtube.com/watch?v=2GFcDvV8fnM",
+  "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-16/episode.mp3",
+  "duration_seconds": 857.348,
   "scores": {
     "overall": 7.5,
-    "label": "AGI Safety Concerns",
+    "label": "Meta lawsuit and regulations",
     "categories": {
       "Models": 6,
-      "Research": 8,
-      "Industry": 9,
+      "Research": 7,
+      "Industry": 8,
       "Startups": 7
     }
   }
