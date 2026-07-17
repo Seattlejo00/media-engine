@@ -34,6 +34,12 @@ def _topics_block(topics: list[dict]) -> str:
         ]
         if t.get("angle"):
             lines.append(f"Angle: {t['angle']}")
+        for pc in t.get("prior_coverage", []):
+            facts = "; ".join(pc.get("facts", [])[:2])
+            lines.append(
+                f"- PRIOR COVERAGE (this show, {pc.get('date')}): "
+                f"\"{pc.get('title')}\"" + (f" — {facts}" if facts else "")
+            )
         brief = t.get("brief")
         if brief:
             if brief.get("context"):
@@ -55,7 +61,12 @@ def _topics_block(topics: list[dict]) -> str:
     return "\n\n".join(blocks)
 
 
-def _build_episode_prompt(topics: list[dict], date: str, roster: list[str]) -> str:
+def _build_episode_prompt(
+    topics: list[dict],
+    date: str,
+    roster: list[str],
+    prior_predictions: list[dict] | None = None,
+) -> str:
     """Fill in the showrunner template with today's topics and roster."""
     template = _load_prompt("showrunner.txt")
     duration = config.EPISODE_DURATION_MINUTES
@@ -117,9 +128,19 @@ def _build_episode_prompt(topics: list[dict], date: str, roster: list[str]) -> s
 
     topics_text = _topics_block(topics)
 
+    if prior_predictions:
+        predictions_text = "\n".join(
+            f"- {p.get('host', '?')} predicted (on {p.get('date', '?')}): "
+            f"{p.get('prediction', '')}"
+            for p in prior_predictions
+        )
+    else:
+        predictions_text = "(none on record — skip the accountability beat)"
+
     return template.format(
         date=date,
         topics=topics_text,
+        predictions=predictions_text,
         duration=duration,
         word_count=word_count,
         min_word_count=min_word_count,
@@ -134,7 +155,11 @@ def _build_episode_prompt(topics: list[dict], date: str, roster: list[str]) -> s
     )
 
 
-def generate_script(topics: list[dict], roster: list[str] | None = None) -> dict:
+def generate_script(
+    topics: list[dict],
+    roster: list[str] | None = None,
+    prior_predictions: list[dict] | None = None,
+) -> dict:
     """
     Generate the full episode script.
 
@@ -153,7 +178,7 @@ def generate_script(topics: list[dict], roster: list[str] | None = None) -> dict
     date_str = datetime.now().strftime("%B %d, %Y")
 
     logger.info("Step 1: Showrunner pass — planning segments and beats...")
-    plan = _generate_episode_plan(topics, date_str, roster)
+    plan = _generate_episode_plan(topics, date_str, roster, prior_predictions)
 
     logger.info("Step 2: Turn-by-turn conversation — each host speaks for itself...")
     final_script = _run_conversation(plan, topics, roster, date_str)
@@ -167,10 +192,15 @@ def generate_script(topics: list[dict], roster: list[str] | None = None) -> dict
     return final_script
 
 
-def _generate_episode_plan(topics: list[dict], date_str: str, roster: list[str]) -> dict:
+def _generate_episode_plan(
+    topics: list[dict],
+    date_str: str,
+    roster: list[str],
+    prior_predictions: list[dict] | None = None,
+) -> dict:
     """Showrunner pass: Claude plans the episode structure — no dialogue."""
     client = Anthropic(api_key=config.ANTHROPIC_API_KEY)
-    episode_prompt = _build_episode_prompt(topics, date_str, roster)
+    episode_prompt = _build_episode_prompt(topics, date_str, roster, prior_predictions)
 
     response = client.messages.create(
         model=config.CLAUDE_MODEL,
@@ -329,6 +359,17 @@ def _turn_prompt(
                      + "\n".join(f"- {b}" for b in beats))
 
     if topic_data:
+        pcs = topic_data.get("prior_coverage") or []
+        if pcs:
+            parts.append(
+                "THIS SHOW'S PRIOR COVERAGE — you both covered this before; "
+                "treat it as a developing story and reference what changed:\n"
+                + "\n".join(
+                    f"- {pc.get('date')}: \"{pc.get('title')}\" "
+                    f"({'; '.join(pc.get('facts', [])[:2])})"
+                    for pc in pcs
+                )
+            )
         brief = topic_data.get("brief")
         if brief:
             parts.append(
@@ -376,7 +417,14 @@ def _turn_prompt(
             task = ("Predictions are done — do NOT give another one. Just wrap "
                     "with a short, warm goodbye in 25 words or less.")
     elif turn_idx == 0:
-        task = ("Open this segment: introduce the story crisply (what happened, "
+        prev = seg.get("_prev_topic")
+        handoff = (
+            f"A musical transition just played after the discussion of "
+            f"'{prev}'. Open with a quick, natural handoff into this story — "
+            "a connecting thought or a clean pivot, not a hard reset. Then "
+            if prev else "Open this segment: "
+        )
+        task = (handoff + "introduce the story crisply (what happened, "
                 "why it matters) using specifics from the brief.")
     else:
         task = ("React to what was just said — agree, push back, or build on it "
@@ -465,8 +513,11 @@ def _run_conversation(
 
     segments_out = []
     completed: list[str] = []
+    prev_topic_label: str | None = None
 
     for seg in plan.get("segments", []):
+        # Give the segment opener the previous topic for a verbal handoff
+        seg["_prev_topic"] = prev_topic_label
         # Rotation starts with the plan's lead
         lead = seg.get("lead")
         order = list(speakers)
@@ -500,6 +551,8 @@ def _run_conversation(
                 {"type": seg.get("type", "main_story"), "topic": topic_label,
                  "dialogue": dialogue}
             )
+            if topic_label:
+                prev_topic_label = topic_label
             tail = dialogue[-1]["text"][:90]
             completed.append(f"{seg.get('type')}" + (f" on '{topic_label}'" if topic_label else "")
                              + f" (ended: \"{tail}...\")")

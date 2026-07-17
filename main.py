@@ -165,6 +165,16 @@ def run_pipeline(
             json.dumps(topics, indent=2, ensure_ascii=False), encoding="utf-8"
         )
 
+    # === STEP 1c: Story memory — follow-ups + yesterday's predictions ===
+    prior_predictions = None
+    try:
+        from pipeline.memory import enrich_with_memory
+        prior_predictions = enrich_with_memory(topics, date_str)
+        if prior_predictions:
+            logger.info(f"Loaded {len(prior_predictions)} predictions to revisit")
+    except Exception as e:
+        logger.warning(f"Story memory unavailable (non-fatal): {e}")
+
     # === STEP 2: Generate Script ===
     logger.info("=" * 60)
     logger.info("STEP 2: Generating script...")
@@ -175,7 +185,9 @@ def run_pipeline(
     if script:
         logger.info("Reusing existing script.json (use --fresh to regenerate)")
     else:
-        script = generate_script(topics, roster=roster)
+        script = generate_script(
+            topics, roster=roster, prior_predictions=prior_predictions
+        )
         script_path = save_script(script, episode_dir)
     summary["script_path"] = str(script_path)
     summary["episode_title"] = script.get("title", "Untitled")
@@ -303,7 +315,9 @@ def run_pipeline(
         logger.info(f"Episode already on YouTube ({yt_episode_id}) — skipping upload")
     else:
         yt_episode_id = upload_episode(
-            episode_video, script, date_str, roster=roster, thumbnail_path=thumbnail_path,
+            episode_video, script, date_str, roster=roster,
+            thumbnail_path=thumbnail_path,
+            chapters=_load_checkpoint(episode_dir / "chapters.json"),
         )
         if yt_episode_id:
             ledger["youtube_episode_id"] = yt_episode_id
@@ -409,6 +423,13 @@ def run_pipeline(
 
     # RSS feed (append to existing; same-day re-runs replace the entry)
     _update_rss_feed(script, episode_audio, duration, date_str, audio_url=audio_url)
+
+    # Story memory: remember today's coverage + predictions for tomorrow
+    try:
+        from pipeline.memory import update_after_episode
+        update_after_episode(topics, script, date_str)
+    except Exception as e:
+        logger.warning(f"Story memory update failed (non-fatal): {e}")
 
     # === STEP 8: Cost Report ===
     cost_summary = tracker.save_report(episode_dir)

@@ -6,7 +6,14 @@ Today's stories, each with a researched fact brief (the hosts may only cite fact
 
 {topics}
 
+PREDICTIONS ON RECORD from the previous episode's sign-off:
+{predictions}
+
 Design today's episode PLAN — structure and talking points only. Do NOT write any dialogue; the hosts speak for themselves, each powered by their own model.
+
+Continuity rules (this is what makes it a real news desk):
+- If predictions are on record, the intro segment MUST include an accountability beat: each host revisits their own prediction and owns whether it held up. Keep it brisk and honest — being wrong is good content.
+- If a story has PRIOR COVERAGE lines in its brief, treat it as a DEVELOPING story: plan a beat that says when the show last covered it and what has CHANGED since, not a from-scratch explainer.
 
 Episode structure to plan (target ~{duration} minutes / ~{word_count} words when spoken):
 1. cold_open — a punchy hook on the top story ({cold_open_exchanges} turns per speaker)

@@ -83,6 +83,7 @@ def synthesize_script(script: dict, output_dir: Path) -> list[dict]:
                         "text": text,
                         "audio_path": audio_path,
                         "segment_type": segment_type,
+                        "topic": segment.get("topic"),
                         "index": global_index,
                     }
                 )

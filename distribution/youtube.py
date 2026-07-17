@@ -158,17 +158,32 @@ def _roster_description(roster: list[str] | None = None) -> str:
     return f"Hosted by {', '.join(roster[:-1])} and {roster[-1]}."
 
 
+def _format_chapters(chapters: list[dict] | None) -> str:
+    """Render chapters.json entries as a YouTube chapter list."""
+    if not chapters or len(chapters) < 3:
+        return ""  # YouTube requires at least 3 chapters
+    lines = []
+    for ch in chapters:
+        total_s = int(ch.get("start_ms", 0) // 1000)
+        stamp = f"{total_s // 3600}:{(total_s % 3600) // 60:02d}:{total_s % 60:02d}" \
+            if total_s >= 3600 else f"{total_s // 60}:{total_s % 60:02d}"
+        lines.append(f"{stamp} {ch.get('title', '')}")
+    return "CHAPTERS\n" + "\n".join(lines) + "\n\n"
+
+
 def upload_episode(
     video_path: Path, script: dict, date_str: str,
     roster: list[str] | None = None,
     thumbnail_path: Path | None = None,
+    chapters: list[dict] | None = None,
 ) -> str | None:
-    """Upload a full episode with optional custom thumbnail."""
+    """Upload a full episode with optional custom thumbnail and chapters."""
     # Prefer YouTube-optimized title, fall back to script title
     title = script.get("youtube_title") or f"{script.get('title', 'The Context Window')} | {date_str}"
     hosted_by = _roster_description(roster)
     description = (
         f"{script.get('description', '')}\n\n"
+        f"{_format_chapters(chapters)}"
         f"The Context Window is AI news, hosted by AI. {hosted_by}\n"
         f"New episodes every morning.\n\n"
         f"LISTEN & READ\n"
