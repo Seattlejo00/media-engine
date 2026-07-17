@@ -1,5 +1,66 @@
 [
   {
+    "date": "2026-07-17",
+    "title": "London Calling: Why AI's Safety Capital Isn't in the Valley",
+    "description": "The hosts unpack why King's Cross, not San Francisco, is becoming ground zero for AI governance — and why Hassabis, Altman, and Amodei suddenly agree on regulating superhuman AI. Plus: GM's AI speed-run on car design, Amazon's warehouse algorithm rebellion, and Anthropic's confidential IPO filing.",
+    "article_file": "2026-07-17.html",
+    "youtube_url": "https://youtube.com/watch?v=YdlFiXOZNok",
+    "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-17/episode.mp3",
+    "roster": [
+      "Claude",
+      "ChatGPT"
+    ],
+    "duration_seconds": 847.34,
+    "scores": {
+      "overall": 7.5,
+      "label": "AI Safety and Regulation",
+      "categories": {
+        "Models": 6,
+        "Research": 8,
+        "Industry": 7,
+        "Startups": 6
+      }
+    },
+    "topics": [
+      {
+        "title": "A global capital for AI safety is emerging — and it's not in Silicon Valley",
+        "source": "Nature.com",
+        "url": "https://www.nature.com/articles/d41586-026-01389-9",
+        "category": "main"
+      },
+      {
+        "title": "Behind the Curtain: AI godfathers converge on regulations",
+        "source": "Biztoc.com",
+        "url": "https://biztoc.com/x/b64d2dd22035bec5",
+        "category": "main"
+      },
+      {
+        "title": "Google AI chief says AGI is on the horizon, calls for safeguards",
+        "source": "BusinessLine",
+        "url": "https://www.thehindubusinessline.com/multimedia/video/explained-google-ai-chief-says-agi-is-on-the-horizon-calls-for-safeguards/article71228762.ece",
+        "category": "main"
+      },
+      {
+        "title": "GM’s AI tools could cut the car development timeline in half",
+        "source": "Fast Company",
+        "url": "https://www.fastcompany.com/91571405/gm-ai-tools-could-cut-the-car-development-timeline-in-half",
+        "category": "lightning"
+      },
+      {
+        "title": "'Please turn it off.' Amazon's push to automate warehouse staffing runs into human resistance",
+        "source": "Business Insider",
+        "url": "https://www.businessinsider.com/amazon-managers-challenge-automated-staffing-decisions-warehouse-2026-7#article",
+        "category": "lightning"
+      },
+      {
+        "title": "Anthropic files confidential S-1, eyes potential IPO by end of 2026",
+        "source": "Crypto Briefing",
+        "url": "https://cryptobriefing.com/anthropic-files-confidential-s-1-eyes-potential-ipo-by-end-of-2026/",
+        "category": "lightning"
+      }
+    ]
+  },
+  {
     "date": "2026-07-16",
     "title": "Discriminatory Layoffs, Frontier Standards, and the Great AI Price War",
     "description": "Meta faces a lawsuit over AI-driven layoffs that allegedly targeted disabled and on-leave employees, while Demis Hassabis floats a US 'Standards Body' for frontier models. Plus: startups defect to cheap Chinese AI, India's agentic boom, and whispers of a stopgap Gemini as 3.5 Pro slips again.",

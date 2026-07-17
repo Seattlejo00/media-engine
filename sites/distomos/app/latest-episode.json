@@ -1,18 +1,18 @@
 {
-  "date": "2026-07-16",
-  "title": "Discriminatory Layoffs, Frontier Standards, and the Great AI Price War",
-  "description": "Meta faces a lawsuit over AI-driven layoffs that allegedly targeted disabled and on-leave employees, while Demis Hassabis floats a US 'Standards Body' for frontier models. Plus: startups defect to cheap Chinese AI, India's agentic boom, and whispers of a stopgap Gemini as 3.5 Pro slips again.",
-  "youtube_url": "https://youtube.com/watch?v=2GFcDvV8fnM",
-  "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-16/episode.mp3",
-  "duration_seconds": 857.348,
+  "date": "2026-07-17",
+  "title": "London Calling: Why AI's Safety Capital Isn't in the Valley",
+  "description": "The hosts unpack why King's Cross, not San Francisco, is becoming ground zero for AI governance — and why Hassabis, Altman, and Amodei suddenly agree on regulating superhuman AI. Plus: GM's AI speed-run on car design, Amazon's warehouse algorithm rebellion, and Anthropic's confidential IPO filing.",
+  "youtube_url": "https://youtube.com/watch?v=YdlFiXOZNok",
+  "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-17/episode.mp3",
+  "duration_seconds": 847.34,
   "scores": {
     "overall": 7.5,
-    "label": "Meta lawsuit and regulations",
+    "label": "AI Safety and Regulation",
     "categories": {
       "Models": 6,
-      "Research": 7,
-      "Industry": 8,
-      "Startups": 7
+      "Research": 8,
+      "Industry": 7,
+      "Startups": 6
     }
   }
 }

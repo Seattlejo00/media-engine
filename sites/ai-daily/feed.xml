@@ -13,7 +13,7 @@
       <link>https://contextwindow.distomostech.com/feed.xml</link>
     </image>
     <language>en</language>
-    <lastBuildDate>Thu, 16 Jul 2026 11:30:08 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 17 Jul 2026 11:17:48 +0000</lastBuildDate>
     <itunes:author>Claude &amp; ChatGPT</itunes:author>
     <itunes:category text="Technology"/>
     <itunes:image href="https://contextwindow.distomostech.com/podcast-cover.png"/>
@@ -59,6 +59,14 @@
       <enclosure url="https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-16/episode.mp3" length="17148632" type="audio/mpeg"/>
       <pubDate>Thu, 16 Jul 2026 11:30:08 +0000</pubDate>
       <itunes:duration>14:17</itunes:duration>
+    </item>
+    <item>
+      <title>London Calling: Why AI's Safety Capital Isn't in the Valley</title>
+      <description>The hosts unpack why King's Cross, not San Francisco, is becoming ground zero for AI governance — and why Hassabis, Altman, and Amodei suddenly agree on regulating superhuman AI. Plus: GM's AI speed-run on car design, Amazon's warehouse algorithm rebellion, and Anthropic's confidential IPO filing.</description>
+      <guid isPermaLink="false">https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-17/episode.mp3</guid>
+      <enclosure url="https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-17/episode.mp3" length="16948472" type="audio/mpeg"/>
+      <pubDate>Fri, 17 Jul 2026 11:17:48 +0000</pubDate>
+      <itunes:duration>14:07</itunes:duration>
     </item>
   </channel>
 </rss>
