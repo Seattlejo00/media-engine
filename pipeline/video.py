@@ -288,6 +288,97 @@ def _wrap_text(text: str, max_chars: int) -> str:
     return "\n".join(lines)
 
 
+# Brand colors for neutral (non-speaker) cards
+_CARD_ACCENT = (204, 120, 50)     # Claude orange
+_CARD_ACCENT2 = (16, 163, 127)    # ChatGPT green
+_CARD_CACHE: dict = {}
+
+
+def _card_background(size: tuple[int, int]) -> Image.Image:
+    """Neutral gradient with both brand glows — the cover art look."""
+    key = ("card", size)
+    if key in _CARD_CACHE:
+        return _CARD_CACHE[key]
+    width, height = size
+    img = Image.new("RGB", size)
+    for y in range(height):
+        t = y / max(height - 1, 1)
+        row = tuple(int(a + (b - a) * t) for a, b in zip(BG_TOP, BG_BOTTOM))
+        img.paste(row, (0, y, width, y + 1))
+    glow = Image.new("RGBA", size, (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glow)
+    r = int(min(width, height) * 0.4)
+    gd.ellipse([width * 0.28 - r, height * 0.4 - r, width * 0.28 + r, height * 0.4 + r],
+               fill=(*_CARD_ACCENT, 55))
+    gd.ellipse([width * 0.72 - r, height * 0.6 - r, width * 0.72 + r, height * 0.6 + r],
+               fill=(*_CARD_ACCENT2, 45))
+    glow = glow.filter(ImageFilter.GaussianBlur(radius=r // 2))
+    img = Image.alpha_composite(img.convert("RGBA"), glow).convert("RGB")
+    _CARD_CACHE[key] = img
+    return img
+
+
+def _render_transition_card(
+    kind: str, size: tuple[int, int], label: str | None = None
+) -> Image.Image:
+    """Full-screen card shown during the sonic-logo moments."""
+    width, height = size
+    is_landscape = width > height
+    img = _card_background(size).copy()
+    overlay = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    cx, cy = width // 2, height // 2
+
+    if kind == "intro":
+        f1 = _font(FONT_BOLD, 110 if is_landscape else 96)
+        f2 = _font(FONT_BOLD, 64 if is_landscape else 58)
+        f3 = _font(FONT_REGULAR, 30 if is_landscape else 32)
+        draw.text((cx, cy - int(f1.size * 1.15)), "THE CONTEXT", font=f1,
+                  fill=(255, 255, 255, 255), anchor="ma")
+        draw.text((cx, cy + 8), "W I N D O W", font=f2,
+                  fill=(*MUTED_TEXT, 255), anchor="ma")
+        draw.text((cx, cy + f2.size + 52), "AI NEWS, HOSTED BY AIS", font=f3,
+                  fill=(*_CARD_ACCENT, 235), anchor="ma")
+
+    elif kind == "upnext":
+        eyebrow = _font(FONT_BOLD, 34 if is_landscape else 38)
+        draw.text((cx, cy - int(height * 0.12)), "UP NEXT", font=eyebrow,
+                  fill=(*_CARD_ACCENT, 255), anchor="ma")
+        rule_w = int(width * 0.06)
+        draw.rectangle([cx - rule_w, cy - int(height * 0.12) + eyebrow.size + 22,
+                        cx + rule_w, cy - int(height * 0.12) + eyebrow.size + 26],
+                       fill=(*_CARD_ACCENT2, 200))
+        headline = label or ""
+        hfont = _fit_text(draw, headline, FONT_BOLD,
+                          56 if is_landscape else 48, int(width * 0.8), min_px=30)
+        if draw.textlength(headline, font=hfont) > width * 0.8:
+            headline = headline[:80] + "..."
+        draw.text((cx, cy - 6), headline, font=hfont,
+                  fill=(255, 255, 255, 255), anchor="ma")
+
+    else:  # outro
+        f1 = _font(FONT_BOLD, 84 if is_landscape else 72)
+        f2 = _font(FONT_REGULAR, 34 if is_landscape else 34)
+        f3 = _font(FONT_BOLD, 28 if is_landscape else 30)
+        draw.text((cx, cy - int(f1.size * 1.2)), "THE CONTEXT WINDOW", font=_fit_text(
+            draw, "THE CONTEXT WINDOW", FONT_BOLD, f1.size, int(width * 0.9)),
+            fill=(255, 255, 255, 255), anchor="ma")
+        draw.text((cx, cy + 10), "New episodes every morning", font=f2,
+                  fill=(*MUTED_TEXT, 255), anchor="ma")
+        draw.text((cx, cy + f2.size + 40), "contextwindow.distomostech.com", font=f3,
+                  fill=(*_CARD_ACCENT, 235), anchor="ma")
+
+    return Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+
+
+def _transition_clip(kind: str, size: tuple[int, int], duration: float,
+                     label: str | None = None):
+    key = (kind, size, label)
+    if key not in _CARD_CACHE:
+        _CARD_CACHE[key] = np.asarray(_render_transition_card(kind, size, label))
+    return ImageClip(_CARD_CACHE[key]).with_duration(max(duration, 0.2))
+
+
 def _estimate_duration(audio_path: Path) -> float:
     """Get duration of an audio segment."""
     clip = AudioFileClip(str(audio_path))
@@ -310,21 +401,29 @@ def generate_video(
     """
     logger.info(f"Generating {'landscape' if size == LANDSCAPE else 'portrait'} video...")
 
-    # The assembled episode audio inserts pauses between lines/segments
-    # (see pipeline.audio). Each frame must cover its line's audio PLUS the
-    # pause before it, or subtitles drift ahead of the audio and cut
-    # speakers off before they finish.
+    # The video timeline must mirror pipeline.audio.assemble_episode
+    # EXACTLY: intro sting -> lines with pauses -> stinger at segment
+    # boundaries -> outro sting. Transition cards cover the stings.
     from pipeline.audio import (
-        INTRO_SILENCE,
+        OUTRO_SILENCE,
+        PAUSE_AFTER_INTRO,
+        PAUSE_BEFORE_OUTRO,
         PAUSE_BETWEEN_LINES,
-        PAUSE_BETWEEN_SEGMENTS,
         PAUSE_WITHIN_SPEAKER,
+        STINGER_PAD,
+        _chapter_title,
+        sting_durations_ms,
     )
 
+    stings = sting_durations_ms()
     clips = []
     topic_map = _topic_by_index(script)
     prev_speaker = None
     prev_segment = None
+
+    # Intro title card over the intro sting
+    intro_s = (max(stings["intro"], 500) + PAUSE_AFTER_INTRO) / 1000.0
+    clips.append(_transition_clip("intro", size, intro_s))
 
     for entry in audio_manifest:
         duration = _estimate_duration(entry["audio_path"])
@@ -334,13 +433,17 @@ def generate_video(
 
         # Same pause rules as pipeline.audio.assemble_episode
         if prev_segment is not None and segment_type != prev_segment:
-            pause_ms = PAUSE_BETWEEN_SEGMENTS
+            # Segment boundary: UP NEXT card covers pad + stinger + pad
+            label = _chapter_title(segment_type, entry.get("topic"))
+            card_s = (2 * STINGER_PAD + stings["stinger"]) / 1000.0
+            clips.append(_transition_clip("upnext", size, card_s, label=label))
+            pause_ms = 0
         elif prev_speaker is not None and speaker != prev_speaker:
             pause_ms = PAUSE_BETWEEN_LINES
         elif prev_speaker is not None:
             pause_ms = PAUSE_WITHIN_SPEAKER
         else:
-            pause_ms = INTRO_SILENCE
+            pause_ms = 0  # first line — the intro card covers its lead-in
 
         clips.extend(
             _create_speaker_frames(
@@ -353,6 +456,10 @@ def generate_video(
         )
         prev_speaker = speaker
         prev_segment = segment_type
+
+    # Outro card over the outro sting + tail silence
+    outro_s = (PAUSE_BEFORE_OUTRO + stings["outro"] + OUTRO_SILENCE) / 1000.0
+    clips.append(_transition_clip("outro", size, outro_s))
 
     if not clips:
         raise ValueError("No video clips to assemble")
@@ -391,8 +498,57 @@ def generate_video(
     video.close()
     audio.close()
 
+    if size == LANDSCAPE:
+        _overlay_waveform(output_path)
+
     logger.info(f"Video saved: {output_path}")
     return output_path
+
+
+def _overlay_waveform(video_path: Path) -> None:
+    """
+    Composite a subtle audio-reactive waveform along the bottom of the
+    frame in a single ffmpeg pass. Non-fatal: on any failure the original
+    video is kept.
+    """
+    import shutil
+    import subprocess
+
+    if not shutil.which("ffmpeg"):
+        logger.warning("ffmpeg not found — skipping waveform overlay")
+        return
+
+    tmp_path = video_path.with_name(video_path.stem + "_wave.mp4")
+    wave_h = 110
+    # Waveform sits above the watermark zone (which starts at 94% height)
+    y = f"main_h-{wave_h}-120"
+    filter_complex = (
+        f"[0:a]showwaves=s=1920x{wave_h}:mode=cline:rate=24:"
+        f"colors=0x9EA0B8@0.9[w];"
+        f"[w]colorkey=0x000000:0.12:0.2,format=yuva420p,"
+        f"colorchannelmixer=aa=0.45[wk];"
+        f"[0:v][wk]overlay=0:{y}:shortest=1[v]"
+    )
+    try:
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-i", str(video_path),
+                "-filter_complex", filter_complex,
+                "-map", "[v]", "-map", "0:a",
+                "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
+                "-c:a", "copy",
+                str(tmp_path),
+            ],
+            check=True, capture_output=True, timeout=1800,
+        )
+        tmp_path.replace(video_path)
+        logger.info("Waveform overlay applied")
+    except Exception as e:
+        detail = getattr(e, "stderr", b"")
+        if isinstance(detail, bytes):
+            detail = detail.decode(errors="ignore")[-400:]
+        logger.warning(f"Waveform overlay failed (keeping original): {e} {detail}")
+        tmp_path.unlink(missing_ok=True)
 
 
 def generate_landscape_video(
