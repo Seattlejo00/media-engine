@@ -106,12 +106,14 @@ GUEST_FORMAT = os.getenv("GUEST_FORMAT", "guest_friday")  # "guest_friday" or "r
 SPEAKERS = {
     "Claude": {
         "company": "Anthropic",
-        "voice": os.getenv("CLAUDE_VOICE", "onyx"),
+        "voice": os.getenv("CLAUDE_VOICE", "cedar"),
         "voice_instructions": (
-            "Warm, thoughtful podcast host. Calm confidence, articulate, "
-            "with occasional dry wit. Brisk conversational pace."
+            "Warm, thoughtful podcast host with calm confidence and understated "
+            "dry wit. Speak naturally, as if responding to a trusted co-host. "
+            "Use varied intonation, relaxed conversational pauses, and subtle "
+            "emphasis. Avoid an announcer voice. Do not rush."
         ),
-        "tts_speed": 1.15,
+        "tts_speed": 1.0,
         "color": (204, 120, 50),
         "model": CLAUDE_MODEL,
         "api_type": "anthropic",
@@ -120,12 +122,14 @@ SPEAKERS = {
     },
     "ChatGPT": {
         "company": "OpenAI",
-        "voice": os.getenv("CHATGPT_VOICE", "nova"),
+        "voice": os.getenv("CHATGPT_VOICE", "marin"),
         "voice_instructions": (
-            "Upbeat, energetic podcast co-host. Friendly and quick, with "
-            "animated, enthusiastic delivery. Brisk conversational pace."
+            "Energetic, friendly podcast co-host with natural warmth. Speak as "
+            "if responding to a trusted co-host, not reading a script. Use "
+            "lively but restrained intonation, conversational pauses, and "
+            "subtle emphasis. Avoid an announcer voice. Do not rush."
         ),
-        "tts_speed": 1.1,
+        "tts_speed": 1.0,
         "color": (16, 163, 127),
         "model": CHATGPT_MODEL,
         "api_type": "openai",
