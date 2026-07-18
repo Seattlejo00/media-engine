@@ -452,6 +452,57 @@ def synthesize_from_directory(script: dict, source_dir: Path) -> list[dict]:
     return manifest
 
 
+def recolor_mara_waveforms(
+    episode_video: Path,
+    clip_paths: dict[str, list[Path]],
+) -> None:
+    """Keep the CTA concept's waveform aligned with Mara's blue identity."""
+    targets = [(episode_video, 820, 260)]
+    for platform_paths in clip_paths.values():
+        targets.extend((path, 1560, 360) for path in platform_paths)
+
+    for video_path, band_y, band_height in targets:
+        corrected_path = video_path.with_name(f".{video_path.stem}_mara_blue.mp4")
+        filter_complex = (
+            f"[0:v]split[base][band];"
+            f"[band]crop=iw:{band_height}:0:{band_y},"
+            "huesaturation=colors=g:hue=110:saturation=-0.1:"
+            "intensity=0.3:strength=100[fixed];"
+            f"[base][fixed]overlay=0:{band_y}[out]"
+        )
+        subprocess.run(
+            [
+                FFMPEG,
+                "-y",
+                "-loglevel",
+                "error",
+                "-i",
+                str(video_path),
+                "-filter_complex",
+                filter_complex,
+                "-map",
+                "[out]",
+                "-map",
+                "0:a",
+                "-c:v",
+                "libx264",
+                "-preset",
+                "veryfast",
+                "-crf",
+                "20",
+                "-pix_fmt",
+                "yuv420p",
+                "-c:a",
+                "copy",
+                "-movflags",
+                "+faststart",
+                str(corrected_path),
+            ],
+            check=True,
+        )
+        corrected_path.replace(video_path)
+
+
 def write_editorial_files(*, premium_voice: bool = False) -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     (OUTPUT_DIR / "topics.json").write_text(
@@ -602,7 +653,9 @@ def main() -> None:
         manifest = synthesize_local(SCRIPT, roster)
     episode_audio = assemble_episode(manifest, OUTPUT_DIR, roster=roster)
     duration = get_episode_duration(episode_audio)
-    generate_landscape_video(manifest, episode_audio, SCRIPT, OUTPUT_DIR)
+    episode_video = generate_landscape_video(
+        manifest, episode_audio, SCRIPT, OUTPUT_DIR
+    )
     generate_thumbnail(SCRIPT, TOPICS, OUTPUT_DIR, roster=roster)
 
     clip_segments = [
@@ -617,6 +670,7 @@ def main() -> None:
         json.dumps(clip_segments, indent=2), encoding="utf-8"
     )
     clips = extract_clips(clip_segments, manifest, SCRIPT, OUTPUT_DIR)
+    recolor_mara_waveforms(episode_video, clips)
     write_demo_page(duration, clips, premium_voice=premium_voice)
 
     summary = {
