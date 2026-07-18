@@ -6,6 +6,7 @@ to produce a full podcast episode script.
 
 import json
 import logging
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -17,11 +18,41 @@ from pipeline.cost_tracker import tracker
 
 logger = logging.getLogger(__name__)
 
+SCRIPT_FORMAT_VERSION = 5
+SIGNOFF_CTA = (
+    "If you enjoyed the show, subscribe to The Context Window on YouTube "
+    "and follow us on Spotify."
+)
+
+_INVALID_JSON_ESCAPE = re.compile(r'\\(?!["\\/bfnrtu])')
+
 
 def _load_prompt(name: str) -> str:
     """Load a prompt template from the prompts directory."""
     path = config.PROMPTS_DIR / name
     return path.read_text(encoding="utf-8")
+
+
+def _json_payload(text: str) -> str:
+    """Extract a JSON object from plain text or a fenced model response."""
+    if "```json" in text:
+        return text.split("```json", 1)[1].split("```", 1)[0].strip()
+    if "```" in text:
+        return text.split("```", 1)[1].split("```", 1)[0].strip()
+    return text.strip()
+
+
+def _parse_plan_json(text: str) -> dict:
+    """Parse a plan, repairing only backslashes that are invalid in JSON."""
+    payload = _json_payload(text)
+    try:
+        return json.loads(payload)
+    except json.JSONDecodeError:
+        repaired = _INVALID_JSON_ESCAPE.sub(r"\\\\", payload)
+        if repaired == payload:
+            raise
+        logger.warning("Repaired invalid backslash escape in showrunner JSON")
+        return json.loads(repaired)
 
 
 def _topics_block(topics: list[dict]) -> str:
@@ -66,6 +97,7 @@ def _build_episode_prompt(
     date: str,
     roster: list[str],
     prior_predictions: list[dict] | None = None,
+    special_note: str = "",
 ) -> str:
     """Fill in the showrunner template with today's topics and roster."""
     template = _load_prompt("showrunner.txt")
@@ -137,10 +169,13 @@ def _build_episode_prompt(
     else:
         predictions_text = "(none on record — skip the accountability beat)"
 
+    special_note_text = special_note or "(none — do not invent an announcement)"
+
     return template.format(
         date=date,
         topics=topics_text,
         predictions=predictions_text,
+        special_note=special_note_text,
         duration=duration,
         word_count=word_count,
         min_word_count=min_word_count,
@@ -159,6 +194,8 @@ def generate_script(
     topics: list[dict],
     roster: list[str] | None = None,
     prior_predictions: list[dict] | None = None,
+    special_note: str = "",
+    episode_date: str | None = None,
 ) -> dict:
     """
     Generate the full episode script.
@@ -175,19 +212,29 @@ def generate_script(
     if roster is None:
         roster = config.get_episode_roster()
 
-    date_str = datetime.now().strftime("%B %d, %Y")
+    if episode_date:
+        date_str = datetime.strptime(episode_date, "%Y-%m-%d").strftime("%B %d, %Y")
+    else:
+        date_str = datetime.now().strftime("%B %d, %Y")
 
     logger.info("Step 1: Showrunner pass — planning segments and beats...")
-    plan = _generate_episode_plan(topics, date_str, roster, prior_predictions)
+    plan = _generate_episode_plan(
+        topics, date_str, roster, prior_predictions, special_note=special_note
+    )
 
     logger.info("Step 2: Turn-by-turn conversation — each host speaks for itself...")
-    final_script = _run_conversation(plan, topics, roster, date_str)
+    final_script = _run_conversation(
+        plan, topics, roster, date_str, special_note=special_note
+    )
+    _enforce_signoff_cta(final_script, roster)
 
     logger.info("Step 3: Generating YouTube-optimized title...")
     final_script["youtube_title"] = _generate_youtube_title(final_script, topics)
 
     # Attach roster metadata for downstream consumers
     final_script["roster"] = roster
+    final_script["special_note"] = special_note
+    final_script["script_format_version"] = SCRIPT_FORMAT_VERSION
 
     return final_script
 
@@ -197,10 +244,13 @@ def _generate_episode_plan(
     date_str: str,
     roster: list[str],
     prior_predictions: list[dict] | None = None,
+    special_note: str = "",
 ) -> dict:
     """Showrunner pass: Claude plans the episode structure — no dialogue."""
     client = Anthropic(api_key=config.ANTHROPIC_API_KEY)
-    episode_prompt = _build_episode_prompt(topics, date_str, roster, prior_predictions)
+    episode_prompt = _build_episode_prompt(
+        topics, date_str, roster, prior_predictions, special_note=special_note
+    )
 
     response = client.messages.create(
         model=config.CLAUDE_MODEL,
@@ -226,18 +276,44 @@ def _generate_episode_plan(
 
     text = next(b.text for b in response.content if b.type == "text")
 
-    # Extract JSON from the response (handle markdown code blocks)
-    if "```json" in text:
-        text = text.split("```json")[1].split("```")[0]
-    elif "```" in text:
-        text = text.split("```")[1].split("```")[0]
-
     try:
-        plan = json.loads(text.strip())
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse episode plan: {e}")
-        logger.debug(f"Raw response: {text[:500]}")
-        raise
+        plan = _parse_plan_json(text)
+    except json.JSONDecodeError as first_error:
+        logger.warning(
+            "Showrunner returned malformed JSON (%s); requesting one repair",
+            first_error,
+        )
+        repair = client.messages.create(
+            model=config.CLAUDE_MODEL,
+            max_tokens=6000,
+            thinking={"type": "disabled"},
+            system=(
+                "You repair malformed JSON. Return ONLY the corrected JSON object. "
+                "Preserve every field and value; change only syntax required to parse."
+            ),
+            messages=[{
+                "role": "user",
+                "content": (
+                    f"Parser error: {first_error}\n\n"
+                    "Repair this showrunner plan:\n"
+                    f"{text}"
+                ),
+            }],
+        )
+        tracker.record(
+            step="episode_plan_repair",
+            model=config.CLAUDE_MODEL,
+            input_tokens=repair.usage.input_tokens,
+            output_tokens=repair.usage.output_tokens,
+            speaker="Claude",
+        )
+        repaired_text = next(b.text for b in repair.content if b.type == "text")
+        try:
+            plan = _parse_plan_json(repaired_text)
+        except json.JSONDecodeError as final_error:
+            logger.error("Failed to parse repaired episode plan: %s", final_error)
+            logger.debug("Raw repaired response: %s", repaired_text[:500])
+            raise
 
     n_segs = len(plan.get("segments", []))
     logger.info(f"Episode plan: '{plan.get('title', '?')}' with {n_segs} segments")
@@ -341,6 +417,7 @@ def _turn_prompt(
     total_turns: int,
     date_str: str,
     participants: list[str],
+    special_note: str = "",
 ) -> str:
     """Build the user prompt for one conversational turn."""
     seg_type = seg.get("type", "")
@@ -357,6 +434,13 @@ def _turn_prompt(
     if beats:
         parts.append("SHOWRUNNER BEATS (cover what's still uncovered, in your own way):\n"
                      + "\n".join(f"- {b}" for b in beats))
+
+    clip_moment = (seg.get("clip_moment") or "").strip()
+    if clip_moment:
+        parts.append(
+            "PLANNED CLIP MOMENT — a self-contained, fact-grounded short-form "
+            f"exchange this segment must create: {clip_moment}"
+        )
 
     if topic_data:
         pcs = topic_data.get("prior_coverage") or []
@@ -405,17 +489,29 @@ def _turn_prompt(
         parts.append(f"THE CONVERSATION SO FAR IN THIS SEGMENT:\n{convo}")
 
     # Role-specific instruction for this turn
-    if seg_type == "intro" :
+    if seg_type == "intro":
         task = "Welcome listeners to The Context Window, mention today's date, and tee up the episode."
+        if special_note and turn_idx == 0:
+            task += (
+                " Include this operator-supplied announcement clearly and naturally "
+                f"in this turn; do not skip it: {special_note}"
+            )
     elif seg_type == "cold_open" and turn_idx == 0:
         task = "Open the show with a punchy, curiosity-grabbing line about the top story. No greetings yet."
     elif seg_type == "sign_off":
         if turn_idx < len(participants):
             task = ("Give your 'one thing to watch' — a specific, checkable "
                     "prediction related to today's stories. One prediction only.")
+        elif turn_idx == len(participants):
+            task = (
+                "Predictions are done — do NOT give another one. Give a short, warm "
+                "goodbye in 25 words or less. Do not mention subscriptions or any "
+                "platform; the show's standard CTA is inserted automatically."
+            )
         else:
             task = ("Predictions are done — do NOT give another one. Just wrap "
-                    "with a short, warm goodbye in 25 words or less.")
+                    "with a short, warm goodbye in 25 words or less. Do not repeat "
+                    "the subscribe/follow request.")
     elif turn_idx == 0:
         prev = seg.get("_prev_topic")
         handoff = (
@@ -431,6 +527,18 @@ def _turn_prompt(
                 "with something NEW from the brief or your own perspective. If you "
                 "genuinely see it differently, say so and argue it.")
 
+    if (
+        clip_moment
+        and seg_type in ("main_story", "lightning_round")
+        and turn_idx == len(participants)
+    ):
+        task += (
+            " Make this the planned clip moment. Open with a decisive, standalone "
+            "sentence—not agreement or a transition—then deliver the specific fact, "
+            "tension, analogy, or stakes and a clear payoff. A new viewer must "
+            "understand it without hearing the rest of the episode."
+        )
+
     if turn_idx == total_turns - 1 and seg_type not in ("intro", "sign_off"):
         task += " Then land the segment — a closing thought or handoff, not a summary."
 
@@ -441,6 +549,44 @@ def _turn_prompt(
         f"stage directions.\n{BANNED_FILLER}"
     )
     return "\n\n".join(parts)
+
+
+def _enforce_signoff_cta(script: dict, roster: list[str]) -> None:
+    """Insert one canonical CTA and remove any model-generated duplicates."""
+    sign_off = next(
+        (segment for segment in script.get("segments", [])
+         if segment.get("type") == "sign_off"),
+        None,
+    )
+    dialogue = sign_off.get("dialogue", []) if sign_off else []
+    if not dialogue:
+        return
+
+    # The first pass through the roster contains predictions; goodbyes begin
+    # on the next turn. Models sometimes append an unsolicited CTA to a
+    # prediction, so scan the whole sign-off while distinguishing calls to
+    # action from legitimate news discussion that names a platform.
+    target_idx = min(len(roster), len(dialogue) - 1)
+    platform_pattern = re.compile(r"\b(?:youtube|spotify)\b", re.IGNORECASE)
+    cta_action_pattern = re.compile(
+        r"\b(?:subscribe|follow\s+(?:us|on)|find\s+us|catch\s+us|listen\s+on)\b",
+        re.IGNORECASE,
+    )
+
+    def is_platform_cta(sentence: str) -> bool:
+        platforms = set(match.group(0).lower() for match in platform_pattern.finditer(sentence))
+        return len(platforms) == 2 or (bool(platforms) and bool(cta_action_pattern.search(sentence)))
+
+    for idx in range(len(dialogue)):
+        text = dialogue[idx].get("text", "")
+        sentences = re.split(r"(?<=[.!?])\s+|\n+", text.strip())
+        dialogue[idx]["text"] = " ".join(
+            sentence.strip() for sentence in sentences
+            if sentence.strip() and not is_platform_cta(sentence)
+        )
+
+    goodbye = dialogue[target_idx].get("text", "").strip()
+    dialogue[target_idx]["text"] = SIGNOFF_CTA + (f" {goodbye}" if goodbye else "")
 
 
 def _speak(client, speaker: str, persona: str, user_content: str) -> str | None:
@@ -497,7 +643,11 @@ def _speak(client, speaker: str, persona: str, user_content: str) -> str | None:
 
 
 def _run_conversation(
-    plan: dict, topics: list[dict], roster: list[str], date_str: str
+    plan: dict,
+    topics: list[dict],
+    roster: list[str],
+    date_str: str,
+    special_note: str = "",
 ) -> dict:
     """
     Generate the episode as an actual conversation: each turn is written by
@@ -534,7 +684,7 @@ def _run_conversation(
             speaker = order[turn_idx % len(order)]
             prompt = _turn_prompt(
                 seg, topic_data, dialogue, completed, speaker,
-                turn_idx, total_turns, date_str, order,
+                turn_idx, total_turns, date_str, order, special_note,
             )
             text = None
             for attempt in (1, 2):

@@ -48,6 +48,9 @@ BG_BOTTOM = (24, 22, 48)    # deep indigo
 PANEL_FILL = (0, 0, 0, 150)  # subtitle panel (RGBA)
 MUTED_TEXT = (158, 160, 184)
 
+YOUTUBE_OUTRO_URL = "youtube.com/@TheContextWindow-q1z"
+SPOTIFY_OUTRO_URL = "open.spotify.com/show/033OoZlyZBlEwCd6kmNdpT"
+
 # Backgrounds are expensive (gaussian-blurred glow) but identical for every
 # line a speaker says — cache per (speaker, size).
 _BG_CACHE: dict = {}
@@ -288,6 +291,52 @@ def _wrap_text(text: str, max_chars: int) -> str:
     return "\n".join(lines)
 
 
+def _wrap_text_pixels(
+    draw: ImageDraw.ImageDraw,
+    text: str,
+    font: ImageFont.FreeTypeFont,
+    max_width: int,
+) -> list[str]:
+    """Word-wrap text using its rendered width instead of character count."""
+    words = text.split()
+    if not words:
+        return [""]
+
+    lines: list[str] = []
+    current = words[0]
+    for word in words[1:]:
+        candidate = f"{current} {word}"
+        if draw.textlength(candidate, font=font) <= max_width:
+            current = candidate
+        else:
+            lines.append(current)
+            current = word
+    lines.append(current)
+    return lines
+
+
+def _fit_wrapped_text(
+    draw: ImageDraw.ImageDraw,
+    text: str,
+    font_path: str,
+    start_px: int,
+    max_width: int,
+    max_lines: int,
+    min_px: int = 24,
+) -> tuple[ImageFont.FreeTypeFont, list[str]]:
+    """Fit a complete headline into a bounded number of lines without clipping."""
+    for px in range(start_px, min_px - 1, -2):
+        font = _font(font_path, px)
+        lines = _wrap_text_pixels(draw, text, font, max_width)
+        if len(lines) <= max_lines and all(
+            draw.textlength(line, font=font) <= max_width for line in lines
+        ):
+            return font, lines
+
+    font = _font(font_path, min_px)
+    return font, _wrap_text_pixels(draw, text, font, max_width)
+
+
 # Brand colors for neutral (non-speaker) cards
 _CARD_ACCENT = (204, 120, 50)     # Claude orange
 _CARD_ACCENT2 = (16, 163, 127)    # ChatGPT green
@@ -349,25 +398,86 @@ def _render_transition_card(
                         cx + rule_w, cy - int(height * 0.12) + eyebrow.size + 26],
                        fill=(*_CARD_ACCENT2, 200))
         headline = label or ""
-        hfont = _fit_text(draw, headline, FONT_BOLD,
-                          56 if is_landscape else 48, int(width * 0.8), min_px=30)
-        if draw.textlength(headline, font=hfont) > width * 0.8:
-            headline = headline[:80] + "..."
-        draw.text((cx, cy - 6), headline, font=hfont,
-                  fill=(255, 255, 255, 255), anchor="ma")
+        hfont, headline_lines = _fit_wrapped_text(
+            draw,
+            headline,
+            FONT_BOLD,
+            56 if is_landscape else 48,
+            int(width * (0.82 if is_landscape else 0.84)),
+            max_lines=3 if is_landscape else 4,
+            min_px=26,
+        )
+        draw.multiline_text(
+            (cx, cy + int(height * 0.04)),
+            "\n".join(headline_lines),
+            font=hfont,
+            fill=(255, 255, 255, 255),
+            anchor="mm",
+            align="center",
+            spacing=max(8, int(hfont.size * 0.24)),
+        )
 
     else:  # outro
         f1 = _font(FONT_BOLD, 84 if is_landscape else 72)
-        f2 = _font(FONT_REGULAR, 34 if is_landscape else 34)
-        f3 = _font(FONT_BOLD, 28 if is_landscape else 30)
+        f2 = _font(FONT_REGULAR, 32 if is_landscape else 34)
+        f3 = _font(FONT_BOLD, 26 if is_landscape else 28)
         draw.text((cx, cy - int(f1.size * 1.2)), "THE CONTEXT WINDOW", font=_fit_text(
             draw, "THE CONTEXT WINDOW", FONT_BOLD, f1.size, int(width * 0.9)),
             fill=(255, 255, 255, 255), anchor="ma")
-        draw.text((cx, cy + 10), "New episodes every morning", font=f2,
+        draw.text((cx, cy - 18), "New episodes every morning", font=f2,
                   fill=(*MUTED_TEXT, 255), anchor="ma")
-        draw.text((cx, cy + f2.size + 40), "contextwindow.distomostech.com", font=f3,
-                  fill=(*_CARD_ACCENT, 235), anchor="ma")
+        youtube = f"SUBSCRIBE  {YOUTUBE_OUTRO_URL}"
+        spotify = f"FOLLOW  {SPOTIFY_OUTRO_URL}"
+        youtube_font = _fit_text(
+            draw, youtube, FONT_BOLD, f3.size, int(width * 0.88), min_px=20
+        )
+        spotify_font = _fit_text(
+            draw, spotify, FONT_BOLD, f3.size, int(width * 0.88), min_px=20
+        )
+        draw.text((cx, cy + f2.size + 24), youtube, font=youtube_font,
+                  fill=(*_CARD_ACCENT, 245), anchor="ma")
+        draw.text((cx, cy + f2.size + 72), spotify, font=spotify_font,
+                  fill=(*_CARD_ACCENT2, 245), anchor="ma")
+        site_font = _font(FONT_REGULAR, 23 if is_landscape else 25)
+        draw.text((cx, cy + f2.size + 126), "contextwindow.distomostech.com",
+                  font=site_font, fill=(*MUTED_TEXT, 235), anchor="ma")
 
+    return Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+
+
+def _render_clip_cta_card(platform: str, size: tuple[int, int] = PORTRAIT) -> Image.Image:
+    """Render the brief, platform-aware end card used on short-form clips."""
+    width, height = size
+    img = _card_background(size).copy()
+    overlay = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    cx, cy = width // 2, height // 2
+
+    eyebrow = _font(FONT_BOLD, 38 if width < height else 32)
+    headline = _font(FONT_BOLD, 88 if width < height else 72)
+    detail = _font(FONT_BOLD, 38 if width < height else 30)
+    small = _font(FONT_REGULAR, 27 if width < height else 23)
+
+    draw.text((cx, cy - 230), "THE CONTEXT WINDOW", font=eyebrow,
+              fill=(*MUTED_TEXT, 255), anchor="ma")
+    if platform == "youtube":
+        draw.text((cx, cy - 86), "SUBSCRIBE", font=headline,
+                  fill=(255, 255, 255, 255), anchor="ma")
+        draw.text((cx, cy + 38), "ON YOUTUBE", font=detail,
+                  fill=(*_CARD_ACCENT, 255), anchor="ma")
+        destination = "@TheContextWindow-q1z"
+    else:
+        draw.text((cx, cy - 86), "FOLLOW FOR MORE", font=_fit_text(
+            draw, "FOLLOW FOR MORE", FONT_BOLD, headline.size, int(width * 0.88), 52
+        ), fill=(255, 255, 255, 255), anchor="ma")
+        draw.text((cx, cy + 38), "DAILY AI NEWS", font=detail,
+                  fill=(*_CARD_ACCENT2, 255), anchor="ma")
+        destination = "Full episodes on YouTube + Spotify"
+
+    draw.text((cx, cy + 135), destination, font=small,
+              fill=(*MUTED_TEXT, 255), anchor="ma")
+    draw.text((cx, cy + 205), "contextwindow.distomostech.com", font=small,
+              fill=(*MUTED_TEXT, 220), anchor="ma")
     return Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
 
 
@@ -405,12 +515,12 @@ def generate_video(
     # EXACTLY: intro sting -> lines with pauses -> stinger at segment
     # boundaries -> outro sting. Transition cards cover the stings.
     from pipeline.audio import (
-        OUTRO_SILENCE,
-        PAUSE_AFTER_INTRO,
-        PAUSE_BEFORE_OUTRO,
+        INTRO_OVERLAP,
+        OUTRO_OVERLAP,
         PAUSE_BETWEEN_LINES,
         PAUSE_WITHIN_SPEAKER,
-        STINGER_PAD,
+        SEG_OVERLAP,
+        TAIL_SILENCE,
         _chapter_title,
         sting_durations_ms,
     )
@@ -425,8 +535,9 @@ def generate_video(
     speaker_windows: dict[str, list[list[float]]] = {}
     cursor = 0.0
 
-    # Intro title card over the intro sting
-    intro_s = (max(stings["intro"], 500) + PAUSE_AFTER_INTRO) / 1000.0
+    # Intro title card — holds until the first words start (the music's
+    # crossfade tail plays under the first speaker's frame)
+    intro_s = max(stings["intro"] - INTRO_OVERLAP, 500) / 1000.0
     clips.append(_transition_clip("intro", size, intro_s))
     cursor += intro_s
 
@@ -439,9 +550,11 @@ def generate_video(
 
         # Same pause rules as pipeline.audio.assemble_episode
         if prev_key is not None and seg_key != prev_key:
-            # Segment boundary: UP NEXT card covers pad + stinger + pad
+            # Segment boundary: the UP NEXT card holds for the segue's
+            # un-overlapped middle (its crossfaded ends play under the
+            # outgoing and incoming speaker frames)
             label = _chapter_title(segment_type, entry.get("topic"))
-            card_s = (2 * STINGER_PAD + stings["stinger"]) / 1000.0
+            card_s = max(stings["stinger"] - 2 * SEG_OVERLAP, 500) / 1000.0
             clips.append(_transition_clip("upnext", size, card_s, label=label))
             cursor += card_s
             pause_ms = 0
@@ -473,7 +586,9 @@ def generate_video(
         prev_key = seg_key
 
     # Outro card over the outro sting + tail silence
-    outro_s = (PAUSE_BEFORE_OUTRO + stings["outro"] + OUTRO_SILENCE) / 1000.0
+    # Outro card appears once the words end; the outro music's fade-in
+    # already played under the final speaker frame
+    outro_s = max(stings["outro"] - OUTRO_OVERLAP + TAIL_SILENCE, 500) / 1000.0
     clips.append(_transition_clip("outro", size, outro_s))
 
     if not clips:
@@ -530,6 +645,7 @@ def _ffmpeg_bin() -> str | None:
 def _overlay_waveform(
     video_path: Path,
     speaker_windows: dict[str, list[list[float]]] | None = None,
+    size: tuple[int, int] = LANDSCAPE,
 ) -> None:
     """
     Composite an audio-reactive waveform along the bottom of the frame:
@@ -545,8 +661,12 @@ def _overlay_waveform(
         return
 
     tmp_path = video_path.with_name(video_path.stem + "_wave.mp4")
-    wave_h = 150
-    y = f"main_h-{wave_h}-100"
+    width, height = size
+    is_portrait = height > width
+    wave_h = 190 if is_portrait else 150
+    bottom_margin = 150 if is_portrait else 100
+    wave_gain = 6 if is_portrait else 1
+    y = f"main_h-{wave_h}-{bottom_margin}"
 
     def _hex(speaker: str) -> str:
         r, g, b = config.SPEAKERS.get(speaker, config.SPEAKERS["ChatGPT"])["color"]
@@ -563,14 +683,15 @@ def _overlay_waveform(
     if not layers:
         layers = [("0x9EA0B8", None)]
 
-    # Base video renders at 1fps (static frames) — lift to 24fps or the
-    # wave only updates once a second.
-    parts = ["[0:v]fps=24[vb]"]
+    # Base video renders at 1fps (static frames) — pad its fractional final
+    # second, then lift to 24fps so the waveform remains smooth through the
+    # last spoken word.
+    parts = ["[0:v]tpad=stop_mode=clone:stop_duration=1,fps=24[vb]"]
     last = "[vb]"
     for i, (color, enable) in enumerate(layers):
         en = f":enable='{enable}'" if enable else ""
         parts.append(
-            f"[0:a]showwaves=s=1920x{wave_h}:mode=cline:rate=24:colors={color}[sw{i}];"
+            f"[0:a]volume={wave_gain},showwaves=s={width}x{wave_h}:mode=cline:rate=24:scale=sqrt:colors={color}[sw{i}];"
             f"[sw{i}]colorkey=0x000000:0.12:0.2,format=rgba[k{i}];"
             f"[k{i}]split[k{i}a][k{i}b];"
             f"[k{i}a]gblur=sigma=18,colorchannelmixer=aa=0.55[glow{i}];"

@@ -76,5 +76,18 @@
       "Industry": 7,
       "Startups": 6
     }
+  },
+  {
+    "date": "2026-07-18",
+    "episode": "/episodes/2026-07-18.html",
+    "title": "Symphony or Solo? Xi's AI Alliance, DeepMind's FINRA Pitch, and the $50 Barrel of Intelligence",
+    "overall": 7.5,
+    "label": "International AI Alliances",
+    "categories": {
+      "Models": 7,
+      "Research": 6,
+      "Industry": 8,
+      "Startups": 5
+    }
   }
 ]

@@ -13,13 +13,16 @@ Usage:
 import argparse
 import json
 import logging
+import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import config
 from pipeline.topics import discover_topics
-from pipeline.script import generate_script, save_script
+from pipeline.script import SCRIPT_FORMAT_VERSION, generate_script, save_script
+from pipeline.episode_notes import resolve_episode_note
 from pipeline.tts import synthesize_script
 from pipeline.audio import assemble_episode, get_episode_duration
 from pipeline.video import generate_landscape_video
@@ -55,6 +58,35 @@ def _load_checkpoint(path: Path):
     return None
 
 
+def _episode_date() -> str:
+    """Return the production date in the configured editorial timezone."""
+    return datetime.now(ZoneInfo(config.TIMEZONE)).strftime("%Y-%m-%d")
+
+
+def _clear_script_outputs(episode_dir: Path) -> None:
+    """Clear script-dependent checkpoints while preserving research and uploads."""
+    directories = (episode_dir / "audio_segments", episode_dir / "clips")
+    files = (
+        "script.json",
+        "transcript.txt",
+        "audio_manifest.json",
+        "episode.mp3",
+        "chapters.json",
+        "episode_landscape.mp4",
+        "thumbnail.png",
+        "clip_segments.json",
+        "cost_report.json",
+        "summary.json",
+    )
+    for directory in directories:
+        if directory.exists():
+            shutil.rmtree(directory)
+    for filename in files:
+        path = episode_dir / filename
+        if path.exists():
+            path.unlink()
+
+
 def run_pipeline(
     script_only: bool = False,
     dry_run: bool = False,
@@ -62,6 +94,7 @@ def run_pipeline(
     roundtable: bool = False,
     no_upload: bool = False,
     fresh: bool = False,
+    special_note: str | None = None,
 ) -> dict:
     """
     Execute the full episode generation pipeline.
@@ -73,14 +106,17 @@ def run_pipeline(
 
     Returns a summary dict with paths and IDs.
     """
-    date_str = datetime.now().strftime("%Y-%m-%d")
+    date_str = _episode_date()
     episode_dir = config.OUTPUT_DIR / date_str
     episode_dir.mkdir(parents=True, exist_ok=True)
+
+    special_note = resolve_episode_note(date_str, override=special_note)
+    if special_note:
+        logger.info("Operator note active for %s", date_str)
 
     if fresh:
         # Wipe generated artifacts but KEEP the distribution ledger —
         # forgetting past uploads would cause duplicate YouTube posts.
-        import shutil
         for item in episode_dir.iterdir():
             if item.name == "distribution_state.json":
                 continue
@@ -107,7 +143,12 @@ def run_pipeline(
 
     is_guest_episode = len(roster) > len(config.get_hosts())
 
-    summary = {"date": date_str, "status": "started", "roster": roster}
+    summary = {
+        "date": date_str,
+        "status": "started",
+        "roster": roster,
+        "special_note": special_note or None,
+    }
 
     if is_guest_episode:
         guests = [s for s in roster if config.SPEAKERS[s]["role"] == "guest"]
@@ -182,11 +223,24 @@ def run_pipeline(
 
     script_path = episode_dir / "script.json"
     script = _load_checkpoint(script_path)
+    if script and (
+        script.get("script_format_version") != SCRIPT_FORMAT_VERSION
+        or (script.get("special_note") or "") != special_note
+    ):
+        logger.info(
+            "Editorial inputs changed — regenerating script, speech, video, and clips"
+        )
+        _clear_script_outputs(episode_dir)
+        script = None
     if script:
         logger.info("Reusing existing script.json (use --fresh to regenerate)")
     else:
         script = generate_script(
-            topics, roster=roster, prior_predictions=prior_predictions
+            topics,
+            roster=roster,
+            prior_predictions=prior_predictions,
+            special_note=special_note,
+            episode_date=date_str,
         )
         script_path = save_script(script, episode_dir)
     summary["script_path"] = str(script_path)
@@ -275,16 +329,25 @@ def run_pipeline(
         clip_segments_path.write_text(json.dumps(clip_segments, indent=2), encoding="utf-8")
 
     clips_dir = episode_dir / "clips"
-    existing_clips = sorted(
-        clips_dir.glob("clip_*.mp4"),
-        key=lambda p: int(p.name.split("_")[1]),
-    ) if clips_dir.exists() else []
-    if clip_segments and len(existing_clips) >= len(clip_segments):
-        clip_paths = existing_clips
-        logger.info(f"Reusing {len(clip_paths)} rendered clips")
+    clip_paths = {
+        platform: sorted(
+            (clips_dir / platform).glob("clip_*.mp4"),
+            key=lambda p: int(p.name.split("_")[1]),
+        )
+        for platform in ("youtube", "social")
+    }
+    if clip_segments and all(
+        len(paths) >= len(clip_segments) for paths in clip_paths.values()
+    ):
+        logger.info("Reusing %d rendered clip pairs", len(clip_paths["youtube"]))
     else:
         clip_paths = extract_clips(clip_segments, audio_manifest, script, episode_dir)
-    summary["clips"] = [str(p) for p in clip_paths]
+    youtube_clip_paths = clip_paths["youtube"]
+    social_clip_paths = clip_paths["social"]
+    summary["clips"] = {
+        platform: [str(p) for p in paths]
+        for platform, paths in clip_paths.items()
+    }
 
     # === STEP 7: Distribute ===
     logger.info("=" * 60)
@@ -328,7 +391,7 @@ def run_pipeline(
     # YouTube - clips (capped to avoid daily upload limit)
     max_yt_clips = config.MAX_CLIPS_UPLOAD
     yt_clip_ids = ledger.setdefault("youtube_clip_ids", {})
-    for i, clip_path in enumerate(clip_paths[:max_yt_clips]):
+    for i, clip_path in enumerate(youtube_clip_paths[:max_yt_clips]):
         if str(i) in yt_clip_ids:
             continue
         clip_title = (
@@ -338,9 +401,9 @@ def run_pipeline(
         if clip_id:
             yt_clip_ids[str(i)] = clip_id
             _save_ledger()
-    if len(clip_paths) > max_yt_clips:
+    if len(youtube_clip_paths) > max_yt_clips:
         logger.info(
-            f"Uploaded {max_yt_clips}/{len(clip_paths)} clips to YouTube "
+            f"Uploaded {max_yt_clips}/{len(youtube_clip_paths)} clips to YouTube "
             f"(MAX_CLIPS_UPLOAD={max_yt_clips})"
         )
     summary["youtube_clip_ids"] = list(yt_clip_ids.values())
@@ -357,7 +420,7 @@ def run_pipeline(
 
     # Twitter/X - clips
     if not ledger.get("twitter_clips_posted"):
-        for i, clip_path in enumerate(clip_paths):
+        for i, clip_path in enumerate(social_clip_paths):
             clip_title = (
                 clip_segments[i]["title"] if i < len(clip_segments) else f"Clip {i+1}"
             )
@@ -367,7 +430,7 @@ def run_pipeline(
 
     # TikTok - clips
     tiktok_ids = ledger.setdefault("tiktok_ids", {})
-    for i, clip_path in enumerate(clip_paths):
+    for i, clip_path in enumerate(social_clip_paths):
         if str(i) in tiktok_ids:
             continue
         clip_title = (
@@ -390,7 +453,7 @@ def run_pipeline(
     ig_ids = ledger.setdefault("instagram_ids", {})
     if instagram_configured():
         refresh_access_token()
-        for i, clip_path in enumerate(clip_paths[:config.INSTAGRAM_MAX_CLIPS]):
+        for i, clip_path in enumerate(social_clip_paths[:config.INSTAGRAM_MAX_CLIPS]):
             if str(i) in ig_ids:
                 continue
             clip_title = (
@@ -638,6 +701,10 @@ def main():
         help="Regenerate today's artifacts from scratch instead of reusing "
              "checkpoints (the upload ledger is preserved)",
     )
+    parser.add_argument(
+        "--special-note", type=str, default=None,
+        help="One-off editorial note the hosts must mention naturally in the intro",
+    )
 
     args = parser.parse_args()
 
@@ -651,6 +718,7 @@ def main():
             roundtable=args.roundtable,
             no_upload=args.no_upload,
             fresh=args.fresh,
+            special_note=args.special_note,
         )
 
         if summary["status"] == "complete":

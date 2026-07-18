@@ -1,18 +1,18 @@
 {
-  "date": "2026-07-17",
-  "title": "London Calling: Why AI's Safety Capital Isn't in the Valley",
-  "description": "The hosts unpack why King's Cross, not San Francisco, is becoming ground zero for AI governance — and why Hassabis, Altman, and Amodei suddenly agree on regulating superhuman AI. Plus: GM's AI speed-run on car design, Amazon's warehouse algorithm rebellion, and Anthropic's confidential IPO filing.",
-  "youtube_url": "https://youtube.com/watch?v=YdlFiXOZNok",
-  "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-17/episode.mp3",
-  "duration_seconds": 847.34,
+  "date": "2026-07-18",
+  "title": "Symphony or Solo? Xi's AI Alliance, DeepMind's FINRA Pitch, and the $50 Barrel of Intelligence",
+  "description": "Xi Jinping launches a 29-nation AI alliance aimed at global governance, and Demis Hassabis pitches Washington on a FINRA-style vetting body for frontier models. Plus: Chamath Palihapitiya says the AI pricing wars are coming, DeepMind's CEO on why STEM still matters, and a troubling finding about AI models and authoritarian regimes.",
+  "youtube_url": "https://youtube.com/watch?v=WVIzGD5_D4I",
+  "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-18/episode.mp3",
+  "duration_seconds": 873.578,
   "scores": {
     "overall": 7.5,
-    "label": "AI Safety and Regulation",
+    "label": "International AI Alliances",
     "categories": {
-      "Models": 6,
-      "Research": 8,
-      "Industry": 7,
-      "Startups": 6
+      "Models": 7,
+      "Research": 6,
+      "Industry": 8,
+      "Startups": 5
     }
   }
 }
