@@ -419,7 +419,7 @@ def generate_video(
     clips = []
     topic_map = _topic_by_index(script)
     prev_speaker = None
-    prev_segment = None
+    prev_key = None  # (segment_type, topic) — mirror of audio assembly
 
     # Intro title card over the intro sting
     intro_s = (max(stings["intro"], 500) + PAUSE_AFTER_INTRO) / 1000.0
@@ -430,9 +430,10 @@ def generate_video(
         speaker = entry["speaker"]
         text = entry["text"]
         segment_type = entry.get("segment_type")
+        seg_key = (segment_type, entry.get("topic"))
 
         # Same pause rules as pipeline.audio.assemble_episode
-        if prev_segment is not None and segment_type != prev_segment:
+        if prev_key is not None and seg_key != prev_key:
             # Segment boundary: UP NEXT card covers pad + stinger + pad
             label = _chapter_title(segment_type, entry.get("topic"))
             card_s = (2 * STINGER_PAD + stings["stinger"]) / 1000.0
@@ -455,7 +456,7 @@ def generate_video(
             )
         )
         prev_speaker = speaker
-        prev_segment = segment_type
+        prev_key = seg_key
 
     # Outro card over the outro sting + tail silence
     outro_s = (PAUSE_BEFORE_OUTRO + stings["outro"] + OUTRO_SILENCE) / 1000.0
