@@ -79,12 +79,13 @@ def assemble_episode(
 
     chapters: list[dict] = []
     prev_speaker = None
-    prev_segment = None
+    prev_key = None  # (segment_type, topic) — a new topic IS a new segment
 
     for entry in audio_manifest:
         audio_path = entry["audio_path"]
         speaker = entry["speaker"]
         segment_type = entry["segment_type"]
+        seg_key = (segment_type, entry.get("topic"))
 
         try:
             segment_audio = AudioSegment.from_mp3(str(audio_path))
@@ -92,7 +93,7 @@ def assemble_episode(
             logger.error(f"Failed to load {audio_path}: {e}")
             continue
 
-        if prev_segment is not None and segment_type != prev_segment:
+        if prev_key is not None and seg_key != prev_key:
             # Segment boundary: pad, sting, pad
             episode += AudioSegment.silent(duration=STINGER_PAD)
             if stinger:
@@ -103,7 +104,7 @@ def assemble_episode(
         elif prev_speaker is not None:
             episode += AudioSegment.silent(duration=PAUSE_WITHIN_SPEAKER)
 
-        if segment_type != prev_segment:
+        if seg_key != prev_key:
             chapters.append({
                 "title": _chapter_title(segment_type, entry.get("topic")),
                 "start_ms": len(episode),
@@ -112,7 +113,7 @@ def assemble_episode(
         episode += segment_audio
 
         prev_speaker = speaker
-        prev_segment = segment_type
+        prev_key = seg_key
 
     # Outro: pad, sting, tail silence
     episode += AudioSegment.silent(duration=PAUSE_BEFORE_OUTRO)
