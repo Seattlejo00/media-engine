@@ -18,7 +18,7 @@ from pipeline.cost_tracker import tracker
 
 logger = logging.getLogger(__name__)
 
-SCRIPT_FORMAT_VERSION = 4
+SCRIPT_FORMAT_VERSION = 5
 SIGNOFF_CTA = (
     "If you enjoyed the show, subscribe to The Context Window on YouTube "
     "and follow us on Spotify."
@@ -435,6 +435,13 @@ def _turn_prompt(
         parts.append("SHOWRUNNER BEATS (cover what's still uncovered, in your own way):\n"
                      + "\n".join(f"- {b}" for b in beats))
 
+    clip_moment = (seg.get("clip_moment") or "").strip()
+    if clip_moment:
+        parts.append(
+            "PLANNED CLIP MOMENT — a self-contained, fact-grounded short-form "
+            f"exchange this segment must create: {clip_moment}"
+        )
+
     if topic_data:
         pcs = topic_data.get("prior_coverage") or []
         if pcs:
@@ -519,6 +526,18 @@ def _turn_prompt(
         task = ("React to what was just said — agree, push back, or build on it "
                 "with something NEW from the brief or your own perspective. If you "
                 "genuinely see it differently, say so and argue it.")
+
+    if (
+        clip_moment
+        and seg_type in ("main_story", "lightning_round")
+        and turn_idx == len(participants)
+    ):
+        task += (
+            " Make this the planned clip moment. Open with a decisive, standalone "
+            "sentence—not agreement or a transition—then deliver the specific fact, "
+            "tension, analogy, or stakes and a clear payoff. A new viewer must "
+            "understand it without hearing the rest of the episode."
+        )
 
     if turn_idx == total_turns - 1 and seg_type not in ("intro", "sign_off"):
         task += " Then land the segment — a closing thought or handoff, not a summary."

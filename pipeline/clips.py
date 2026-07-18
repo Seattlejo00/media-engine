@@ -8,18 +8,35 @@ import json
 import logging
 from pathlib import Path
 
-from moviepy import AudioFileClip, CompositeVideoClip, concatenate_videoclips
+import numpy as np
+from moviepy import (
+    AudioFileClip,
+    CompositeAudioClip,
+    ImageClip,
+    VideoFileClip,
+    afx,
+    concatenate_videoclips,
+)
 from openai import OpenAI
 
 import config
 from pipeline.cost_tracker import tracker
-from pipeline.video import PORTRAIT, _create_speaker_frames, _estimate_duration
+from pipeline.video import (
+    PORTRAIT,
+    _create_speaker_frames,
+    _estimate_duration,
+    _overlay_waveform,
+    _render_clip_cta_card,
+)
 
 logger = logging.getLogger(__name__)
 
 MIN_CLIP_SECONDS = 20
 MAX_CLIP_SECONDS = 58
-MAX_CLIPS = 4
+CANDIDATE_LIMIT = 8
+MAX_CLIPS = 3
+MIN_FALLBACK_SCORE = 82
+CTA_SECONDS = 1.8
 
 
 def _estimated_seconds(text: str) -> float:
@@ -58,7 +75,9 @@ def _score_value(clip: dict) -> float:
         return 0.0
 
 
-def _normalize_clip_segments(raw_clips: list[dict], all_lines: list[dict]) -> list[dict]:
+def _normalize_clip_segments(
+    raw_clips: list[dict], all_lines: list[dict], limit: int = CANDIDATE_LIMIT
+) -> list[dict]:
     """Validate, de-overlap, duration-fit, and rank model-selected clips."""
     by_index = {line["global_index"]: line for line in all_lines}
     normalized: list[dict] = []
@@ -132,16 +151,92 @@ def _normalize_clip_segments(raw_clips: list[dict], all_lines: list[dict]) -> li
                 "estimated_duration_seconds": round(duration, 1),
             }
         )
-        if len(normalized) >= MAX_CLIPS:
+        if len(normalized) >= limit:
             break
 
     return normalized
 
 
+def _fallback_finalists(candidates: list[dict]) -> list[dict]:
+    """Keep only candidates whose first-pass score clears the quality floor."""
+    return [c for c in candidates if _score_value(c) >= MIN_FALLBACK_SCORE][:MAX_CLIPS]
+
+
+def _resolve_finalist_numbers(raw: object, candidates: list[dict]) -> list[dict]:
+    """Resolve a model's 1-based candidate numbers, de-duplicated and bounded."""
+    if not isinstance(raw, list):
+        return []
+    chosen: list[dict] = []
+    seen: set[int] = set()
+    for item in raw:
+        value = item.get("candidate_number") if isinstance(item, dict) else item
+        try:
+            number = int(value)
+        except (TypeError, ValueError):
+            continue
+        if number in seen or not 1 <= number <= len(candidates):
+            continue
+        seen.add(number)
+        chosen.append(candidates[number - 1])
+        if len(chosen) >= MAX_CLIPS:
+            break
+    return chosen
+
+
+def _select_finalists(client: OpenAI, candidates: list[dict]) -> list[dict]:
+    """Run a second, stricter editorial pass; zero finalists is a valid answer."""
+    if not candidates:
+        return []
+    slate = [
+        {
+            "candidate_number": i,
+            "title": c["title"],
+            "first_spoken_line": c["hook"],
+            "selection_reason": c["selection_reason"],
+            "estimated_seconds": c["estimated_duration_seconds"],
+            "first_pass_score": c["score"],
+        }
+        for i, c in enumerate(candidates, 1)
+    ]
+    try:
+        response = client.chat.completions.create(
+            model=config.CHATGPT_MODEL,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are the final short-form programming editor. Select zero to three "
+                        "clips that are genuinely strong enough to publish. Do not fill a quota. "
+                        "Reject openings that need prior context, sound like setup, or merely agree. "
+                        "Favor an instantly legible claim, surprise, tension, useful specificity, "
+                        "and a satisfying payoff. Return JSON only: {\"finalists\": "
+                        "[{\"candidate_number\": 1}]}. An empty list is encouraged when nothing "
+                        "would stop a smart AI-news viewer from scrolling."
+                    ),
+                },
+                {"role": "user", "content": json.dumps(slate, ensure_ascii=False)},
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.2,
+        )
+        usage = response.usage
+        if usage:
+            tracker.record(
+                step="clip_final_selection", model=config.CHATGPT_MODEL,
+                input_tokens=usage.prompt_tokens,
+                output_tokens=usage.completion_tokens,
+            )
+        result = json.loads(response.choices[0].message.content)
+        return _resolve_finalist_numbers(result.get("finalists"), candidates)
+    except Exception as exc:
+        logger.warning("Final clip selection failed; using quality-floor fallback: %s", exc)
+        return _fallback_finalists(candidates)
+
+
 def identify_clip_segments(script: dict) -> list[dict]:
     """
     Use AI to identify the most clip-worthy moments in the script.
-    Returns validated indices and metadata for the best 3-4 clips.
+    Returns validated indices and metadata for up to three publishable clips.
     """
     client = OpenAI(api_key=config.OPENAI_API_KEY)
 
@@ -163,7 +258,7 @@ def identify_clip_segments(script: dict) -> list[dict]:
                     "role": "system",
                     "content": (
                     "You are the ruthless short-form editor for a smart AI-news show. "
-                    "Choose the 3-4 moments most likely to stop a scroll and earn a "
+                    "Find up to eight candidate moments most likely to stop a scroll and earn a "
                     "share. The first selected spoken line must itself be the hook; "
                     "the editor cannot reorder or rewrite the audio.\n\n"
                     "Rank candidates on:\n"
@@ -208,7 +303,8 @@ def identify_clip_segments(script: dict) -> list[dict]:
 
     try:
         result = json.loads(response.choices[0].message.content)
-        clips = _normalize_clip_segments(result.get("clips", []), all_lines)
+        candidates = _normalize_clip_segments(result.get("clips", []), all_lines)
+        clips = _select_finalists(client, candidates)
         logger.info(
             "Selected %d high-hook clips: %s",
             len(clips),
@@ -225,15 +321,15 @@ def extract_clips(
     audio_manifest: list[dict],
     script: dict,
     output_dir: Path,
-) -> list[Path]:
+) -> dict[str, list[Path]]:
     """
     Extract short-form video clips in portrait mode.
 
-    Returns list of paths to generated clip MP4s.
+    Returns YouTube and social variants with platform-specific CTA cards.
     """
     clips_dir = output_dir / "clips"
     clips_dir.mkdir(parents=True, exist_ok=True)
-    clip_paths = []
+    clip_paths: dict[str, list[Path]] = {"youtube": [], "social": []}
 
     for clip_idx, clip_info in enumerate(clip_segments):
         start = clip_info.get("start_index", 0)
@@ -251,16 +347,17 @@ def extract_clips(
             continue
 
         try:
-            clip_path = _render_clip(
+            variants = _render_clip(
                 relevant_entries, title, on_screen_hook, clip_idx, clips_dir
             )
-            clip_paths.append(clip_path)
-            logger.info(f"Clip {clip_idx}: {title} -> {clip_path.name}")
+            for platform, path in variants.items():
+                clip_paths[platform].append(path)
+            logger.info("Clip %d: %s -> %s", clip_idx, title, variants)
         except Exception as e:
             logger.error(f"Failed to render clip {clip_idx}: {e}")
             continue
 
-    logger.info(f"Generated {len(clip_paths)} clips")
+    logger.info("Generated %d clip pairs", len(clip_paths["youtube"]))
     return clip_paths
 
 
@@ -270,13 +367,19 @@ def _render_clip(
     on_screen_hook: str,
     clip_idx: int,
     output_dir: Path,
-) -> Path:
-    """Render a single short-form clip as portrait video."""
+) -> dict[str, Path]:
+    """Render one portrait clip with waveform, then add two CTA variants."""
     video_clips = []
     audio_clips = []
 
+    speaker_windows: dict[str, list[list[float]]] = {}
+    elapsed = 0.0
     for entry in entries:
         duration = _estimate_duration(entry["audio_path"])
+        speaker_windows.setdefault(entry["speaker"], []).append(
+            [elapsed, elapsed + duration]
+        )
+        elapsed += duration
 
         # The short hook is optimized for a phone screen; the longer title is
         # retained for filenames and distribution metadata.
@@ -294,7 +397,6 @@ def _render_clip(
     video = concatenate_videoclips(video_clips, method="compose")
 
     # Concatenate audio using CompositeAudioClip with sequential offsets
-    from moviepy import CompositeAudioClip
     offset = 0
     positioned_audio = []
     for ac in audio_clips:
@@ -310,12 +412,13 @@ def _render_clip(
             clip_idx, video.duration,
         )
 
-    # Export
+    # Export the spoken content once, then add the animated waveform before
+    # creating platform-specific copies.
     safe_title = "".join(c for c in title if c.isalnum() or c in " -_")[:40]
-    output_path = output_dir / f"clip_{clip_idx}_{safe_title}.mp4"
+    content_path = output_dir / f".clip_{clip_idx}_{safe_title}_content.mp4"
 
     video.write_videofile(
-        str(output_path),
+        str(content_path),
         fps=1,
         codec="libx264",
         audio_codec="aac",
@@ -328,4 +431,35 @@ def _render_clip(
     for ac in audio_clips:
         ac.close()
 
-    return output_path
+    _overlay_waveform(content_path, speaker_windows, size=PORTRAIT)
+
+    variants: dict[str, Path] = {}
+    for platform in ("youtube", "social"):
+        platform_dir = output_dir / platform
+        platform_dir.mkdir(parents=True, exist_ok=True)
+        output_path = platform_dir / f"clip_{clip_idx}_{safe_title}.mp4"
+        content = VideoFileClip(str(content_path))
+        card = ImageClip(np.asarray(_render_clip_cta_card(platform))).with_duration(CTA_SECONDS)
+        sting_path = config.BASE_DIR / "assets" / "stinger.wav"
+        sting = None
+        if sting_path.exists():
+            sting_source = AudioFileClip(str(sting_path))
+            sting = sting_source.subclipped(
+                0, min(CTA_SECONDS, sting_source.duration)
+            ).with_effects([afx.AudioFadeIn(0.12), afx.AudioFadeOut(0.3)])
+            card = card.with_audio(sting)
+        final = concatenate_videoclips([content, card], method="compose")
+        final.write_videofile(
+            str(output_path), fps=24, codec="libx264", audio_codec="aac",
+            preset="veryfast", threads=4, logger="bar",
+        )
+        final.close()
+        content.close()
+        card.close()
+        if sting:
+            sting.close()
+            sting_source.close()
+        variants[platform] = output_path
+
+    content_path.unlink(missing_ok=True)
+    return variants

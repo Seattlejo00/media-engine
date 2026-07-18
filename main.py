@@ -329,16 +329,25 @@ def run_pipeline(
         clip_segments_path.write_text(json.dumps(clip_segments, indent=2), encoding="utf-8")
 
     clips_dir = episode_dir / "clips"
-    existing_clips = sorted(
-        clips_dir.glob("clip_*.mp4"),
-        key=lambda p: int(p.name.split("_")[1]),
-    ) if clips_dir.exists() else []
-    if clip_segments and len(existing_clips) >= len(clip_segments):
-        clip_paths = existing_clips
-        logger.info(f"Reusing {len(clip_paths)} rendered clips")
+    clip_paths = {
+        platform: sorted(
+            (clips_dir / platform).glob("clip_*.mp4"),
+            key=lambda p: int(p.name.split("_")[1]),
+        )
+        for platform in ("youtube", "social")
+    }
+    if clip_segments and all(
+        len(paths) >= len(clip_segments) for paths in clip_paths.values()
+    ):
+        logger.info("Reusing %d rendered clip pairs", len(clip_paths["youtube"]))
     else:
         clip_paths = extract_clips(clip_segments, audio_manifest, script, episode_dir)
-    summary["clips"] = [str(p) for p in clip_paths]
+    youtube_clip_paths = clip_paths["youtube"]
+    social_clip_paths = clip_paths["social"]
+    summary["clips"] = {
+        platform: [str(p) for p in paths]
+        for platform, paths in clip_paths.items()
+    }
 
     # === STEP 7: Distribute ===
     logger.info("=" * 60)
@@ -382,7 +391,7 @@ def run_pipeline(
     # YouTube - clips (capped to avoid daily upload limit)
     max_yt_clips = config.MAX_CLIPS_UPLOAD
     yt_clip_ids = ledger.setdefault("youtube_clip_ids", {})
-    for i, clip_path in enumerate(clip_paths[:max_yt_clips]):
+    for i, clip_path in enumerate(youtube_clip_paths[:max_yt_clips]):
         if str(i) in yt_clip_ids:
             continue
         clip_title = (
@@ -392,9 +401,9 @@ def run_pipeline(
         if clip_id:
             yt_clip_ids[str(i)] = clip_id
             _save_ledger()
-    if len(clip_paths) > max_yt_clips:
+    if len(youtube_clip_paths) > max_yt_clips:
         logger.info(
-            f"Uploaded {max_yt_clips}/{len(clip_paths)} clips to YouTube "
+            f"Uploaded {max_yt_clips}/{len(youtube_clip_paths)} clips to YouTube "
             f"(MAX_CLIPS_UPLOAD={max_yt_clips})"
         )
     summary["youtube_clip_ids"] = list(yt_clip_ids.values())
@@ -411,7 +420,7 @@ def run_pipeline(
 
     # Twitter/X - clips
     if not ledger.get("twitter_clips_posted"):
-        for i, clip_path in enumerate(clip_paths):
+        for i, clip_path in enumerate(social_clip_paths):
             clip_title = (
                 clip_segments[i]["title"] if i < len(clip_segments) else f"Clip {i+1}"
             )
@@ -421,7 +430,7 @@ def run_pipeline(
 
     # TikTok - clips
     tiktok_ids = ledger.setdefault("tiktok_ids", {})
-    for i, clip_path in enumerate(clip_paths):
+    for i, clip_path in enumerate(social_clip_paths):
         if str(i) in tiktok_ids:
             continue
         clip_title = (
@@ -444,7 +453,7 @@ def run_pipeline(
     ig_ids = ledger.setdefault("instagram_ids", {})
     if instagram_configured():
         refresh_access_token()
-        for i, clip_path in enumerate(clip_paths[:config.INSTAGRAM_MAX_CLIPS]):
+        for i, clip_path in enumerate(social_clip_paths[:config.INSTAGRAM_MAX_CLIPS]):
             if str(i) in ig_ids:
                 continue
             clip_title = (

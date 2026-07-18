@@ -5,7 +5,12 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-from pipeline.clips import _flatten_dialogue, _normalize_clip_segments
+from pipeline.clips import (
+    _fallback_finalists,
+    _flatten_dialogue,
+    _normalize_clip_segments,
+    _resolve_finalist_numbers,
+)
 from pipeline.episode_notes import resolve_episode_note
 from pipeline.script import (
     SIGNOFF_CTA,
@@ -19,6 +24,7 @@ from pipeline.video import (
     SPOTIFY_OUTRO_URL,
     YOUTUBE_OUTRO_URL,
     _fit_wrapped_text,
+    _render_clip_cta_card,
     _render_transition_card,
 )
 
@@ -104,6 +110,19 @@ class SpokenEditorialTests(unittest.TestCase):
         self.assertIn("My prediction mentions YouTube.", script["segments"][0]["dialogue"][0]["text"])
         self.assertEqual(script["segments"][0]["dialogue"][1]["text"], "My prediction.")
 
+    def test_planned_clip_moment_is_forced_into_designated_turn(self):
+        segment = {
+            "type": "main_story",
+            "beats": [],
+            "clip_moment": "Use the seventy-percent figure to expose the stakes.",
+        }
+        prompt = _turn_prompt(
+            segment, None, [], [], "Claude", 2, 4, "July 18, 2026",
+            ["Claude", "ChatGPT"], "",
+        )
+        self.assertIn("PLANNED CLIP MOMENT", prompt)
+        self.assertIn("Open with a decisive, standalone sentence", prompt)
+
 
 class TransitionCardTests(unittest.TestCase):
     def test_long_up_next_headline_wraps_without_truncation(self):
@@ -126,6 +145,15 @@ class TransitionCardTests(unittest.TestCase):
         self.assertIn("youtube.com/", YOUTUBE_OUTRO_URL)
         self.assertIn("open.spotify.com/", SPOTIFY_OUTRO_URL)
         self.assertEqual(_render_transition_card("outro", LANDSCAPE).size, LANDSCAPE)
+
+    def test_clip_cta_cards_are_portrait_and_platform_specific(self):
+        from pipeline.video import PORTRAIT
+
+        youtube = _render_clip_cta_card("youtube")
+        social = _render_clip_cta_card("social")
+        self.assertEqual(youtube.size, PORTRAIT)
+        self.assertEqual(social.size, PORTRAIT)
+        self.assertNotEqual(youtube.tobytes(), social.tobytes())
 
 
 class ClipSelectionTests(unittest.TestCase):
@@ -164,6 +192,27 @@ class ClipSelectionTests(unittest.TestCase):
         self.assertEqual(clips[0]["title"], "High Stakes")
         self.assertEqual(clips[0]["on_screen_hook"], "THIS CHANGES EVERYTHING")
         self.assertGreater(clips[0]["estimated_duration_seconds"], 0)
+
+    def test_final_editor_can_choose_fewer_without_filling_a_quota(self):
+        candidates = [
+            {"title": "A", "score": 96},
+            {"title": "B", "score": 91},
+            {"title": "C", "score": 79},
+        ]
+        finalists = _resolve_finalist_numbers(
+            [{"candidate_number": 2}, {"candidate_number": 2}, {"candidate_number": 99}],
+            candidates,
+        )
+        self.assertEqual([c["title"] for c in finalists], ["B"])
+
+    def test_fallback_drops_weak_candidates(self):
+        candidates = [
+            {"title": "Strong", "score": 94},
+            {"title": "Weak", "score": 70},
+        ]
+        self.assertEqual(
+            [c["title"] for c in _fallback_finalists(candidates)], ["Strong"]
+        )
 
 
 if __name__ == "__main__":

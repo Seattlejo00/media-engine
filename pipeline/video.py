@@ -445,6 +445,42 @@ def _render_transition_card(
     return Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
 
 
+def _render_clip_cta_card(platform: str, size: tuple[int, int] = PORTRAIT) -> Image.Image:
+    """Render the brief, platform-aware end card used on short-form clips."""
+    width, height = size
+    img = _card_background(size).copy()
+    overlay = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    cx, cy = width // 2, height // 2
+
+    eyebrow = _font(FONT_BOLD, 38 if width < height else 32)
+    headline = _font(FONT_BOLD, 88 if width < height else 72)
+    detail = _font(FONT_BOLD, 38 if width < height else 30)
+    small = _font(FONT_REGULAR, 27 if width < height else 23)
+
+    draw.text((cx, cy - 230), "THE CONTEXT WINDOW", font=eyebrow,
+              fill=(*MUTED_TEXT, 255), anchor="ma")
+    if platform == "youtube":
+        draw.text((cx, cy - 86), "SUBSCRIBE", font=headline,
+                  fill=(255, 255, 255, 255), anchor="ma")
+        draw.text((cx, cy + 38), "ON YOUTUBE", font=detail,
+                  fill=(*_CARD_ACCENT, 255), anchor="ma")
+        destination = "@TheContextWindow-q1z"
+    else:
+        draw.text((cx, cy - 86), "FOLLOW FOR MORE", font=_fit_text(
+            draw, "FOLLOW FOR MORE", FONT_BOLD, headline.size, int(width * 0.88), 52
+        ), fill=(255, 255, 255, 255), anchor="ma")
+        draw.text((cx, cy + 38), "DAILY AI NEWS", font=detail,
+                  fill=(*_CARD_ACCENT2, 255), anchor="ma")
+        destination = "Full episodes on YouTube + Spotify"
+
+    draw.text((cx, cy + 135), destination, font=small,
+              fill=(*MUTED_TEXT, 255), anchor="ma")
+    draw.text((cx, cy + 205), "contextwindow.distomostech.com", font=small,
+              fill=(*MUTED_TEXT, 220), anchor="ma")
+    return Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+
+
 def _transition_clip(kind: str, size: tuple[int, int], duration: float,
                      label: str | None = None):
     key = (kind, size, label)
@@ -609,6 +645,7 @@ def _ffmpeg_bin() -> str | None:
 def _overlay_waveform(
     video_path: Path,
     speaker_windows: dict[str, list[list[float]]] | None = None,
+    size: tuple[int, int] = LANDSCAPE,
 ) -> None:
     """
     Composite an audio-reactive waveform along the bottom of the frame:
@@ -624,8 +661,12 @@ def _overlay_waveform(
         return
 
     tmp_path = video_path.with_name(video_path.stem + "_wave.mp4")
-    wave_h = 150
-    y = f"main_h-{wave_h}-100"
+    width, height = size
+    is_portrait = height > width
+    wave_h = 190 if is_portrait else 150
+    bottom_margin = 150 if is_portrait else 100
+    wave_gain = 6 if is_portrait else 1
+    y = f"main_h-{wave_h}-{bottom_margin}"
 
     def _hex(speaker: str) -> str:
         r, g, b = config.SPEAKERS.get(speaker, config.SPEAKERS["ChatGPT"])["color"]
@@ -642,14 +683,15 @@ def _overlay_waveform(
     if not layers:
         layers = [("0x9EA0B8", None)]
 
-    # Base video renders at 1fps (static frames) — lift to 24fps or the
-    # wave only updates once a second.
-    parts = ["[0:v]fps=24[vb]"]
+    # Base video renders at 1fps (static frames) — pad its fractional final
+    # second, then lift to 24fps so the waveform remains smooth through the
+    # last spoken word.
+    parts = ["[0:v]tpad=stop_mode=clone:stop_duration=1,fps=24[vb]"]
     last = "[vb]"
     for i, (color, enable) in enumerate(layers):
         en = f":enable='{enable}'" if enable else ""
         parts.append(
-            f"[0:a]showwaves=s=1920x{wave_h}:mode=cline:rate=24:colors={color}[sw{i}];"
+            f"[0:a]volume={wave_gain},showwaves=s={width}x{wave_h}:mode=cline:rate=24:scale=sqrt:colors={color}[sw{i}];"
             f"[sw{i}]colorkey=0x000000:0.12:0.2,format=rgba[k{i}];"
             f"[k{i}]split[k{i}a][k{i}b];"
             f"[k{i}a]gblur=sigma=18,colorchannelmixer=aa=0.55[glow{i}];"

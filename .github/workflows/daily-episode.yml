@@ -164,7 +164,7 @@ jobs:
           if-no-files-found: ignore
           path: |
             output/${{ steps.guard.outputs.today }}/episode_landscape.mp4
-            output/${{ steps.guard.outputs.today }}/clips/*.mp4
+            output/${{ steps.guard.outputs.today }}/clips/**/*.mp4
 
       - name: Upload logs and episode summary
         if: always()
