@@ -523,12 +523,16 @@ def _overlay_waveform(video_path: Path) -> None:
     wave_h = 110
     # Waveform sits above the watermark zone (which starts at 94% height)
     y = f"main_h-{wave_h}-120"
+    # The base video is rendered at 1fps (static frames); without fps
+    # normalization the overlay only updates once a second and the wave
+    # looks laggy. Lift the base to 24fps so the wave animates smoothly.
     filter_complex = (
+        f"[0:v]fps=24[vb];"
         f"[0:a]showwaves=s=1920x{wave_h}:mode=cline:rate=24:"
         f"colors=0x9EA0B8@0.9[w];"
         f"[w]colorkey=0x000000:0.12:0.2,format=yuva420p,"
-        f"colorchannelmixer=aa=0.45[wk];"
-        f"[0:v][wk]overlay=0:{y}:shortest=1[v]"
+        f"colorchannelmixer=aa=0.5[wk];"
+        f"[vb][wk]overlay=0:{y}:shortest=1[v]"
     )
     try:
         subprocess.run(
