@@ -1,0 +1,11 @@
+{
+  "model": "gpt-4o-mini-tts",
+  "mapping": {
+    "A": "marin",
+    "B": "coral",
+    "C": "nova"
+  },
+  "selected_candidate": "A",
+  "selected_voice": "marin",
+  "customer_pack_is_blinded": true
+}
