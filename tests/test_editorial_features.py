@@ -6,6 +6,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from pipeline.clips import (
+    CTA_SECONDS,
     _fallback_finalists,
     _flatten_dialogue,
     _normalize_clip_segments,
@@ -125,6 +126,9 @@ class SpokenEditorialTests(unittest.TestCase):
 
 
 class TransitionCardTests(unittest.TestCase):
+    def test_clip_cta_has_time_to_be_read(self):
+        self.assertGreaterEqual(CTA_SECONDS, 3.0)
+
     def test_long_up_next_headline_wraps_without_truncation(self):
         headline = (
             "DeepMind CEO lobbies Washington on AI model vetting plan "

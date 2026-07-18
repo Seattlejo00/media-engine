@@ -36,7 +36,7 @@ MAX_CLIP_SECONDS = 58
 CANDIDATE_LIMIT = 8
 MAX_CLIPS = 3
 MIN_FALLBACK_SCORE = 82
-CTA_SECONDS = 1.8
+CTA_SECONDS = 3.0
 
 
 def _estimated_seconds(text: str) -> float:
@@ -446,7 +446,7 @@ def _render_clip(
             sting_source = AudioFileClip(str(sting_path))
             sting = sting_source.subclipped(
                 0, min(CTA_SECONDS, sting_source.duration)
-            ).with_effects([afx.AudioFadeIn(0.12), afx.AudioFadeOut(0.3)])
+            ).with_effects([afx.AudioFadeIn(0.15), afx.AudioFadeOut(0.45)])
             card = card.with_audio(sting)
         final = concatenate_videoclips([content, card], method="compose")
         final.write_videofile(
