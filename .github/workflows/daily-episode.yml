@@ -17,6 +17,10 @@ on:
         description: "Regenerate all of today's artifacts instead of reusing cached checkpoints (upload ledger is preserved)"
         type: boolean
         default: false
+      special_note:
+        description: "Optional one-off announcement or editorial note for the hosts to mention naturally in this episode"
+        type: string
+        default: ""
 
 permissions:
   contents: write
@@ -54,7 +58,7 @@ jobs:
         if: steps.guard.outputs.exists == 'false'
         uses: actions/cache/restore@v4
         with:
-          path: output
+          path: output/${{ steps.guard.outputs.today }}
           key: episode-output-v2-${{ steps.guard.outputs.today }}-${{ github.run_id }}
           restore-keys: |
             episode-output-v2-${{ steps.guard.outputs.today }}-
@@ -109,6 +113,7 @@ jobs:
           # Episode settings
           EPISODE_DURATION_MINUTES: "12"
           TIMEZONE: America/Los_Angeles
+          EPISODE_SPECIAL_NOTE: ${{ inputs.special_note }}
         run: python main.py ${{ inputs.test_mode == true && '--no-upload' || '' }} ${{ inputs.fresh == true && '--fresh' || '' }}
 
       - name: Publish article to website
@@ -145,7 +150,7 @@ jobs:
         if: always() && steps.guard.outputs.exists == 'false'
         uses: actions/cache/save@v4
         with:
-          path: output
+          path: output/${{ steps.guard.outputs.today }}
           key: episode-output-v2-${{ steps.guard.outputs.today }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       # In test mode nothing is posted anywhere, so attach the rendered
@@ -158,8 +163,8 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
           path: |
-            output/*/episode_landscape.mp4
-            output/*/clips/*.mp4
+            output/${{ steps.guard.outputs.today }}/episode_landscape.mp4
+            output/${{ steps.guard.outputs.today }}/clips/**/*.mp4
 
       - name: Upload logs and episode summary
         if: always()
@@ -170,8 +175,8 @@ jobs:
           if-no-files-found: ignore
           path: |
             media_engine.log
-            output/*/*.json
-            output/*/transcript.txt
-            output/*/*.png
-            !output/*/*.mp4
-            !output/*/*.mp3
+            output/${{ steps.guard.outputs.today }}/*.json
+            output/${{ steps.guard.outputs.today }}/transcript.txt
+            output/${{ steps.guard.outputs.today }}/*.png
+            !output/${{ steps.guard.outputs.today }}/*.mp4
+            !output/${{ steps.guard.outputs.today }}/*.mp3

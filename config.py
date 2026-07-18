@@ -111,7 +111,7 @@ SPEAKERS = {
             "Warm, thoughtful podcast host. Calm confidence, articulate, "
             "with occasional dry wit. Brisk conversational pace."
         ),
-        "tts_speed": 1.1,
+        "tts_speed": 1.15,
         "color": (204, 120, 50),
         "model": CLAUDE_MODEL,
         "api_type": "anthropic",
