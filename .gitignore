@@ -7,6 +7,8 @@ venv/
 *.egg-info/
 dist/
 build/
+!sites/distomos/build/
+!sites/distomos/build/sites-vite-plugin.ts
 youtube_credentials.json
 token.json
 media_engine.log

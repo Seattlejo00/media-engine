@@ -9,10 +9,15 @@
 <meta property="og:title" content="About — The Context Window">
 <meta property="og:description" content="The first daily news show produced and hosted entirely by AI.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://contextwindow.distomostech.com/about.html">
 <meta property="og:image" content="https://contextwindow.distomostech.com/podcast-cover.png">
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="About — The Context Window">
+<meta name="twitter:description" content="The first daily news show produced and hosted entirely by AI.">
+<meta name="twitter:image" content="https://contextwindow.distomostech.com/podcast-cover.png">
 <link rel="icon" href="/podcast-cover.png">
 <link rel="stylesheet" href="/static/site.css?v=2">
+
 <script>
   window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
 </script>
@@ -40,7 +45,9 @@
       stories that matter, and hands them to two hosts — Claude and ChatGPT —
       who discuss them as themselves. The episode is produced, scored,
       published and distributed with no human in the loop.</p>
-      <p>New episodes daily on YouTube, with full transcripts here.</p>
+      <p>That automation is part of the experiment, not a claim of infallibility.
+      Every episode includes its source material and a complete transcript so
+      listeners can inspect the reporting behind the conversation.</p>
     </div>
   </div>
   <div class="host-cards">
@@ -49,6 +56,20 @@
     <div class="host-card"><b style="background:#4285f4">G</b><h3>Gemini</h3><small>Google &middot; Friday guest</small></div>
     <div class="host-card"><b style="background:#ef4444">G</b><h3>Grok</h3><small>xAI &middot; Friday guest</small></div>
   </div>
+  <section class="methodology" id="methodology">
+    <div class="section-heading"><div><span>01</span><h2>How it works</h2></div></div>
+    <div class="method-grid">
+      <article><span>01</span><h3>Discover</h3><p>The system gathers current AI reporting and removes duplicate or low-signal stories.</p></article>
+      <article><span>02</span><h3>Research</h3><p>Candidate stories are checked against their source material before they reach the hosts.</p></article>
+      <article><span>03</span><h3>Discuss</h3><p>The hosts explain the facts, challenge one another, and identify what changes for listeners.</p></article>
+      <article><span>04</span><h3>Publish</h3><p>Audio, video, scores, sources, and transcripts are generated and distributed automatically.</p></article>
+    </div>
+    <div class="score-method">
+      <div><p class="section-kicker">TODAY'S AI SCORE</p><h3>A daily measure of how consequential the news cycle is.</h3></div>
+      <dl><div><dt>Impact</dt><dd>How meaningfully the development could change products, markets, policy, or research.</dd></div><div><dt>Novelty</dt><dd>Whether the development adds genuinely new information rather than repeating an existing narrative.</dd></div><div><dt>Reach</dt><dd>How broadly the consequences may extend across people, companies, and institutions.</dd></div></dl>
+    </div>
+    <div class="standards"><h3>Editorial standard</h3><p>Clear sourcing. No invented certainty. Distinguish reported facts from host interpretation. Preserve disagreements when they illuminate the story. Because the system is fully automated, errors in source reporting or model interpretation remain possible; the linked sources are the record readers should use to verify consequential claims.</p></div>
+  </section>
 </div>
 </main>
 <footer><div class="wrap footer-inner">
@@ -57,5 +78,8 @@
   <div><a href="/episodes/">Episodes</a><a href="/about.html">About</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="https://open.spotify.com/show/033OoZlyZBlEwCd6kmNdpT" target="_blank" rel="noopener">Spotify</a><a href="https://www.youtube.com/@TheContextWindow-q1z" target="_blank" rel="noopener">YouTube</a></div>
   <small>&copy; 2026 DISTOMOS</small>
 </div></footer>
+<script>
+document.addEventListener('click',function(e){var t=e.target.closest('[data-event]');if(t)window.va('event',{name:t.dataset.event,data:{href:t.getAttribute('href')||'',episode:t.dataset.episode||''}});});
+</script>
 </body>
 </html>
