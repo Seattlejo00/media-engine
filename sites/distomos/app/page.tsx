@@ -1,20 +1,15 @@
-import { BriefingPlayer } from "./signal";
+import { DailyArtwork } from "./art";
+import { LatestBriefing } from "./signal";
 import latest from "./latest-episode.json";
 
-const latestDate = new Date(`${latest.date}T12:00:00Z`).toLocaleDateString("en-US", {
-  month: "short",
-  day: "2-digit",
-  timeZone: "UTC",
-}).toUpperCase();
 const contextWindowUrl = process.env.NEXT_PUBLIC_CONTEXT_WINDOW_URL || "https://contextwindow.distomostech.com";
 const spotifyUrl = "https://open.spotify.com/show/033OoZlyZBlEwCd6kmNdpT";
 const youtubeUrl = "https://www.youtube.com/@TheContextWindow-q1z";
-const latestHref = latest.podcast_url || latest.youtube_url || contextWindowUrl;
 
 export default function Home() {
   return <main>
     <section className="hero" id="top">
-      <div className="hero-image" />
+      <DailyArtwork />
       <div className="hero-shade" />
       <header>
         <a className="wordmark" href="#top" aria-label="Distomos home"><i>D</i><span>DISTOMOS</span></a>
@@ -26,8 +21,6 @@ export default function Home() {
         <h1>See the shape<br />of what’s <em>next.</em></h1>
         <div className="hero-foot"><p>Distomos publishes The Context Window—the essential briefing on what changed and why it matters.</p><a href="#context-window">Start with The Context Window <b>↘</b></a></div>
       </div>
-      <div className="image-credit">LANDSAT 8 · KEVIR DESERT, IRAN <span>USGS / NASA</span></div>
-      <div className="coordinate">30.95° N<br />54.48° E</div>
     </section>
 
     <section className="manifesto shell" id="about">
@@ -47,14 +40,23 @@ export default function Home() {
           <a className="text-link" href={youtubeUrl} target="_blank" rel="noopener noreferrer">Watch on YouTube <b>↗</b></a>
         </div>
       </div>
-      <div className="daily-card">
-        <div className="card-top"><span><i /> LATEST EPISODE</span><time>{latestDate}</time></div>
-        <h3>{latest.title}</h3>
-        <BriefingPlayer href={latestHref} hasAudio={Boolean(latest.podcast_url)} />
-      </div>
+      <LatestBriefing fallback={latest} feedUrl={`${contextWindowUrl}/static/articles.json`} />
     </section>
 
-    <section className="art-break"><div /><p>Patterns appear<br />before predictions.</p><small>KEVIR DESERT · LANDSAT 8</small></section>
+    <section className="methodology shell" id="methodology">
+      <div>
+        <p className="index">02 / HOW IT WORKS</p>
+        <h2>Fully automated.<br /><em>Radically transparent.</em></h2>
+      </div>
+      <ol>
+        <li><span>01</span><div><h3>Discover</h3><p>The system scans current AI reporting and ranks stories by impact, novelty, and reach.</p></div></li>
+        <li><span>02</span><div><h3>Interrogate</h3><p>AI hosts examine the strongest claims, disagree where useful, and connect the day’s events to the larger picture.</p></div></li>
+        <li><span>03</span><div><h3>Publish</h3><p>Audio, video, sources, scores, and transcripts are produced and distributed without a human in the publishing loop.</p></div></li>
+      </ol>
+      <p className="automation-note">Automation is the format, not a claim of infallibility. Every briefing preserves its sources so readers can inspect the reporting behind it.</p>
+    </section>
+
+    <section className="art-break"><div /><p>Patterns appear<br />before predictions.</p><small>EARTH AS ART · USGS / NASA LANDSAT</small></section>
 
     <footer className="shell"><div className="wordmark"><i>D</i><span>DISTOMOS</span></div><p>Publisher of The Context Window.<br />Signal over noise, every morning.</p><nav><a href={contextWindowUrl} target="_blank">The Context Window</a><a href={spotifyUrl} target="_blank" rel="noopener noreferrer">Spotify</a><a href={youtubeUrl} target="_blank" rel="noopener noreferrer">YouTube</a><a href="#about">About</a></nav><div className="footer-bottom"><span>© 2026 DISTOMOS</span><span>EARTH IMAGERY: USGS / NASA LANDSAT</span><span>DENVER, COLORADO</span></div></footer>
   </main>;
