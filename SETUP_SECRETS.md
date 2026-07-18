@@ -80,6 +80,34 @@ A browser opens — **sign in with the Google account that owns the
 | `TIKTOK_CLIENT_KEY` / `TIKTOK_CLIENT_SECRET` / `TIKTOK_REFRESH_TOKEN` | Auto-post clips to TikTok | https://developers.tiktok.com — app with Login Kit + Content Posting API; mint the refresh token once with `get_tiktok_token.py` (see SETUP_TODO.txt). Posts stay private (SELF_ONLY) until TikTok's app audit passes — then set repo **variable** `TIKTOK_PRIVACY_LEVEL=PUBLIC_TO_EVERYONE`. |
 | `R2_ENDPOINT_URL` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET_NAME` / `R2_PUBLIC_URL` | Podcast audio hosting (Spotify/Apple) | https://cloudflare.com (see SETUP_TODO.txt) |
 
+## Engineering build-note email
+
+A read-only Codex scheduled task analyzes the previous day's meaningful human
+commits from an engineer's perspective. It emails a technical summary, the key
+engineering insight, one standalone X draft, an optional 2–3 post thread, and
+the source commits. Codex does the editorial reasoning; repository code only
+validates and sends the email. Nothing posts to X automatically.
+
+Store the email configuration outside the repository at
+`~/.config/context-window/build-in-public.env`:
+
+```dotenv
+RESEND_API_KEY=re_...
+BUILD_IN_PUBLIC_TO_EMAIL=you@example.com
+BUILD_IN_PUBLIC_FROM_EMAIL=Context Window <updates@your-verified-domain.com>
+```
+
+The sender never overwrites environment variables, so a custom environment can
+set `BUILD_IN_PUBLIC_ENV_FILE` to use a different configuration path. The
+sender domain must be verified in Resend.
+
+To tune the analysis and voice, edit `prompts/build_in_public.txt`. To preview
+an already-generated JSON brief without sending, pipe it to:
+
+```bash
+python3 scripts/send_build_in_public.py --dry-run
+```
+
 ---
 
 ## After the secrets are in
