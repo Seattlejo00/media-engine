@@ -405,12 +405,12 @@ def generate_video(
     # EXACTLY: intro sting -> lines with pauses -> stinger at segment
     # boundaries -> outro sting. Transition cards cover the stings.
     from pipeline.audio import (
-        OUTRO_SILENCE,
-        PAUSE_AFTER_INTRO,
-        PAUSE_BEFORE_OUTRO,
+        INTRO_OVERLAP,
+        OUTRO_OVERLAP,
         PAUSE_BETWEEN_LINES,
         PAUSE_WITHIN_SPEAKER,
-        STINGER_PAD,
+        SEG_OVERLAP,
+        TAIL_SILENCE,
         _chapter_title,
         sting_durations_ms,
     )
@@ -425,8 +425,9 @@ def generate_video(
     speaker_windows: dict[str, list[list[float]]] = {}
     cursor = 0.0
 
-    # Intro title card over the intro sting
-    intro_s = (max(stings["intro"], 500) + PAUSE_AFTER_INTRO) / 1000.0
+    # Intro title card — holds until the first words start (the music's
+    # crossfade tail plays under the first speaker's frame)
+    intro_s = max(stings["intro"] - INTRO_OVERLAP, 500) / 1000.0
     clips.append(_transition_clip("intro", size, intro_s))
     cursor += intro_s
 
@@ -439,9 +440,11 @@ def generate_video(
 
         # Same pause rules as pipeline.audio.assemble_episode
         if prev_key is not None and seg_key != prev_key:
-            # Segment boundary: UP NEXT card covers pad + stinger + pad
+            # Segment boundary: the UP NEXT card holds for the segue's
+            # un-overlapped middle (its crossfaded ends play under the
+            # outgoing and incoming speaker frames)
             label = _chapter_title(segment_type, entry.get("topic"))
-            card_s = (2 * STINGER_PAD + stings["stinger"]) / 1000.0
+            card_s = max(stings["stinger"] - 2 * SEG_OVERLAP, 500) / 1000.0
             clips.append(_transition_clip("upnext", size, card_s, label=label))
             cursor += card_s
             pause_ms = 0
@@ -473,7 +476,9 @@ def generate_video(
         prev_key = seg_key
 
     # Outro card over the outro sting + tail silence
-    outro_s = (PAUSE_BEFORE_OUTRO + stings["outro"] + OUTRO_SILENCE) / 1000.0
+    # Outro card appears once the words end; the outro music's fade-in
+    # already played under the final speaker frame
+    outro_s = max(stings["outro"] - OUTRO_OVERLAP + TAIL_SILENCE, 500) / 1000.0
     clips.append(_transition_clip("outro", size, outro_s))
 
     if not clips:
