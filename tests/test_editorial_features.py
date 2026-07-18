@@ -65,7 +65,7 @@ class SpokenEditorialTests(unittest.TestCase):
                 "type": "sign_off",
                 "dialogue": [
                     {"speaker": "Claude", "text": "My prediction mentions YouTube."},
-                    {"speaker": "ChatGPT", "text": "My prediction."},
+                    {"speaker": "ChatGPT", "text": "My prediction. Subscribe on YouTube and follow on Spotify."},
                     {"speaker": "Claude", "text": "Subscribe on YouTube and follow on Spotify. Thanks for listening."},
                     {"speaker": "ChatGPT", "text": "Find us on YouTube and Spotify. See you tomorrow."},
                 ],
@@ -79,6 +79,7 @@ class SpokenEditorialTests(unittest.TestCase):
         self.assertEqual(goodbye_text.lower().count("spotify"), 1)
         self.assertIn(SIGNOFF_CTA, goodbye_text)
         self.assertIn("My prediction mentions YouTube.", script["segments"][0]["dialogue"][0]["text"])
+        self.assertEqual(script["segments"][0]["dialogue"][1]["text"], "My prediction.")
 
 
 class TransitionCardTests(unittest.TestCase):

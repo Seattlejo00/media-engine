@@ -18,7 +18,7 @@ from pipeline.cost_tracker import tracker
 
 logger = logging.getLogger(__name__)
 
-SCRIPT_FORMAT_VERSION = 3
+SCRIPT_FORMAT_VERSION = 4
 SIGNOFF_CTA = (
     "If you enjoyed the show, subscribe to The Context Window on YouTube "
     "and follow us on Spotify."
@@ -494,17 +494,26 @@ def _enforce_signoff_cta(script: dict, roster: list[str]) -> None:
         return
 
     # The first pass through the roster contains predictions; goodbyes begin
-    # on the next turn. Preserve prediction sentences even if today's news
-    # happens to mention one of the platforms.
+    # on the next turn. Models sometimes append an unsolicited CTA to a
+    # prediction, so scan the whole sign-off while distinguishing calls to
+    # action from legitimate news discussion that names a platform.
     target_idx = min(len(roster), len(dialogue) - 1)
     platform_pattern = re.compile(r"\b(?:youtube|spotify)\b", re.IGNORECASE)
+    cta_action_pattern = re.compile(
+        r"\b(?:subscribe|follow\s+(?:us|on)|find\s+us|catch\s+us|listen\s+on)\b",
+        re.IGNORECASE,
+    )
 
-    for idx in range(target_idx, len(dialogue)):
+    def is_platform_cta(sentence: str) -> bool:
+        platforms = set(match.group(0).lower() for match in platform_pattern.finditer(sentence))
+        return len(platforms) == 2 or (bool(platforms) and bool(cta_action_pattern.search(sentence)))
+
+    for idx in range(len(dialogue)):
         text = dialogue[idx].get("text", "")
-        sentences = re.split(r"(?<=[.!?])\s+", text.replace("\n", " ").strip())
+        sentences = re.split(r"(?<=[.!?])\s+|\n+", text.strip())
         dialogue[idx]["text"] = " ".join(
             sentence.strip() for sentence in sentences
-            if sentence.strip() and not platform_pattern.search(sentence)
+            if sentence.strip() and not is_platform_cta(sentence)
         )
 
     goodbye = dialogue[target_idx].get("text", "").strip()
