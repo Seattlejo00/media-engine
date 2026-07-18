@@ -7,7 +7,12 @@ from PIL import Image, ImageDraw
 
 from pipeline.clips import _flatten_dialogue, _normalize_clip_segments
 from pipeline.episode_notes import resolve_episode_note
-from pipeline.script import SIGNOFF_CTA, _enforce_signoff_cta, _turn_prompt
+from pipeline.script import (
+    SIGNOFF_CTA,
+    _enforce_signoff_cta,
+    _parse_plan_json,
+    _turn_prompt,
+)
 from pipeline.video import (
     FONT_BOLD,
     LANDSCAPE,
@@ -37,6 +42,24 @@ class EpisodeNoteTests(unittest.TestCase):
                 resolve_episode_note("2026-07-18", "Manual", path),
                 "Manual",
             )
+
+
+class ShowrunnerPlanParsingTests(unittest.TestCase):
+    def test_fenced_valid_json_parses(self):
+        self.assertEqual(
+            _parse_plan_json('```json\n{"title": "Test", "segments": []}\n```'),
+            {"title": "Test", "segments": []},
+        )
+
+    def test_invalid_backslash_escape_is_repaired(self):
+        plan = _parse_plan_json(
+            '{"title": "AI\\policy update", "segments": []}'
+        )
+        self.assertEqual(plan["title"], "AI\\policy update")
+
+    def test_non_escape_syntax_error_still_raises_for_model_retry(self):
+        with self.assertRaises(json.JSONDecodeError):
+            _parse_plan_json('{"title": "Missing comma" "segments": []}')
 
 
 class SpokenEditorialTests(unittest.TestCase):

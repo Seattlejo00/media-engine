@@ -24,11 +24,35 @@ SIGNOFF_CTA = (
     "and follow us on Spotify."
 )
 
+_INVALID_JSON_ESCAPE = re.compile(r'\\(?!["\\/bfnrtu])')
+
 
 def _load_prompt(name: str) -> str:
     """Load a prompt template from the prompts directory."""
     path = config.PROMPTS_DIR / name
     return path.read_text(encoding="utf-8")
+
+
+def _json_payload(text: str) -> str:
+    """Extract a JSON object from plain text or a fenced model response."""
+    if "```json" in text:
+        return text.split("```json", 1)[1].split("```", 1)[0].strip()
+    if "```" in text:
+        return text.split("```", 1)[1].split("```", 1)[0].strip()
+    return text.strip()
+
+
+def _parse_plan_json(text: str) -> dict:
+    """Parse a plan, repairing only backslashes that are invalid in JSON."""
+    payload = _json_payload(text)
+    try:
+        return json.loads(payload)
+    except json.JSONDecodeError:
+        repaired = _INVALID_JSON_ESCAPE.sub(r"\\\\", payload)
+        if repaired == payload:
+            raise
+        logger.warning("Repaired invalid backslash escape in showrunner JSON")
+        return json.loads(repaired)
 
 
 def _topics_block(topics: list[dict]) -> str:
@@ -252,18 +276,44 @@ def _generate_episode_plan(
 
     text = next(b.text for b in response.content if b.type == "text")
 
-    # Extract JSON from the response (handle markdown code blocks)
-    if "```json" in text:
-        text = text.split("```json")[1].split("```")[0]
-    elif "```" in text:
-        text = text.split("```")[1].split("```")[0]
-
     try:
-        plan = json.loads(text.strip())
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse episode plan: {e}")
-        logger.debug(f"Raw response: {text[:500]}")
-        raise
+        plan = _parse_plan_json(text)
+    except json.JSONDecodeError as first_error:
+        logger.warning(
+            "Showrunner returned malformed JSON (%s); requesting one repair",
+            first_error,
+        )
+        repair = client.messages.create(
+            model=config.CLAUDE_MODEL,
+            max_tokens=6000,
+            thinking={"type": "disabled"},
+            system=(
+                "You repair malformed JSON. Return ONLY the corrected JSON object. "
+                "Preserve every field and value; change only syntax required to parse."
+            ),
+            messages=[{
+                "role": "user",
+                "content": (
+                    f"Parser error: {first_error}\n\n"
+                    "Repair this showrunner plan:\n"
+                    f"{text}"
+                ),
+            }],
+        )
+        tracker.record(
+            step="episode_plan_repair",
+            model=config.CLAUDE_MODEL,
+            input_tokens=repair.usage.input_tokens,
+            output_tokens=repair.usage.output_tokens,
+            speaker="Claude",
+        )
+        repaired_text = next(b.text for b in repair.content if b.type == "text")
+        try:
+            plan = _parse_plan_json(repaired_text)
+        except json.JSONDecodeError as final_error:
+            logger.error("Failed to parse repaired episode plan: %s", final_error)
+            logger.debug("Raw repaired response: %s", repaired_text[:500])
+            raise
 
     n_segs = len(plan.get("segments", []))
     logger.info(f"Episode plan: '{plan.get('title', '?')}' with {n_segs} segments")
