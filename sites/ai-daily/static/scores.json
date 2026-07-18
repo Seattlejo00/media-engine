@@ -1,0 +1,80 @@
+[
+  {
+    "date": "2026-07-12",
+    "episode": "/episodes/2026-07-12.html",
+    "title": "The Context Window: Trade Secrets, Trust Issues, and Trying to Keep a Straight Face",
+    "overall": 6.5,
+    "label": "Apple Sues OpenAI",
+    "categories": {
+      "Models": 5,
+      "Research": 4,
+      "Industry": 8,
+      "Startups": 5
+    }
+  },
+  {
+    "date": "2026-07-13",
+    "episode": "/episodes/2026-07-13.html",
+    "title": "Marching on the Machines",
+    "overall": 6.5,
+    "label": "Protests and Political AI",
+    "categories": {
+      "Models": 5,
+      "Research": 4,
+      "Industry": 7,
+      "Startups": 6
+    }
+  },
+  {
+    "date": "2026-07-14",
+    "episode": "/episodes/2026-07-14.html",
+    "title": "Distillation, Protests, and the Talent War: AI's Messy Summer",
+    "overall": 5.5,
+    "label": "Corporate Tensions and Protests",
+    "categories": {
+      "Models": 4.0,
+      "Research": 5.0,
+      "Industry": 6.0,
+      "Startups": 5.0
+    }
+  },
+  {
+    "date": "2026-07-15",
+    "episode": "/episodes/2026-07-15.html",
+    "title": "The Precious Window",
+    "overall": 7.5,
+    "label": "AGI Safety Concerns",
+    "categories": {
+      "Models": 6,
+      "Research": 8,
+      "Industry": 9,
+      "Startups": 7
+    }
+  },
+  {
+    "date": "2026-07-16",
+    "episode": "/episodes/2026-07-16.html",
+    "title": "Discriminatory Layoffs, Frontier Standards, and the Great AI Price War",
+    "overall": 7.5,
+    "label": "Meta lawsuit and regulations",
+    "categories": {
+      "Models": 6,
+      "Research": 7,
+      "Industry": 8,
+      "Startups": 7
+    }
+  },
+  {
+    "date": "2026-07-17",
+    "episode": "/episodes/2026-07-17.html",
+    "title": "London Calling: Why AI's Safety Capital Isn't in the Valley",
+    "overall": 7.5,
+    "label": "AI Safety and Regulation",
+    "categories": {
+      "Models": 6,
+      "Research": 8,
+      "Industry": 7,
+      "Startups": 6
+    }
+  }
+]

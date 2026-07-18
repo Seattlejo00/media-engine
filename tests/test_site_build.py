@@ -24,7 +24,8 @@ class ContextWindowSiteTests(unittest.TestCase):
         self.assertIn("THE THREE THINGS TO KNOW", homepage)
         self.assertIn("WHY IT MATTERS", homepage)
         self.assertIn("Episode play", homepage)
-        self.assertIn("How the score works", homepage)
+        self.assertIn("View score history", homepage)
+        self.assertIn("Methodology", homepage)
 
     def test_episode_has_schema_and_unique_social_image(self):
         latest = self.episodes[0]
@@ -38,6 +39,19 @@ class ContextWindowSiteTests(unittest.TestCase):
         sitemap = (self.site / "sitemap.xml").read_text()
         self.assertIn("<urlset", sitemap)
         self.assertIn(f'/episodes/{self.episodes[0]["date"]}.html', sitemap)
+
+    def test_every_episode_score_is_logged(self):
+        expected = [ep for ep in self.episodes if (ep.get("scores") or {}).get("overall") is not None]
+        score_log = json.loads((self.site / "static" / "scores.json").read_text())
+        self.assertEqual(len(expected), len(score_log))
+        self.assertEqual(
+            {ep["date"] for ep in expected},
+            {entry["date"] for entry in score_log},
+        )
+        score_page = (self.site / "scores" / "index.html").read_text()
+        self.assertIn("Every score", score_page)
+        for episode in expected:
+            self.assertIn(episode["date"], score_page)
 
 
 if __name__ == "__main__":

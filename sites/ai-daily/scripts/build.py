@@ -93,7 +93,7 @@ def page(title: str, desc: str, path: str, body: str, active: str = "",
 <body>
 <header class="site-header wrap">
   <a class="logo" href="/"><i></i>THE CONTEXT WINDOW<small>BY DISTOMOS</small></a>
-  <nav>{nav("/episodes/", "Episodes", "episodes")}{nav("/about.html", "About", "about")}</nav>
+  <nav>{nav("/episodes/", "Episodes", "episodes")}{nav("/scores/", "Scores", "scores")}{nav("/about.html", "About", "about")}</nav>
   <div class="header-platforms">
     <a class="platform-button spotify" href="{SPOTIFY_SHOW}" target="_blank" rel="noopener"><i></i>Spotify <b>&#8599;</b></a>
     <a class="platform-button youtube" href="{YT_CHANNEL}" target="_blank" rel="noopener"><i></i>YouTube <b>&#8599;</b></a>
@@ -105,7 +105,7 @@ def page(title: str, desc: str, path: str, body: str, active: str = "",
 <footer><div class="wrap footer-inner">
   <a class="logo" href="/"><i></i>THE CONTEXT WINDOW</a>
   <p>AI news, hosted by AIs.<br>A Distomos publication.</p>
-  <div><a href="/episodes/">Episodes</a><a href="/about.html">About</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="{SPOTIFY_SHOW}" target="_blank" rel="noopener">Spotify</a><a href="{YT_CHANNEL}" target="_blank" rel="noopener">YouTube</a></div>
+  <div><a href="/episodes/">Episodes</a><a href="/scores/">Score history</a><a href="/about.html">About</a><a href="/privacy.html">Privacy</a><a href="{SPOTIFY_SHOW}" target="_blank" rel="noopener">Spotify</a><a href="{YT_CHANNEL}" target="_blank" rel="noopener">YouTube</a></div>
   <small>&copy; {datetime.now().year} DISTOMOS</small>
 </div></footer>
 <script>
@@ -172,7 +172,7 @@ def score_card(ep: dict) -> str:
   <div class="score-total"><strong>{esc(scores["overall"])}</strong><small>/ 10</small></div>
   <p>{esc(scores.get("label", ""))}</p>
   <div class="scores">{rows}</div>
-  <a class="method" href="/about.html#methodology">How the score works &#8599;</a>
+  <div class="score-links"><a class="method" href="/scores/">View score history &#8599;</a><a class="method" href="/about.html#methodology">Methodology &#8599;</a></div>
 </aside>"""
 
 
@@ -190,6 +190,64 @@ def briefing_snapshot(ep: dict) -> str:
   <ol>{items}</ol>
   {f'<p><b>WHY IT MATTERS</b>{why}</p>' if why else ''}
 </section>"""
+
+
+def scored_episodes(episodes: list[dict]) -> list[dict]:
+    """Return every episode carrying a valid overall score, oldest first."""
+    return [
+        ep for ep in reversed(episodes)
+        if isinstance((ep.get("scores") or {}).get("overall"), (int, float))
+    ]
+
+
+def score_history_preview(episodes: list[dict]) -> str:
+    history = scored_episodes(episodes)[-7:]
+    if not history:
+        return ""
+    bars = "".join(
+        f'''<a class="trend-day" href="/episodes/{ep["date"]}.html" aria-label="{esc(ep["date"])} score {esc(ep["scores"]["overall"])} out of 10">
+  <strong>{esc(ep["scores"]["overall"])}</strong><i><b style="height:{float(ep["scores"]["overall"]) * 10:.0f}%"></b></i><span>{fmt_date(ep["date"])[0]}</span>
+</a>'''
+        for ep in history
+    )
+    return f"""<section class="score-trend wrap">
+  <div><span class="section-number">SCORE LOG</span><h2>The signal over time.</h2><p>Every daily score is preserved with its category breakdown and episode record.</p><a href="/scores/">View the complete history &#8599;</a></div>
+  <div class="trend-chart">{bars}</div>
+</section>"""
+
+
+def build_scores(episodes: list[dict]) -> str:
+    history = scored_episodes(episodes)
+    if not history:
+        return page("AI Score History — The Context Window", "The complete Context Window AI Score history.", "/scores/", '<div class="inner wrap"><p>No scores published yet.</p></div>', active="scores")
+    values = [float(ep["scores"]["overall"]) for ep in history]
+    average = sum(values) / len(values)
+    peak = max(history, key=lambda ep: float(ep["scores"]["overall"]))
+    rows = ""
+    for ep in reversed(history):
+        scores = ep["scores"]
+        categories = scores.get("categories") or {}
+        category_html = "".join(
+            f'<span><small>{esc(label)}</small><b>{esc(value)}</b></span>'
+            for label, value in categories.items()
+        )
+        rows += f"""<a class="score-log-row" href="/episodes/{ep["date"]}.html">
+  <time>{fmt_date(ep["date"])[0]}<small>{fmt_date(ep["date"])[1]}</small></time>
+  <div><strong>{esc(scores["overall"])}</strong><span>{esc(scores.get("label") or ep["title"])}</span></div>
+  <div class="category-scores">{category_html}</div><b>&#8599;</b>
+</a>"""
+    chart = "".join(
+        f'<a href="/episodes/{ep["date"]}.html" style="height:{float(ep["scores"]["overall"]) * 10:.0f}%" title="{esc(ep["date"])} — {esc(ep["scores"]["overall"])}"><i></i></a>'
+        for ep in history
+    )
+    body = f"""<div class="inner wrap score-history">
+  <div class="page-intro"><p>THE COMPLETE LEDGER</p><h1>Every score.<br><em>Nothing erased.</em></h1><span>{len(history)} daily scores &middot; Updated with every episode</span></div>
+  <div class="score-summary"><div><small>LATEST</small><strong>{esc(history[-1]["scores"]["overall"])}</strong><span>{esc(history[-1]["scores"].get("label"))}</span></div><div><small>ALL-TIME AVERAGE</small><strong>{average:.1f}</strong><span>Across {len(history)} episodes</span></div><div><small>HIGHEST</small><strong>{esc(peak["scores"]["overall"])}</strong><span>{fmt_date(peak["date"])[0]}</span></div></div>
+  <section class="full-trend"><div><h2>Overall score</h2><p>Impact, novelty, and reach &middot; oldest to newest</p></div><div class="full-trend-chart">{chart}</div><div class="scale"><span>10</span><span>5</span><span>0</span></div></section>
+  <div class="score-log"><div class="score-log-head"><span>DATE</span><span>OVERALL SIGNAL</span><span>CATEGORY BREAKDOWN</span></div>{rows}</div>
+  <p class="ledger-note">This ledger is generated directly from the score attached to each published episode. The underlying structured record is available at <a href="/static/scores.json">/static/scores.json</a>.</p>
+</div>"""
+    return page("AI Score History — The Context Window", "Every Context Window AI Score, with the complete category breakdown and episode record.", "/scores/", body, active="scores")
 
 
 def story_grid(ep: dict) -> str:
@@ -268,6 +326,8 @@ def build_index(episodes: list[dict]) -> str:
 </section>
 
 {briefing_snapshot(latest)}
+
+{score_history_preview(episodes)}
 
 {story_grid(latest)}
 
@@ -413,14 +473,32 @@ def main() -> None:
         raise SystemExit("articles.json is empty — nothing to build")
 
     (ROOT / "episodes").mkdir(exist_ok=True)
+    (ROOT / "scores").mkdir(exist_ok=True)
 
     (ROOT / "index.html").write_text(build_index(episodes), encoding="utf-8")
     (ROOT / "episodes" / "index.html").write_text(build_archive(episodes), encoding="utf-8")
+    (ROOT / "scores" / "index.html").write_text(build_scores(episodes), encoding="utf-8")
     (ROOT / "about.html").write_text(build_about(episodes), encoding="utf-8")
     (ROOT / "tiktok-callback.html").write_text(build_callback(), encoding="utf-8")
+    score_log = [
+        {
+            "date": ep["date"],
+            "episode": f'/episodes/{ep["date"]}.html',
+            "title": ep["title"],
+            "overall": ep["scores"]["overall"],
+            "label": ep["scores"].get("label"),
+            "categories": ep["scores"].get("categories") or {},
+        }
+        for ep in scored_episodes(episodes)
+    ]
+    (ROOT / "static" / "scores.json").write_text(
+        json.dumps(score_log, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
     sitemap_urls = [
         (f"{SITE_URL}/", episodes[0]["date"]),
         (f"{SITE_URL}/episodes/", episodes[0]["date"]),
+        (f"{SITE_URL}/scores/", episodes[0]["date"]),
         (f"{SITE_URL}/about.html", episodes[0]["date"]),
     ] + [
         (f'{SITE_URL}/episodes/{ep["date"]}.html', ep["date"])

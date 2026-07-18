@@ -105,7 +105,7 @@ function Score({ scores }: { scores?: Scores | null }) {
   return <div className="today-score">
     <div><span>TODAY&apos;S AI SCORE</span><strong>{scores.overall}</strong><small> / 10</small></div>
     <p>{scores.label}</p>
-    <a href="https://contextwindow.distomostech.com/about.html#methodology" target="_blank" rel="noopener noreferrer">HOW IT&apos;S SCORED ↗</a>
+    <div className="score-actions"><a href="https://contextwindow.distomostech.com/scores/" target="_blank" rel="noopener noreferrer">VIEW SCORE HISTORY ↗</a><a href="https://contextwindow.distomostech.com/about.html#methodology" target="_blank" rel="noopener noreferrer">METHODOLOGY ↗</a></div>
   </div>;
 }
 
