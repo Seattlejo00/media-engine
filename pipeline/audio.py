@@ -19,8 +19,9 @@ logger = logging.getLogger(__name__)
 # Timing constants (milliseconds)
 PAUSE_BETWEEN_LINES = 400        # Natural breath pause between speakers
 PAUSE_WITHIN_SPEAKER = 200       # Shorter pause when same speaker continues
-STINGER_PAD = 300                # Silence on each side of a segment stinger
-PAUSE_AFTER_INTRO = 400          # Between the intro sting and the first line
+STINGER_PAD = 700                # Silence on each side of a segment stinger
+                                 # (also sets how long UP NEXT cards hold)
+PAUSE_AFTER_INTRO = 600          # Between the intro sting and the first line
 PAUSE_BEFORE_OUTRO = 500         # Between the last line and the outro sting
 OUTRO_SILENCE = 1200             # Silence at the very end
 

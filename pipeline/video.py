@@ -421,9 +421,14 @@ def generate_video(
     prev_speaker = None
     prev_key = None  # (segment_type, topic) — mirror of audio assembly
 
+    # Track who is speaking when, so the waveform can wear their color
+    speaker_windows: dict[str, list[list[float]]] = {}
+    cursor = 0.0
+
     # Intro title card over the intro sting
     intro_s = (max(stings["intro"], 500) + PAUSE_AFTER_INTRO) / 1000.0
     clips.append(_transition_clip("intro", size, intro_s))
+    cursor += intro_s
 
     for entry in audio_manifest:
         duration = _estimate_duration(entry["audio_path"])
@@ -438,6 +443,7 @@ def generate_video(
             label = _chapter_title(segment_type, entry.get("topic"))
             card_s = (2 * STINGER_PAD + stings["stinger"]) / 1000.0
             clips.append(_transition_clip("upnext", size, card_s, label=label))
+            cursor += card_s
             pause_ms = 0
         elif prev_speaker is not None and speaker != prev_speaker:
             pause_ms = PAUSE_BETWEEN_LINES
@@ -446,15 +452,23 @@ def generate_video(
         else:
             pause_ms = 0  # first line — the intro card covers its lead-in
 
+        entry_s = duration + pause_ms / 1000.0
         clips.extend(
             _create_speaker_frames(
                 speaker,
                 text,
-                duration + pause_ms / 1000.0,
+                entry_s,
                 size,
                 topic=topic_map.get(entry.get("index")),
             )
         )
+        # Extend this speaker's window (merge back-to-back turns)
+        wins = speaker_windows.setdefault(speaker, [])
+        if wins and abs(wins[-1][1] - cursor) < 0.05:
+            wins[-1][1] = cursor + entry_s
+        else:
+            wins.append([cursor, cursor + entry_s])
+        cursor += entry_s
         prev_speaker = speaker
         prev_key = seg_key
 
@@ -500,54 +514,87 @@ def generate_video(
     audio.close()
 
     if size == LANDSCAPE:
-        _overlay_waveform(output_path)
+        _overlay_waveform(output_path, speaker_windows)
 
     logger.info(f"Video saved: {output_path}")
     return output_path
 
 
-def _overlay_waveform(video_path: Path) -> None:
-    """
-    Composite a subtle audio-reactive waveform along the bottom of the
-    frame in a single ffmpeg pass. Non-fatal: on any failure the original
-    video is kept.
-    """
+def _ffmpeg_bin() -> str | None:
+    import os
     import shutil
+
+    return os.getenv("FFMPEG_BIN") or shutil.which("ffmpeg")
+
+
+def _overlay_waveform(
+    video_path: Path,
+    speaker_windows: dict[str, list[list[float]]] | None = None,
+) -> None:
+    """
+    Composite an audio-reactive waveform along the bottom of the frame:
+    a soft glow layer under a crisp line, colored to match whoever is
+    speaking (via per-speaker enable windows). Falls back to a single
+    neutral wave when no windows are provided. Non-fatal on any failure.
+    """
     import subprocess
 
-    if not shutil.which("ffmpeg"):
+    ffmpeg = _ffmpeg_bin()
+    if not ffmpeg:
         logger.warning("ffmpeg not found — skipping waveform overlay")
         return
 
     tmp_path = video_path.with_name(video_path.stem + "_wave.mp4")
-    wave_h = 110
-    # Waveform sits above the watermark zone (which starts at 94% height)
-    y = f"main_h-{wave_h}-120"
-    # The base video is rendered at 1fps (static frames); without fps
-    # normalization the overlay only updates once a second and the wave
-    # looks laggy. Lift the base to 24fps so the wave animates smoothly.
-    filter_complex = (
-        f"[0:v]fps=24[vb];"
-        f"[0:a]showwaves=s=1920x{wave_h}:mode=cline:rate=24:"
-        f"colors=0x9EA0B8@0.9[w];"
-        f"[w]colorkey=0x000000:0.12:0.2,format=yuva420p,"
-        f"colorchannelmixer=aa=0.5[wk];"
-        f"[vb][wk]overlay=0:{y}:shortest=1[v]"
-    )
+    wave_h = 150
+    y = f"main_h-{wave_h}-100"
+
+    def _hex(speaker: str) -> str:
+        r, g, b = config.SPEAKERS.get(speaker, config.SPEAKERS["ChatGPT"])["color"]
+        return f"0x{r:02X}{g:02X}{b:02X}"
+
+    # One (glow + line) pair per speaker, shown only during their turns
+    layers: list[tuple[str, str | None]] = []
+    if speaker_windows:
+        for speaker, wins in speaker_windows.items():
+            if not wins:
+                continue
+            expr = "+".join(f"between(t,{s:.2f},{e:.2f})" for s, e in wins)
+            layers.append((_hex(speaker), expr))
+    if not layers:
+        layers = [("0x9EA0B8", None)]
+
+    # Base video renders at 1fps (static frames) — lift to 24fps or the
+    # wave only updates once a second.
+    parts = ["[0:v]fps=24[vb]"]
+    last = "[vb]"
+    for i, (color, enable) in enumerate(layers):
+        en = f":enable='{enable}'" if enable else ""
+        parts.append(
+            f"[0:a]showwaves=s=1920x{wave_h}:mode=cline:rate=24:colors={color}[sw{i}];"
+            f"[sw{i}]colorkey=0x000000:0.12:0.2,format=rgba[k{i}];"
+            f"[k{i}]split[k{i}a][k{i}b];"
+            f"[k{i}a]gblur=sigma=18,colorchannelmixer=aa=0.55[glow{i}];"
+            f"[k{i}b]colorchannelmixer=aa=0.85[line{i}]"
+        )
+        parts.append(f"{last}[glow{i}]overlay=0:{y}:shortest=1{en}[g{i}]")
+        parts.append(f"[g{i}][line{i}]overlay=0:{y}:shortest=1{en}[o{i}]")
+        last = f"[o{i}]"
+
+    filter_complex = ";".join(parts)
     try:
         subprocess.run(
             [
-                "ffmpeg", "-y", "-i", str(video_path),
+                ffmpeg, "-y", "-i", str(video_path),
                 "-filter_complex", filter_complex,
-                "-map", "[v]", "-map", "0:a",
+                "-map", last, "-map", "0:a",
                 "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
                 "-c:a", "copy",
                 str(tmp_path),
             ],
-            check=True, capture_output=True, timeout=1800,
+            check=True, capture_output=True, timeout=2400,
         )
         tmp_path.replace(video_path)
-        logger.info("Waveform overlay applied")
+        logger.info(f"Waveform overlay applied ({len(layers)} speaker layer(s))")
     except Exception as e:
         detail = getattr(e, "stderr", b"")
         if isinstance(detail, bytes):
