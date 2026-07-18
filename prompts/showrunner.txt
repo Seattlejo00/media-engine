@@ -9,18 +9,22 @@ Today's stories, each with a researched fact brief (the hosts may only cite fact
 PREDICTIONS ON RECORD from the previous episode's sign-off:
 {predictions}
 
+OPERATOR NOTE FOR THIS EPISODE:
+{special_note}
+
 Design today's episode PLAN — structure and talking points only. Do NOT write any dialogue; the hosts speak for themselves, each powered by their own model.
 
 Continuity rules (this is what makes it a real news desk):
 - If predictions are on record, the intro segment MUST include an accountability beat: each host revisits their own prediction and owns whether it held up. Keep it brisk and honest — being wrong is good content.
 - If a story has PRIOR COVERAGE lines in its brief, treat it as a DEVELOPING story: plan a beat that says when the show last covered it and what has CHANGED since, not a from-scratch explainer.
+- If an operator note is present, the intro MUST include it as a brief, natural on-air beat. It is editorial direction, not background information; do not omit it.
 
 Episode structure to plan (target ~{duration} minutes / ~{word_count} words when spoken):
 1. cold_open — a punchy hook on the top story ({cold_open_exchanges} turns per speaker)
 2. intro — welcome to The Context Window + today's date (1 turn per speaker)
 3. main_story x {main_story_count} — the deep discussions ({main_exchanges} turns per speaker each)
 {guest_segment}4. lightning_round — quick takes on the 2-3 smaller stories, one segment per story ({lightning_exchanges} turns per speaker each)
-5. sign_off — each speaker's "one thing to watch" prediction, then goodbyes ({signoff_exchanges} turns per speaker)
+5. sign_off — each speaker's "one thing to watch" prediction, then one natural request to subscribe on YouTube and follow on Spotify, then goodbyes ({signoff_exchanges} turns per speaker)
 
 For each segment provide:
 - "topic": the story title exactly as given above (null for cold_open/intro/sign_off; cold_open may carry the top story's title)

@@ -13,13 +13,16 @@ Usage:
 import argparse
 import json
 import logging
+import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import config
 from pipeline.topics import discover_topics
-from pipeline.script import generate_script, save_script
+from pipeline.script import SCRIPT_FORMAT_VERSION, generate_script, save_script
+from pipeline.episode_notes import resolve_episode_note
 from pipeline.tts import synthesize_script
 from pipeline.audio import assemble_episode, get_episode_duration
 from pipeline.video import generate_landscape_video
@@ -55,6 +58,35 @@ def _load_checkpoint(path: Path):
     return None
 
 
+def _episode_date() -> str:
+    """Return the production date in the configured editorial timezone."""
+    return datetime.now(ZoneInfo(config.TIMEZONE)).strftime("%Y-%m-%d")
+
+
+def _clear_script_outputs(episode_dir: Path) -> None:
+    """Clear script-dependent checkpoints while preserving research and uploads."""
+    directories = (episode_dir / "audio_segments", episode_dir / "clips")
+    files = (
+        "script.json",
+        "transcript.txt",
+        "audio_manifest.json",
+        "episode.mp3",
+        "chapters.json",
+        "episode_landscape.mp4",
+        "thumbnail.png",
+        "clip_segments.json",
+        "cost_report.json",
+        "summary.json",
+    )
+    for directory in directories:
+        if directory.exists():
+            shutil.rmtree(directory)
+    for filename in files:
+        path = episode_dir / filename
+        if path.exists():
+            path.unlink()
+
+
 def run_pipeline(
     script_only: bool = False,
     dry_run: bool = False,
@@ -62,6 +94,7 @@ def run_pipeline(
     roundtable: bool = False,
     no_upload: bool = False,
     fresh: bool = False,
+    special_note: str | None = None,
 ) -> dict:
     """
     Execute the full episode generation pipeline.
@@ -73,14 +106,17 @@ def run_pipeline(
 
     Returns a summary dict with paths and IDs.
     """
-    date_str = datetime.now().strftime("%Y-%m-%d")
+    date_str = _episode_date()
     episode_dir = config.OUTPUT_DIR / date_str
     episode_dir.mkdir(parents=True, exist_ok=True)
+
+    special_note = resolve_episode_note(date_str, override=special_note)
+    if special_note:
+        logger.info("Operator note active for %s", date_str)
 
     if fresh:
         # Wipe generated artifacts but KEEP the distribution ledger —
         # forgetting past uploads would cause duplicate YouTube posts.
-        import shutil
         for item in episode_dir.iterdir():
             if item.name == "distribution_state.json":
                 continue
@@ -107,7 +143,12 @@ def run_pipeline(
 
     is_guest_episode = len(roster) > len(config.get_hosts())
 
-    summary = {"date": date_str, "status": "started", "roster": roster}
+    summary = {
+        "date": date_str,
+        "status": "started",
+        "roster": roster,
+        "special_note": special_note or None,
+    }
 
     if is_guest_episode:
         guests = [s for s in roster if config.SPEAKERS[s]["role"] == "guest"]
@@ -182,11 +223,24 @@ def run_pipeline(
 
     script_path = episode_dir / "script.json"
     script = _load_checkpoint(script_path)
+    if script and (
+        script.get("script_format_version") != SCRIPT_FORMAT_VERSION
+        or (script.get("special_note") or "") != special_note
+    ):
+        logger.info(
+            "Editorial inputs changed — regenerating script, speech, video, and clips"
+        )
+        _clear_script_outputs(episode_dir)
+        script = None
     if script:
         logger.info("Reusing existing script.json (use --fresh to regenerate)")
     else:
         script = generate_script(
-            topics, roster=roster, prior_predictions=prior_predictions
+            topics,
+            roster=roster,
+            prior_predictions=prior_predictions,
+            special_note=special_note,
+            episode_date=date_str,
         )
         script_path = save_script(script, episode_dir)
     summary["script_path"] = str(script_path)
@@ -638,6 +692,10 @@ def main():
         help="Regenerate today's artifacts from scratch instead of reusing "
              "checkpoints (the upload ledger is preserved)",
     )
+    parser.add_argument(
+        "--special-note", type=str, default=None,
+        help="One-off editorial note the hosts must mention naturally in the intro",
+    )
 
     args = parser.parse_args()
 
@@ -651,6 +709,7 @@ def main():
             roundtable=args.roundtable,
             no_upload=args.no_upload,
             fresh=args.fresh,
+            special_note=args.special_note,
         )
 
         if summary["status"] == "complete":

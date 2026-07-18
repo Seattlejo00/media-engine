@@ -17,6 +17,8 @@ from pipeline.cost_tracker import tracker
 
 logger = logging.getLogger(__name__)
 
+SCRIPT_FORMAT_VERSION = 2
+
 
 def _load_prompt(name: str) -> str:
     """Load a prompt template from the prompts directory."""
@@ -66,6 +68,7 @@ def _build_episode_prompt(
     date: str,
     roster: list[str],
     prior_predictions: list[dict] | None = None,
+    special_note: str = "",
 ) -> str:
     """Fill in the showrunner template with today's topics and roster."""
     template = _load_prompt("showrunner.txt")
@@ -137,10 +140,13 @@ def _build_episode_prompt(
     else:
         predictions_text = "(none on record — skip the accountability beat)"
 
+    special_note_text = special_note or "(none — do not invent an announcement)"
+
     return template.format(
         date=date,
         topics=topics_text,
         predictions=predictions_text,
+        special_note=special_note_text,
         duration=duration,
         word_count=word_count,
         min_word_count=min_word_count,
@@ -159,6 +165,8 @@ def generate_script(
     topics: list[dict],
     roster: list[str] | None = None,
     prior_predictions: list[dict] | None = None,
+    special_note: str = "",
+    episode_date: str | None = None,
 ) -> dict:
     """
     Generate the full episode script.
@@ -175,19 +183,28 @@ def generate_script(
     if roster is None:
         roster = config.get_episode_roster()
 
-    date_str = datetime.now().strftime("%B %d, %Y")
+    if episode_date:
+        date_str = datetime.strptime(episode_date, "%Y-%m-%d").strftime("%B %d, %Y")
+    else:
+        date_str = datetime.now().strftime("%B %d, %Y")
 
     logger.info("Step 1: Showrunner pass — planning segments and beats...")
-    plan = _generate_episode_plan(topics, date_str, roster, prior_predictions)
+    plan = _generate_episode_plan(
+        topics, date_str, roster, prior_predictions, special_note=special_note
+    )
 
     logger.info("Step 2: Turn-by-turn conversation — each host speaks for itself...")
-    final_script = _run_conversation(plan, topics, roster, date_str)
+    final_script = _run_conversation(
+        plan, topics, roster, date_str, special_note=special_note
+    )
 
     logger.info("Step 3: Generating YouTube-optimized title...")
     final_script["youtube_title"] = _generate_youtube_title(final_script, topics)
 
     # Attach roster metadata for downstream consumers
     final_script["roster"] = roster
+    final_script["special_note"] = special_note
+    final_script["script_format_version"] = SCRIPT_FORMAT_VERSION
 
     return final_script
 
@@ -197,10 +214,13 @@ def _generate_episode_plan(
     date_str: str,
     roster: list[str],
     prior_predictions: list[dict] | None = None,
+    special_note: str = "",
 ) -> dict:
     """Showrunner pass: Claude plans the episode structure — no dialogue."""
     client = Anthropic(api_key=config.ANTHROPIC_API_KEY)
-    episode_prompt = _build_episode_prompt(topics, date_str, roster, prior_predictions)
+    episode_prompt = _build_episode_prompt(
+        topics, date_str, roster, prior_predictions, special_note=special_note
+    )
 
     response = client.messages.create(
         model=config.CLAUDE_MODEL,
@@ -341,6 +361,7 @@ def _turn_prompt(
     total_turns: int,
     date_str: str,
     participants: list[str],
+    special_note: str = "",
 ) -> str:
     """Build the user prompt for one conversational turn."""
     seg_type = seg.get("type", "")
@@ -405,17 +426,29 @@ def _turn_prompt(
         parts.append(f"THE CONVERSATION SO FAR IN THIS SEGMENT:\n{convo}")
 
     # Role-specific instruction for this turn
-    if seg_type == "intro" :
+    if seg_type == "intro":
         task = "Welcome listeners to The Context Window, mention today's date, and tee up the episode."
+        if special_note and turn_idx == 0:
+            task += (
+                " Include this operator-supplied announcement clearly and naturally "
+                f"in this turn; do not skip it: {special_note}"
+            )
     elif seg_type == "cold_open" and turn_idx == 0:
         task = "Open the show with a punchy, curiosity-grabbing line about the top story. No greetings yet."
     elif seg_type == "sign_off":
         if turn_idx < len(participants):
             task = ("Give your 'one thing to watch' — a specific, checkable "
                     "prediction related to today's stories. One prediction only.")
+        elif turn_idx == len(participants):
+            task = (
+                "Predictions are done — do NOT give another one. Naturally ask "
+                "listeners to subscribe on YouTube and follow The Context Window "
+                "on Spotify, then give a short, warm goodbye in 35 words or less."
+            )
         else:
             task = ("Predictions are done — do NOT give another one. Just wrap "
-                    "with a short, warm goodbye in 25 words or less.")
+                    "with a short, warm goodbye in 25 words or less. Do not repeat "
+                    "the subscribe/follow request.")
     elif turn_idx == 0:
         prev = seg.get("_prev_topic")
         handoff = (
@@ -497,7 +530,11 @@ def _speak(client, speaker: str, persona: str, user_content: str) -> str | None:
 
 
 def _run_conversation(
-    plan: dict, topics: list[dict], roster: list[str], date_str: str
+    plan: dict,
+    topics: list[dict],
+    roster: list[str],
+    date_str: str,
+    special_note: str = "",
 ) -> dict:
     """
     Generate the episode as an actual conversation: each turn is written by
@@ -534,7 +571,7 @@ def _run_conversation(
             speaker = order[turn_idx % len(order)]
             prompt = _turn_prompt(
                 seg, topic_data, dialogue, completed, speaker,
-                turn_idx, total_turns, date_str, order,
+                turn_idx, total_turns, date_str, order, special_note,
             )
             text = None
             for attempt in (1, 2):

@@ -48,6 +48,9 @@ BG_BOTTOM = (24, 22, 48)    # deep indigo
 PANEL_FILL = (0, 0, 0, 150)  # subtitle panel (RGBA)
 MUTED_TEXT = (158, 160, 184)
 
+YOUTUBE_OUTRO_URL = "youtube.com/@TheContextWindow-q1z"
+SPOTIFY_OUTRO_URL = "open.spotify.com/show/033OoZlyZBlEwCd6kmNdpT"
+
 # Backgrounds are expensive (gaussian-blurred glow) but identical for every
 # line a speaker says — cache per (speaker, size).
 _BG_CACHE: dict = {}
@@ -288,6 +291,52 @@ def _wrap_text(text: str, max_chars: int) -> str:
     return "\n".join(lines)
 
 
+def _wrap_text_pixels(
+    draw: ImageDraw.ImageDraw,
+    text: str,
+    font: ImageFont.FreeTypeFont,
+    max_width: int,
+) -> list[str]:
+    """Word-wrap text using its rendered width instead of character count."""
+    words = text.split()
+    if not words:
+        return [""]
+
+    lines: list[str] = []
+    current = words[0]
+    for word in words[1:]:
+        candidate = f"{current} {word}"
+        if draw.textlength(candidate, font=font) <= max_width:
+            current = candidate
+        else:
+            lines.append(current)
+            current = word
+    lines.append(current)
+    return lines
+
+
+def _fit_wrapped_text(
+    draw: ImageDraw.ImageDraw,
+    text: str,
+    font_path: str,
+    start_px: int,
+    max_width: int,
+    max_lines: int,
+    min_px: int = 24,
+) -> tuple[ImageFont.FreeTypeFont, list[str]]:
+    """Fit a complete headline into a bounded number of lines without clipping."""
+    for px in range(start_px, min_px - 1, -2):
+        font = _font(font_path, px)
+        lines = _wrap_text_pixels(draw, text, font, max_width)
+        if len(lines) <= max_lines and all(
+            draw.textlength(line, font=font) <= max_width for line in lines
+        ):
+            return font, lines
+
+    font = _font(font_path, min_px)
+    return font, _wrap_text_pixels(draw, text, font, max_width)
+
+
 # Brand colors for neutral (non-speaker) cards
 _CARD_ACCENT = (204, 120, 50)     # Claude orange
 _CARD_ACCENT2 = (16, 163, 127)    # ChatGPT green
@@ -349,24 +398,49 @@ def _render_transition_card(
                         cx + rule_w, cy - int(height * 0.12) + eyebrow.size + 26],
                        fill=(*_CARD_ACCENT2, 200))
         headline = label or ""
-        hfont = _fit_text(draw, headline, FONT_BOLD,
-                          56 if is_landscape else 48, int(width * 0.8), min_px=30)
-        if draw.textlength(headline, font=hfont) > width * 0.8:
-            headline = headline[:80] + "..."
-        draw.text((cx, cy - 6), headline, font=hfont,
-                  fill=(255, 255, 255, 255), anchor="ma")
+        hfont, headline_lines = _fit_wrapped_text(
+            draw,
+            headline,
+            FONT_BOLD,
+            56 if is_landscape else 48,
+            int(width * (0.82 if is_landscape else 0.84)),
+            max_lines=3 if is_landscape else 4,
+            min_px=26,
+        )
+        draw.multiline_text(
+            (cx, cy + int(height * 0.04)),
+            "\n".join(headline_lines),
+            font=hfont,
+            fill=(255, 255, 255, 255),
+            anchor="mm",
+            align="center",
+            spacing=max(8, int(hfont.size * 0.24)),
+        )
 
     else:  # outro
         f1 = _font(FONT_BOLD, 84 if is_landscape else 72)
-        f2 = _font(FONT_REGULAR, 34 if is_landscape else 34)
-        f3 = _font(FONT_BOLD, 28 if is_landscape else 30)
+        f2 = _font(FONT_REGULAR, 32 if is_landscape else 34)
+        f3 = _font(FONT_BOLD, 26 if is_landscape else 28)
         draw.text((cx, cy - int(f1.size * 1.2)), "THE CONTEXT WINDOW", font=_fit_text(
             draw, "THE CONTEXT WINDOW", FONT_BOLD, f1.size, int(width * 0.9)),
             fill=(255, 255, 255, 255), anchor="ma")
-        draw.text((cx, cy + 10), "New episodes every morning", font=f2,
+        draw.text((cx, cy - 18), "New episodes every morning", font=f2,
                   fill=(*MUTED_TEXT, 255), anchor="ma")
-        draw.text((cx, cy + f2.size + 40), "contextwindow.distomostech.com", font=f3,
-                  fill=(*_CARD_ACCENT, 235), anchor="ma")
+        youtube = f"SUBSCRIBE  {YOUTUBE_OUTRO_URL}"
+        spotify = f"FOLLOW  {SPOTIFY_OUTRO_URL}"
+        youtube_font = _fit_text(
+            draw, youtube, FONT_BOLD, f3.size, int(width * 0.88), min_px=20
+        )
+        spotify_font = _fit_text(
+            draw, spotify, FONT_BOLD, f3.size, int(width * 0.88), min_px=20
+        )
+        draw.text((cx, cy + f2.size + 24), youtube, font=youtube_font,
+                  fill=(*_CARD_ACCENT, 245), anchor="ma")
+        draw.text((cx, cy + f2.size + 72), spotify, font=spotify_font,
+                  fill=(*_CARD_ACCENT2, 245), anchor="ma")
+        site_font = _font(FONT_REGULAR, 23 if is_landscape else 25)
+        draw.text((cx, cy + f2.size + 126), "contextwindow.distomostech.com",
+                  font=site_font, fill=(*MUTED_TEXT, 235), anchor="ma")
 
     return Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
 
