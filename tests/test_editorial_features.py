@@ -7,7 +7,7 @@ from PIL import Image, ImageDraw
 
 from pipeline.clips import _flatten_dialogue, _normalize_clip_segments
 from pipeline.episode_notes import resolve_episode_note
-from pipeline.script import _turn_prompt
+from pipeline.script import SIGNOFF_CTA, _enforce_signoff_cta, _turn_prompt
 from pipeline.video import (
     FONT_BOLD,
     LANDSCAPE,
@@ -59,11 +59,26 @@ class SpokenEditorialTests(unittest.TestCase):
         self.assertIn(note, self._prompt("intro", 0, note))
         self.assertNotIn(note, self._prompt("intro", 1, note))
 
-    def test_cta_mentions_both_platforms_once(self):
-        cta_prompt = self._prompt("sign_off", 2)
-        self.assertIn("subscribe on YouTube", cta_prompt)
-        self.assertIn("Spotify", cta_prompt)
-        self.assertNotIn("subscribe on YouTube", self._prompt("sign_off", 3))
+    def test_cta_is_inserted_exactly_once_even_if_models_repeat_it(self):
+        script = {
+            "segments": [{
+                "type": "sign_off",
+                "dialogue": [
+                    {"speaker": "Claude", "text": "My prediction mentions YouTube."},
+                    {"speaker": "ChatGPT", "text": "My prediction."},
+                    {"speaker": "Claude", "text": "Subscribe on YouTube and follow on Spotify. Thanks for listening."},
+                    {"speaker": "ChatGPT", "text": "Find us on YouTube and Spotify. See you tomorrow."},
+                ],
+            }]
+        }
+        _enforce_signoff_cta(script, ["Claude", "ChatGPT"])
+        goodbye_text = " ".join(
+            line["text"] for line in script["segments"][0]["dialogue"][2:]
+        )
+        self.assertEqual(goodbye_text.lower().count("youtube"), 1)
+        self.assertEqual(goodbye_text.lower().count("spotify"), 1)
+        self.assertIn(SIGNOFF_CTA, goodbye_text)
+        self.assertIn("My prediction mentions YouTube.", script["segments"][0]["dialogue"][0]["text"])
 
 
 class TransitionCardTests(unittest.TestCase):

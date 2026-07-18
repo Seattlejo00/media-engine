@@ -6,6 +6,7 @@ to produce a full podcast episode script.
 
 import json
 import logging
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -17,7 +18,11 @@ from pipeline.cost_tracker import tracker
 
 logger = logging.getLogger(__name__)
 
-SCRIPT_FORMAT_VERSION = 2
+SCRIPT_FORMAT_VERSION = 3
+SIGNOFF_CTA = (
+    "If you enjoyed the show, subscribe to The Context Window on YouTube "
+    "and follow us on Spotify."
+)
 
 
 def _load_prompt(name: str) -> str:
@@ -197,6 +202,7 @@ def generate_script(
     final_script = _run_conversation(
         plan, topics, roster, date_str, special_note=special_note
     )
+    _enforce_signoff_cta(final_script, roster)
 
     logger.info("Step 3: Generating YouTube-optimized title...")
     final_script["youtube_title"] = _generate_youtube_title(final_script, topics)
@@ -441,9 +447,9 @@ def _turn_prompt(
                     "prediction related to today's stories. One prediction only.")
         elif turn_idx == len(participants):
             task = (
-                "Predictions are done — do NOT give another one. Naturally ask "
-                "listeners to subscribe on YouTube and follow The Context Window "
-                "on Spotify, then give a short, warm goodbye in 35 words or less."
+                "Predictions are done — do NOT give another one. Give a short, warm "
+                "goodbye in 25 words or less. Do not mention subscriptions or any "
+                "platform; the show's standard CTA is inserted automatically."
             )
         else:
             task = ("Predictions are done — do NOT give another one. Just wrap "
@@ -474,6 +480,35 @@ def _turn_prompt(
         f"stage directions.\n{BANNED_FILLER}"
     )
     return "\n\n".join(parts)
+
+
+def _enforce_signoff_cta(script: dict, roster: list[str]) -> None:
+    """Insert one canonical CTA and remove any model-generated duplicates."""
+    sign_off = next(
+        (segment for segment in script.get("segments", [])
+         if segment.get("type") == "sign_off"),
+        None,
+    )
+    dialogue = sign_off.get("dialogue", []) if sign_off else []
+    if not dialogue:
+        return
+
+    # The first pass through the roster contains predictions; goodbyes begin
+    # on the next turn. Preserve prediction sentences even if today's news
+    # happens to mention one of the platforms.
+    target_idx = min(len(roster), len(dialogue) - 1)
+    platform_pattern = re.compile(r"\b(?:youtube|spotify)\b", re.IGNORECASE)
+
+    for idx in range(target_idx, len(dialogue)):
+        text = dialogue[idx].get("text", "")
+        sentences = re.split(r"(?<=[.!?])\s+", text.replace("\n", " ").strip())
+        dialogue[idx]["text"] = " ".join(
+            sentence.strip() for sentence in sentences
+            if sentence.strip() and not platform_pattern.search(sentence)
+        )
+
+    goodbye = dialogue[target_idx].get("text", "").strip()
+    dialogue[target_idx]["text"] = SIGNOFF_CTA + (f" {goodbye}" if goodbye else "")
 
 
 def _speak(client, speaker: str, persona: str, user_content: str) -> str | None:
