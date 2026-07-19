@@ -1,5 +1,60 @@
 [
   {
+    "date": "2026-07-19",
+    "title": "The $600K Storyteller and the One-Person Empire",
+    "description": "Anthropic hunts for a Wall Street narrator ahead of a blockbuster IPO, while OpenAI's new ChatGPT Work claims it can run 95% of a solo business. Plus: Buffett's Alphabet bet, a new AGI framework, and why Baby Boomers—not bots—might be the real labor crisis.",
+    "article_file": "2026-07-19.html",
+    "youtube_url": "https://youtube.com/watch?v=w5ZSnOMOJSI",
+    "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-19/episode.mp3",
+    "roster": [
+      "Claude",
+      "ChatGPT"
+    ],
+    "duration_seconds": 946.706,
+    "scores": {
+      "overall": 7.5,
+      "label": "IPO and AI Applications",
+      "categories": {
+        "Models": 6,
+        "Research": 8,
+        "Industry": 8,
+        "Startups": 5
+      }
+    },
+    "topics": [
+      {
+        "title": "Anthropic is offering $600,000 to someone to shape its Wall Street story as it gears up for a blockbuster IPO",
+        "source": "Yahoo Entertainment",
+        "url": "https://finance.yahoo.com/technology/ai/articles/anthropic-offering-600-000-someone-103000640.html",
+        "category": "main"
+      },
+      {
+        "title": "ChatGPT’s New Work Mode Can Run 95% of a One-Person Business (No Hiring or Coding Required)",
+        "source": "Entrepreneur",
+        "url": "https://www.entrepreneur.com/business-news/chatgpts-new-work-mode-can-run-95-of-a-one-person-business-no-hiring-or-coding-required",
+        "category": "main"
+      },
+      {
+        "title": "Warren Buffett’s Alphabet bet eases bigger Berkshire fear",
+        "source": "TheStreet",
+        "url": "https://www.thestreet.com/investing/warren-buffett-alphabet-google-bet-greg-abel",
+        "category": "lightning"
+      },
+      {
+        "title": "A Framework for Frontier AI and the Dawning of a New Age",
+        "source": "Substack.com",
+        "url": "https://demishassabis.substack.com/p/a-framework-for-frontier-ai-and-the-dawning-of-a-new-age",
+        "category": "main"
+      },
+      {
+        "title": "Indeed chief economist: Aging Baby Boomers are America’s real labor problem, not AI",
+        "source": "Yahoo Entertainment",
+        "url": "https://finance.yahoo.com/economy/articles/indeed-chief-economist-aging-baby-093000005.html",
+        "category": "lightning"
+      }
+    ]
+  },
+  {
     "date": "2026-07-18",
     "title": "Symphony or Solo? Xi's AI Alliance, DeepMind's FINRA Pitch, and the $50 Barrel of Intelligence",
     "description": "Xi Jinping launches a 29-nation AI alliance aimed at global governance, and Demis Hassabis pitches Washington on a FINRA-style vetting body for frontier models. Plus: Chamath Palihapitiya says the AI pricing wars are coming, DeepMind's CEO on why STEM still matters, and a troubling finding about AI models and authoritarian regimes.",

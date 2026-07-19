@@ -89,5 +89,18 @@
       "Industry": 8,
       "Startups": 5
     }
+  },
+  {
+    "date": "2026-07-19",
+    "episode": "/episodes/2026-07-19.html",
+    "title": "The $600K Storyteller and the One-Person Empire",
+    "overall": 7.5,
+    "label": "IPO and AI Applications",
+    "categories": {
+      "Models": 6,
+      "Research": 8,
+      "Industry": 8,
+      "Startups": 5
+    }
   }
 ]
