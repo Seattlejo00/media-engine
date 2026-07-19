@@ -21,7 +21,7 @@ MODEL = "gpt-4o-mini-tts"
 VOICE = "marin"
 VOICE_DIRECTION = """Voice affect: Warm, grounded, reassuring, and intelligent. Use the presence of a trusted female public-radio host.
 Tone: Calm confidence, conversational and inviting. Avoid hype, salesmanship, a meditation cadence, or an exaggerated announcer voice.
-Pacing: Measured and natural, around 150 words per minute. Use short, thoughtful pauses between ideas.
+Pacing: Natural broadcast delivery, around 155 to 165 words per minute. Keep each sentence flowing continuously. Pause only where written punctuation calls for it. Never insert rhythmic breath breaks or pause in the middle of an unpunctuated phrase.
 Emotion: Genuine interest and steady optimism.
 Pronunciation: Say Colorado naturally. Pronounce Louisville as LOO-iss-vill. Keep technical phrases crisp."""
 

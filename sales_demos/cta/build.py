@@ -66,6 +66,15 @@ def configure_concept(*, premium_voice: bool = False) -> list[str]:
         "persona_prompt": "",
         "role": "host",
     }
+
+    # Transition and clip cards should follow Mara's blue identity. These are
+    # module-local design settings, so applying them here cannot alter the
+    # Context Window's orange-and-teal production profile in another process.
+    from pipeline import video
+
+    video._CARD_ACCENT = (76, 145, 255)
+    video._CARD_ACCENT2 = (45, 92, 190)
+    video._CARD_CACHE.clear()
     return ["Mara"]
 
 
