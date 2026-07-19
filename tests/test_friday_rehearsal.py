@@ -8,6 +8,7 @@ import config
 import main
 import publish_site
 from pipeline.script import SCRIPT_FORMAT_VERSION
+from pipeline.tts import TTS_FORMAT_VERSION
 
 
 def kimi_topic() -> dict:
@@ -103,6 +104,7 @@ class FridayPipelineRehearsalTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             output_dir = Path(tmp) / "output"
             script_calls = []
+            tts_calls = []
 
             def research(topics):
                 enriched = []
@@ -126,6 +128,10 @@ class FridayPipelineRehearsalTests(unittest.TestCase):
                     "special_note": "",
                     "episode_mode": kwargs["episode_mode"],
                     "landscape_week_end": kwargs["landscape"]["week_end"],
+                    "friday_profile": kwargs["friday_profile"],
+                    "target_duration_minutes": kwargs["friday_profile"][
+                        "target_duration_minutes"
+                    ],
                     "script_format_version": SCRIPT_FORMAT_VERSION,
                     "segments": [{
                         "type": "week_in_review",
@@ -138,6 +144,7 @@ class FridayPipelineRehearsalTests(unittest.TestCase):
                 }
 
             def synthesize(script, episode_dir):
+                tts_calls.append(script["title"])
                 audio = episode_dir / "line.mp3"
                 audio.write_bytes(b"mock mp3")
                 return [{
@@ -147,6 +154,7 @@ class FridayPipelineRehearsalTests(unittest.TestCase):
                     "segment_type": "week_in_review",
                     "topic": kimi_topic()["title"],
                     "index": 0,
+                    "tts_format_version": TTS_FORMAT_VERSION,
                 }]
 
             def create_file(path: Path, content: bytes = b"fixture") -> Path:
@@ -189,7 +197,10 @@ class FridayPipelineRehearsalTests(unittest.TestCase):
             self.assertTrue(audit["candidates"][0]["selected"])
             self.assertEqual(landscape["players"][0]["current_flagship"], "Kimi K3")
             self.assertEqual(script["episode_mode"], "weekly_landscape")
+            self.assertEqual(script["friday_profile"]["scale"], "quiet")
+            self.assertEqual(script["target_duration_minutes"], 6)
             self.assertEqual(len(script_calls), 1)
+            self.assertEqual(len(tts_calls), 1)
             self.assertEqual(script_calls[0]["episode_mode"], "weekly_landscape")
 
             site_dir = Path(tmp) / "site"
@@ -235,6 +246,10 @@ class FridayPipelineRehearsalTests(unittest.TestCase):
                     "special_note": "",
                     "episode_mode": "weekly_landscape",
                     "landscape_week_end": "2026-07-17",
+                    "friday_profile": kwargs["friday_profile"],
+                    "target_duration_minutes": kwargs["friday_profile"][
+                        "target_duration_minutes"
+                    ],
                     "script_format_version": SCRIPT_FORMAT_VERSION,
                     "segments": [{
                         "type": "week_in_review",
@@ -256,6 +271,7 @@ class FridayPipelineRehearsalTests(unittest.TestCase):
                     "segment_type": "week_in_review",
                     "topic": kimi_topic()["title"],
                     "index": 0,
+                    "tts_format_version": TTS_FORMAT_VERSION,
                 }]
 
             def create_file(path: Path) -> Path:

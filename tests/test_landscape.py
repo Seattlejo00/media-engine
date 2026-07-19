@@ -9,12 +9,17 @@ import main
 from main import _episode_date, _validate_episode_date_override
 import pipeline.landscape as landscape_module
 import pipeline.topics as topics_module
-from pipeline.landscape import _normalize_snapshot, is_weekly_review
+from pipeline.landscape import (
+    _normalize_snapshot,
+    friday_review_profile,
+    is_weekly_review,
+)
 from pipeline.script import _build_episode_prompt, _topics_block
 from pipeline.topics import (
     TRACKED_PLAYERS,
     _force_priority_stories,
     audit_candidates,
+    consolidate_topic_events,
 )
 
 
@@ -71,6 +76,49 @@ class CoverageAuditTests(unittest.TestCase):
         with patch.object(topics_module.config, "NEWS_API_KEY", ""):
             self.assertEqual(topics_module.fetch_official_updates(), [])
 
+    def test_duplicate_launch_articles_collapse_to_one_editorial_event(self):
+        events = consolidate_topic_events(audit_candidates([
+            {
+                "title": "Moonshot launches Kimi K3 frontier model",
+                "description": "Moonshot released its new Kimi K3 flagship.",
+                "source": "Kimi",
+                "url": "https://kimi.com/k3",
+            },
+            {
+                "title": "Kimi K3 release shakes up the model race",
+                "description": "The Kimi K3 launch is Moonshot's new flagship.",
+                "source": "AI News",
+                "url": "https://news.example/kimi-k3",
+            },
+            {
+                "title": "A closer look at Moonshot's Kimi K3 launch",
+                "description": "Moonshot shipped Kimi K3 this week.",
+                "source": "Tech Wire",
+                "url": "https://wire.example/kimi-k3",
+            },
+        ]))
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0]["event_article_count"], 3)
+        self.assertEqual(len(events[0]["supporting_articles"]), 2)
+        self.assertTrue(events[0]["must_cover"])
+
+    def test_same_model_different_action_remains_a_separate_event(self):
+        events = consolidate_topic_events(audit_candidates([
+            {
+                "title": "Moonshot launches Kimi K3 frontier model",
+                "description": "Moonshot released its new flagship.",
+                "source": "Kimi",
+                "url": "https://kimi.com/k3",
+            },
+            {
+                "title": "Moonshot changes Kimi K3 API pricing",
+                "description": "New Kimi K3 prices take effect next month.",
+                "source": "Kimi",
+                "url": "https://kimi.com/k3-pricing",
+            },
+        ]))
+        self.assertEqual(len(events), 2)
+
 
 class WeeklyLandscapeTests(unittest.TestCase):
     def test_friday_switches_to_weekly_review(self):
@@ -102,10 +150,96 @@ class WeeklyLandscapeTests(unittest.TestCase):
                 "players": [],
             },
         )
-        self.assertIn("Friday weekly AI-landscape review", prompt)
+        self.assertIn("hybrid daily AI briefing", prompt)
+        self.assertIn("Never pad a quiet week", prompt)
+        self.assertIn("weekly-review share: about 25%", prompt)
+        self.assertIn("Add 1-2 daily_news segments", prompt)
         self.assertIn("frontier_board", prompt)
         self.assertIn("under_the_radar", prompt)
         self.assertIn("hype_check", prompt)
+
+    def test_quiet_friday_is_short_with_one_compact_weekly_beat(self):
+        profile = friday_review_profile(
+            {
+                "top_moves": [{
+                    "player_ids": ["moonshot"],
+                    "summary": "Moonshot launched Kimi K3.",
+                    "evidence_url": "https://kimi.com/k3",
+                }],
+                "under_the_radar": [],
+                "hype_check": [],
+            },
+            [{
+                "title": "Moonshot launches Kimi K3 frontier model",
+                "description": "Moonshot released its new Kimi K3 flagship.",
+                "tracked_players": ["moonshot"],
+                "editorial_lane": "models_products",
+            }],
+            max_duration=12,
+        )
+        self.assertEqual(profile["scale"], "quiet")
+        self.assertEqual(profile["target_duration_minutes"], 6)
+        self.assertEqual(profile["weekly_review_share"], 0.25)
+
+    def test_standard_friday_balances_daily_and_weekly_coverage(self):
+        profile = friday_review_profile({
+            "top_moves": [
+                {
+                    "player_ids": ["moonshot"],
+                    "summary": "Moonshot launched Kimi K3.",
+                    "evidence_url": "https://kimi.com/k3",
+                },
+                {
+                    "player_ids": ["openai"],
+                    "summary": "OpenAI released a new agent product.",
+                    "evidence_url": "https://openai.com/agent",
+                },
+            ],
+            "under_the_radar": [{
+                "summary": "AI labor protests spread to another studio.",
+                "evidence_url": "https://news.example/protests",
+            }],
+            "hype_check": [],
+        }, max_duration=12)
+        self.assertEqual(profile["scale"], "standard")
+        self.assertEqual(profile["target_duration_minutes"], 8)
+        self.assertEqual(profile["weekly_review_share"], 0.5)
+
+    def test_busy_friday_allows_weekly_review_to_dominate(self):
+        events = [
+            {
+                "player_ids": [player],
+                "summary": summary,
+                "evidence_url": f"https://example.com/{index}",
+            }
+            for index, (player, summary) in enumerate([
+                ("openai", "OpenAI released GPT-6."),
+                ("anthropic", "Anthropic launched Claude 6."),
+                ("google", "Google shipped Gemini 5."),
+            ])
+        ]
+        profile = friday_review_profile({
+            "top_moves": events,
+            "under_the_radar": [
+                {
+                    "summary": "A major AI acquisition closed.",
+                    "evidence_url": "https://example.com/acquisition",
+                },
+                {
+                    "summary": "A new national AI law passed.",
+                    "evidence_url": "https://example.com/law",
+                },
+            ],
+            "hype_check": [
+                {
+                    "summary": "A disputed benchmark claim drew attention.",
+                    "evidence_url": "https://example.com/benchmark",
+                },
+            ],
+        }, max_duration=12)
+        self.assertEqual(profile["scale"], "dominant")
+        self.assertEqual(profile["target_duration_minutes"], 12)
+        self.assertEqual(profile["weekly_review_share"], 0.75)
 
     def test_missing_players_are_preserved_as_unclear_not_invented_movement(self):
         snapshot = _normalize_snapshot(

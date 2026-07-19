@@ -386,3 +386,65 @@ def compact_landscape_context(snapshot: dict | None) -> str:
             if item.get("changed") or item.get("trajectory") != "steady"
         ],
     }, ensure_ascii=False, indent=1)
+
+
+def friday_review_profile(
+    snapshot: dict | None,
+    topics: list[dict] | None = None,
+    max_duration: int | None = None,
+) -> dict:
+    """Size Friday's weekly component from distinct, verified developments."""
+    from pipeline.topics import consolidate_topic_events
+
+    snapshot = snapshot or {}
+    weekly_items = []
+    for field in ("top_moves", "under_the_radar", "hype_check"):
+        for item in snapshot.get(field, []) or []:
+            summary = item.get("summary", "")
+            if not summary or not item.get("evidence_url"):
+                continue
+            weekly_items.append({
+                "title": summary,
+                "description": summary,
+                "url": item.get("evidence_url", ""),
+                "source": "weekly landscape",
+                "tracked_players": item.get("player_ids", []),
+                "editorial_lane": "models_products",
+            })
+    weekly_events = consolidate_topic_events(weekly_items)
+    verified_players = {
+        player_id
+        for move in snapshot.get("top_moves", []) or []
+        if move.get("evidence_url")
+        for player_id in move.get("player_ids", [])
+    }
+    daily_event_count = len(consolidate_topic_events(topics or []))
+    activity_score = len(weekly_events) + len(verified_players)
+    ceiling = max(4, max_duration or config.EPISODE_DURATION_MINUTES)
+
+    if activity_score <= 2:
+        scale = "quiet"
+        duration = min(ceiling, 6)
+        review_share = 0.25
+        review_turns = 1
+    elif activity_score <= 5:
+        scale = "standard"
+        duration = min(ceiling, 8)
+        review_share = 0.5
+        review_turns = 2
+    else:
+        scale = "dominant"
+        duration = ceiling
+        review_share = 0.75
+        review_turns = 4
+
+    return {
+        "scale": scale,
+        "target_duration_minutes": duration,
+        "weekly_review_share": review_share,
+        "weekly_review_turns_per_speaker": review_turns,
+        "activity_score": activity_score,
+        "distinct_weekly_events": len(weekly_events),
+        "verified_players_moved": len(verified_players),
+        "distinct_daily_events": daily_event_count,
+    }

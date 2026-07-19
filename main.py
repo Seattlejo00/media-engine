@@ -367,10 +367,28 @@ def run_pipeline(
             json.dumps(topics, indent=2, ensure_ascii=False), encoding="utf-8"
         )
 
-    # Friday replaces the normal daily format with an evidence-grounded
-    # seven-day landscape review. The checkpoint is local until publication
-    # succeeds, then becomes the durable baseline for the following Friday.
+    # Older checkpoints may predate event-level clustering. Collapse those
+    # articles in memory so a cheap Friday rerun can reuse research without
+    # giving one launch several story slots or rewriting the checkpoint.
+    if episode_mode == "weekly_landscape":
+        from pipeline.topics import consolidate_topic_events
+        article_count = len(topics)
+        topics = consolidate_topic_events(topics)
+        summary["editorial_event_count"] = len(topics)
+        summary["topics"] = [topic["title"] for topic in topics]
+        if len(topics) != article_count:
+            logger.info(
+                "Friday editorial pass consolidated %d researched articles into "
+                "%d events",
+                article_count,
+                len(topics),
+            )
+
+    # Friday blends the normal daily briefing with an evidence-sized seven-day
+    # review. The checkpoint is local until publication succeeds, then becomes
+    # the durable baseline for the following Friday.
     landscape = None
+    friday_profile = None
     landscape_path = episode_dir / "landscape.json"
     if episode_mode == "weekly_landscape":
         landscape = _load_checkpoint(landscape_path)
@@ -383,6 +401,15 @@ def run_pipeline(
                 json.dumps(landscape, indent=2, ensure_ascii=False), encoding="utf-8"
             )
         summary["landscape_path"] = str(landscape_path)
+        from pipeline.landscape import friday_review_profile
+        friday_profile = friday_review_profile(landscape, topics)
+        summary["friday_profile"] = friday_profile
+        logger.info(
+            "Friday profile: %s, %d minute target, %d%% weekly review",
+            friday_profile["scale"],
+            friday_profile["target_duration_minutes"],
+            round(friday_profile["weekly_review_share"] * 100),
+        )
 
     # === STEP 1c: Story memory — follow-ups + yesterday's predictions ===
     prior_predictions = None
@@ -409,6 +436,7 @@ def run_pipeline(
             landscape
             and script.get("landscape_week_end") != landscape.get("week_end")
         )
+        or script.get("friday_profile") != friday_profile
     ):
         logger.info(
             "Editorial inputs changed — regenerating script, speech, video, and clips"
@@ -426,6 +454,7 @@ def run_pipeline(
             episode_date=date_str,
             episode_mode=episode_mode,
             landscape=landscape,
+            friday_profile=friday_profile,
         )
         script_path = save_script(script, episode_dir)
     summary["script_path"] = str(script_path)

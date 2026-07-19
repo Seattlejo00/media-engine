@@ -66,6 +66,30 @@ POLICY_EVENT_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+MODEL_EVENT_PATTERN = re.compile(
+    r"\b(?:gpt[- ]?[a-z]?\d+(?:\.\d+)*|claude[- ]?[a-z]*\d+(?:\.\d+)*|"
+    r"gemini[- ]?[a-z]*\d+(?:\.\d+)*|grok[- ]?[a-z]*\d+(?:\.\d+)*|"
+    r"llama[- ]?\d+(?:\.\d+)*|qwen[- ]?[a-z]*\d+(?:\.\d+)*|"
+    r"kimi[- ]?[a-z]*\d+(?:\.\d+)*|deepseek[- ]?[a-z]*\d+(?:\.\d+)*|"
+    r"mistral[- ]?[a-z]*\d+(?:\.\d+)*)\b",
+    re.IGNORECASE,
+)
+EVENT_STOPWORDS = {
+    "about", "after", "against", "from", "into", "launch", "launches",
+    "model", "models", "new", "open", "releases", "says", "that", "the",
+    "their", "this", "with", "world", "worlds",
+}
+EVENT_ACTION_PATTERNS = {
+    "release": re.compile(r"\b(?:launch(?:es|ed)?|release[sd]?|ship(?:s|ped)?)\b", re.I),
+    "funding": re.compile(r"\b(?:funding|fundraise|raises?|valuation|valued)\b", re.I),
+    "benchmark": re.compile(r"\b(?:benchmark|evaluation|evals?|score[sd]?)\b", re.I),
+    "pricing": re.compile(r"\b(?:price|prices|pricing|subscription|costs?)\b", re.I),
+    "partnership": re.compile(r"\b(?:partner(?:s|ed|ship)?|deal|agreement)\b", re.I),
+    "acquisition": re.compile(r"\b(?:acquire[sd]?|acquisition|merger)\b", re.I),
+    "policy": re.compile(r"\b(?:law|lawsuit|policy|regulat(?:e|es|ed|ion))\b", re.I),
+    "outage": re.compile(r"\b(?:outage|downtime|incident)\b", re.I),
+}
+
 
 def _source_priority(article: dict) -> int:
     """Prefer first-party announcements, then fully identified publications."""
@@ -259,6 +283,104 @@ def deduplicate(articles: list[dict]) -> list[dict]:
     return unique
 
 
+def _event_tokens(article: dict) -> set[str]:
+    text = f"{article.get('title', '')} {article.get('description', '')}"
+    return {
+        token for token in re.findall(r"[a-z0-9]+", text.lower())
+        if len(token) > 2 and token not in EVENT_STOPWORDS
+    }
+
+
+def _model_event_ids(article: dict) -> set[str]:
+    text = f"{article.get('title', '')} {article.get('description', '')}"
+    return {
+        re.sub(r"[^a-z0-9]", "", match.group(0).lower())
+        for match in MODEL_EVENT_PATTERN.finditer(text)
+    }
+
+
+def _event_actions(article: dict) -> set[str]:
+    text = f"{article.get('title', '')} {article.get('description', '')}"
+    return {
+        action for action, pattern in EVENT_ACTION_PATTERNS.items()
+        if pattern.search(text)
+    }
+
+
+def _same_event(left: dict, right: dict) -> bool:
+    """Conservatively identify separate articles about one underlying event."""
+    left_models = _model_event_ids(left)
+    right_models = _model_event_ids(right)
+    if left_models & right_models:
+        left_actions = _event_actions(left)
+        right_actions = _event_actions(right)
+        if left_actions and right_actions:
+            return bool(left_actions & right_actions)
+
+    left_players = set(left.get("tracked_players") or [])
+    right_players = set(right.get("tracked_players") or [])
+    if left_players and right_players and not left_players.intersection(right_players):
+        return False
+    if left.get("editorial_lane") != right.get("editorial_lane"):
+        return False
+
+    left_tokens = _event_tokens(left)
+    right_tokens = _event_tokens(right)
+    union = left_tokens | right_tokens
+    return bool(union) and len(left_tokens & right_tokens) / len(union) >= 0.42
+
+
+def _canonical_event_score(article: dict) -> tuple[int, int, int]:
+    title = article.get("title", "")
+    return (
+        _source_priority(article),
+        0 if MAJOR_EVENT_PATTERN.search(title) else 1,
+        -len(article.get("description", "")),
+    )
+
+
+def consolidate_topic_events(articles: list[dict]) -> list[dict]:
+    """Collapse article-level duplicates into one canonical editorial event."""
+    clusters: list[list[dict]] = []
+    for article in articles:
+        cluster = next(
+            (items for items in clusters if _same_event(article, items[0])), None
+        )
+        if cluster is None:
+            clusters.append([article])
+        else:
+            cluster.append(article)
+
+    consolidated = []
+    for cluster in clusters:
+        canonical = min(cluster, key=_canonical_event_score)
+        primary = dict(canonical)
+        sources = list(primary.get("alt_sources") or [])
+        supporting = []
+        for item in cluster:
+            if item is canonical:
+                continue
+            supporting.append({
+                "title": item.get("title", ""),
+                "description": item.get("description") or item.get("summary", ""),
+                "source": item.get("source", ""),
+                "url": item.get("url", ""),
+            })
+            if item.get("url") and item.get("url") != primary.get("url"):
+                sources.append({"source": item.get("source", ""), "url": item["url"]})
+        primary["alt_sources"] = sources[:6]
+        primary["supporting_articles"] = supporting[:6]
+        primary["event_article_count"] = len(cluster)
+        primary["must_cover"] = any(bool(item.get("must_cover")) for item in cluster)
+        if primary["must_cover"] and not primary.get("must_cover_reason"):
+            primary["must_cover_reason"] = next(
+                (item.get("must_cover_reason", "") for item in cluster if item.get("must_cover")),
+                "High-impact editorial event",
+            )
+        consolidated.append(primary)
+    return consolidated
+
+
 def _force_priority_stories(
     stories: list[dict], articles: list[dict], priority_indexes: list[int], limit: int = 6
 ) -> list[dict]:
@@ -407,6 +529,8 @@ def rank_topics(articles: list[dict], audit: dict | None = None) -> list[dict]:
                 s["editorial_lane"] = src.get("editorial_lane")
                 s["must_cover"] = bool(src.get("must_cover"))
                 s["must_cover_reason"] = src.get("must_cover_reason", "")
+                s["event_article_count"] = src.get("event_article_count", 1)
+                s["supporting_articles"] = src.get("supporting_articles", [])
         if audit is not None:
             audit["model_high_impact_omissions"] = model_omissions
             audit["priority_indexes"] = priority_indexes
@@ -429,6 +553,8 @@ def rank_topics(articles: list[dict], audit: dict | None = None) -> list[dict]:
                 "editorial_lane": a.get("editorial_lane"),
                 "must_cover": bool(a.get("must_cover")),
                 "must_cover_reason": a.get("must_cover_reason", ""),
+                "event_article_count": a.get("event_article_count", 1),
+                "supporting_articles": a.get("supporting_articles", []),
             }
             for i, a in enumerate(articles[:5])
         ]
@@ -498,7 +624,13 @@ def discover_topics_with_audit() -> tuple[list[dict], dict]:
 
     # Deduplicate
     articles = audit_candidates(deduplicate(articles))
-    logger.info(f"{len(articles)} unique articles after dedup")
+    article_count = len(articles)
+    articles = consolidate_topic_events(articles)
+    logger.info(
+        "%d unique articles consolidated into %d editorial events",
+        article_count,
+        len(articles),
+    )
 
     # Rank
     ranking_audit: dict = {}

@@ -18,7 +18,7 @@ from pipeline.cost_tracker import tracker
 
 logger = logging.getLogger(__name__)
 
-SCRIPT_FORMAT_VERSION = 6
+SCRIPT_FORMAT_VERSION = 7
 MAX_TURN_WORDS = 48
 MAX_SENTENCE_WORDS = 22
 SIGNOFF_CTA = config.PODCAST_SIGNOFF_CTA
@@ -100,6 +100,7 @@ def _build_episode_prompt(
     special_note: str = "",
     episode_mode: str = "daily",
     landscape: dict | None = None,
+    friday_profile: dict | None = None,
 ) -> str:
     """Fill in the showrunner template with today's topics and roster."""
     template_name = (
@@ -107,13 +108,47 @@ def _build_episode_prompt(
         else "showrunner.txt"
     )
     template = _load_prompt(template_name)
-    duration = config.EPISODE_DURATION_MINUTES
+    if episode_mode == "weekly_landscape":
+        from pipeline.landscape import friday_review_profile
+        friday_profile = friday_profile or friday_review_profile(landscape, topics)
+    else:
+        friday_profile = {}
+
+    duration = friday_profile.get(
+        "target_duration_minutes", config.EPISODE_DURATION_MINUTES
+    )
     word_count = duration * 150  # ~150 words/min spoken
     min_word_count = int(word_count * 0.8)  # hard floor
 
-    # Scale exchange counts based on target duration
-    # These are calibrated so total output matches the word count target
-    if duration >= 25:
+    # Friday's length and weekly share are evidence-sized. Daily episodes retain
+    # their existing duration calibration.
+    if episode_mode == "weekly_landscape":
+        friday_scale = friday_profile["scale"]
+        if friday_scale == "quiet":
+            main_story_count = 2
+            main_exchanges = 2
+            cold_open_exchanges = 1
+            lightning_exchanges = 1
+            signoff_exchanges = 1
+            segment_range = "exactly 5"
+            weekly_segment_range = "exactly 1 compact segment"
+        elif friday_scale == "standard":
+            main_story_count = 2
+            main_exchanges = 3
+            cold_open_exchanges = 1
+            lightning_exchanges = 1
+            signoff_exchanges = 1
+            segment_range = "5-6"
+            weekly_segment_range = "1-2 segments"
+        else:
+            main_story_count = 1
+            main_exchanges = 5
+            cold_open_exchanges = 2
+            lightning_exchanges = 2
+            signoff_exchanges = 2
+            segment_range = "6-7"
+            weekly_segment_range = "2-3 segments; it may be the episode's spine"
+    elif duration >= 25:
         main_story_count = 3
         main_exchanges = 12       # deep dives, ~5-7 min each
         cold_open_exchanges = 3
@@ -131,6 +166,11 @@ def _build_episode_prompt(
         cold_open_exchanges = 2
         lightning_exchanges = 2
         signoff_exchanges = 2
+
+    if episode_mode != "weekly_landscape":
+        friday_scale = "not_applicable"
+        segment_range = "as specified below"
+        weekly_segment_range = "not applicable"
 
     # Build dynamic host description
     speaker_parts = []
@@ -203,6 +243,19 @@ def _build_episode_prompt(
         cold_open_exchanges=cold_open_exchanges,
         lightning_exchanges=lightning_exchanges,
         signoff_exchanges=signoff_exchanges,
+        friday_scale=friday_scale,
+        weekly_review_percent=round(
+            friday_profile.get("weekly_review_share", 0) * 100
+        ),
+        weekly_review_turns=friday_profile.get(
+            "weekly_review_turns_per_speaker", 0
+        ),
+        friday_activity_score=friday_profile.get("activity_score", 0),
+        distinct_weekly_events=friday_profile.get("distinct_weekly_events", 0),
+        distinct_daily_events=friday_profile.get("distinct_daily_events", 0),
+        verified_players_moved=friday_profile.get("verified_players_moved", 0),
+        segment_range=segment_range,
+        weekly_segment_range=weekly_segment_range,
     )
 
 
@@ -214,6 +267,7 @@ def generate_script(
     episode_date: str | None = None,
     episode_mode: str = "daily",
     landscape: dict | None = None,
+    friday_profile: dict | None = None,
 ) -> dict:
     """
     Generate the full episode script.
@@ -230,6 +284,10 @@ def generate_script(
     if roster is None:
         roster = config.get_episode_roster()
 
+    if episode_mode == "weekly_landscape" and not friday_profile:
+        from pipeline.landscape import friday_review_profile
+        friday_profile = friday_review_profile(landscape, topics)
+
     if episode_date:
         date_str = datetime.strptime(episode_date, "%Y-%m-%d").strftime("%B %d, %Y")
     else:
@@ -244,6 +302,7 @@ def generate_script(
         special_note=special_note,
         episode_mode=episode_mode,
         landscape=landscape,
+        friday_profile=friday_profile,
     )
 
     logger.info("Step 2: Turn-by-turn conversation — each host speaks for itself...")
@@ -265,6 +324,11 @@ def generate_script(
     final_script["special_note"] = special_note
     final_script["episode_mode"] = episode_mode
     final_script["landscape_week_end"] = (landscape or {}).get("week_end")
+    final_script["friday_profile"] = friday_profile or None
+    final_script["target_duration_minutes"] = (
+        (friday_profile or {}).get("target_duration_minutes")
+        or config.EPISODE_DURATION_MINUTES
+    )
     final_script["script_format_version"] = SCRIPT_FORMAT_VERSION
 
     return final_script
@@ -278,6 +342,7 @@ def _generate_episode_plan(
     special_note: str = "",
     episode_mode: str = "daily",
     landscape: dict | None = None,
+    friday_profile: dict | None = None,
 ) -> dict:
     """Showrunner pass: Claude plans the episode structure — no dialogue."""
     client = Anthropic(api_key=config.ANTHROPIC_API_KEY)
@@ -289,6 +354,7 @@ def _generate_episode_plan(
         special_note=special_note,
         episode_mode=episode_mode,
         landscape=landscape,
+        friday_profile=friday_profile,
     )
 
     response = client.messages.create(
