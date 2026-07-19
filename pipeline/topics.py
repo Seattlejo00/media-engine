@@ -80,7 +80,10 @@ EVENT_STOPWORDS = {
     "their", "this", "with", "world", "worlds",
 }
 EVENT_ACTION_PATTERNS = {
-    "release": re.compile(r"\b(?:launch(?:es|ed)?|release[sd]?|ship(?:s|ped)?)\b", re.I),
+    "release": re.compile(
+        r"\b(?:launch(?:es|ed)?|release[sd]?|ship(?:s|ped)?|unveil(?:s|ed)?)\b",
+        re.I,
+    ),
     "funding": re.compile(r"\b(?:funding|fundraise|raises?|valuation|valued)\b", re.I),
     "benchmark": re.compile(r"\b(?:benchmark|evaluation|evals?|score[sd]?)\b", re.I),
     "pricing": re.compile(r"\b(?:price|prices|pricing|subscription|costs?)\b", re.I),
@@ -283,8 +286,21 @@ def deduplicate(articles: list[dict]) -> list[dict]:
     return unique
 
 
+def _event_text(article: dict) -> str:
+    """Return event-level text from both discovery and researched checkpoints."""
+    brief = article.get("brief") or {}
+    facts = " ".join(brief.get("key_facts") or [])
+    return " ".join(str(value or "") for value in (
+        article.get("title"),
+        article.get("description"),
+        article.get("summary"),
+        brief.get("context"),
+        facts,
+    ))
+
+
 def _event_tokens(article: dict) -> set[str]:
-    text = f"{article.get('title', '')} {article.get('description', '')}"
+    text = _event_text(article)
     return {
         token for token in re.findall(r"[a-z0-9]+", text.lower())
         if len(token) > 2 and token not in EVENT_STOPWORDS
@@ -292,7 +308,7 @@ def _event_tokens(article: dict) -> set[str]:
 
 
 def _model_event_ids(article: dict) -> set[str]:
-    text = f"{article.get('title', '')} {article.get('description', '')}"
+    text = _event_text(article)
     return {
         re.sub(r"[^a-z0-9]", "", match.group(0).lower())
         for match in MODEL_EVENT_PATTERN.finditer(text)
@@ -300,7 +316,7 @@ def _model_event_ids(article: dict) -> set[str]:
 
 
 def _event_actions(article: dict) -> set[str]:
-    text = f"{article.get('title', '')} {article.get('description', '')}"
+    text = _event_text(article)
     return {
         action for action, pattern in EVENT_ACTION_PATTERNS.items()
         if pattern.search(text)
@@ -356,7 +372,7 @@ def consolidate_topic_events(articles: list[dict]) -> list[dict]:
         canonical = min(cluster, key=_canonical_event_score)
         primary = dict(canonical)
         sources = list(primary.get("alt_sources") or [])
-        supporting = []
+        supporting = list(primary.get("supporting_articles") or [])
         for item in cluster:
             if item is canonical:
                 continue
@@ -368,9 +384,18 @@ def consolidate_topic_events(articles: list[dict]) -> list[dict]:
             })
             if item.get("url") and item.get("url") != primary.get("url"):
                 sources.append({"source": item.get("source", ""), "url": item["url"]})
-        primary["alt_sources"] = sources[:6]
-        primary["supporting_articles"] = supporting[:6]
-        primary["event_article_count"] = len(cluster)
+            supporting.extend(item.get("supporting_articles") or [])
+            sources.extend(item.get("alt_sources") or [])
+        primary["alt_sources"] = list({
+            source.get("url", ""): source for source in sources if source.get("url")
+        }.values())[:6]
+        primary["supporting_articles"] = list({
+            source.get("url", ""): source
+            for source in supporting if source.get("url")
+        }.values())[:6]
+        primary["event_article_count"] = sum(
+            max(1, int(item.get("event_article_count", 1))) for item in cluster
+        )
         primary["must_cover"] = any(bool(item.get("must_cover")) for item in cluster)
         if primary["must_cover"] and not primary.get("must_cover_reason"):
             primary["must_cover_reason"] = next(

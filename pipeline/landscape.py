@@ -411,15 +411,44 @@ def friday_review_profile(
                 "tracked_players": item.get("player_ids", []),
                 "editorial_lane": "models_products",
             })
-    weekly_events = consolidate_topic_events(weekly_items)
+    topic_events = consolidate_topic_events(topics or [])
+    topic_url_sets = []
+    for topic in topic_events:
+        urls = {topic.get("url", "")}
+        urls.update(
+            source.get("url", "") for source in topic.get("alt_sources", [])
+        )
+        urls.update(
+            source.get("url", "")
+            for source in topic.get("supporting_articles", [])
+        )
+        topic_url_sets.append(urls - {""})
+
+    matched_topic_events = set()
+    unmatched_weekly_items = []
+    for item in weekly_items:
+        match = next(
+            (
+                index for index, urls in enumerate(topic_url_sets)
+                if item.get("url") in urls
+            ),
+            None,
+        )
+        if match is None:
+            unmatched_weekly_items.append(item)
+        else:
+            matched_topic_events.add(match)
+    weekly_event_count = len(matched_topic_events) + len(
+        consolidate_topic_events(unmatched_weekly_items)
+    )
     verified_players = {
         player_id
         for move in snapshot.get("top_moves", []) or []
         if move.get("evidence_url")
         for player_id in move.get("player_ids", [])
     }
-    daily_event_count = len(consolidate_topic_events(topics or []))
-    activity_score = len(weekly_events) + len(verified_players)
+    daily_event_count = len(topic_events)
+    activity_score = weekly_event_count + len(verified_players)
     ceiling = max(4, max_duration or config.EPISODE_DURATION_MINUTES)
 
     if activity_score <= 2:
@@ -444,7 +473,7 @@ def friday_review_profile(
         "weekly_review_share": review_share,
         "weekly_review_turns_per_speaker": review_turns,
         "activity_score": activity_score,
-        "distinct_weekly_events": len(weekly_events),
+        "distinct_weekly_events": weekly_event_count,
         "verified_players_moved": len(verified_players),
         "distinct_daily_events": daily_event_count,
     }

@@ -101,6 +101,9 @@ class CoverageAuditTests(unittest.TestCase):
         self.assertEqual(events[0]["event_article_count"], 3)
         self.assertEqual(len(events[0]["supporting_articles"]), 2)
         self.assertTrue(events[0]["must_cover"])
+        rerun = consolidate_topic_events(events)
+        self.assertEqual(rerun[0]["event_article_count"], 3)
+        self.assertEqual(len(rerun[0]["supporting_articles"]), 2)
 
     def test_same_model_different_action_remains_a_separate_event(self):
         events = consolidate_topic_events(audit_candidates([
@@ -118,6 +121,44 @@ class CoverageAuditTests(unittest.TestCase):
             },
         ]))
         self.assertEqual(len(events), 2)
+
+    def test_legacy_research_checkpoint_clusters_launch_analysis_across_lanes(self):
+        events = consolidate_topic_events(audit_candidates([
+            {
+                "title": "Kimi K3 is now the most intelligent model",
+                "summary": "Moonshot AI launched Kimi K3 and it leads benchmarks.",
+                "source": "Analysis A",
+                "url": "https://example.com/kimi-analysis",
+                "editorial_lane": "research",
+                "tracked_players": ["moonshot"],
+            },
+            {
+                "title": "New Moonshot Kimi K3 challenges GPT-5.6",
+                "summary": "Kimi K3 was unveiled by Moonshot AI this week.",
+                "source": "Analysis B",
+                "url": "https://example.com/kimi-comparison",
+                "editorial_lane": "models_products",
+                "tracked_players": ["moonshot", "openai"],
+            },
+            {
+                "title": "Kimi K3 may impact Anthropic valuation",
+                "summary": "Moonshot launched Kimi K3 with implications for rivals.",
+                "source": "Analysis C",
+                "url": "https://example.com/kimi-valuation",
+                "editorial_lane": "models_products",
+                "tracked_players": ["moonshot", "anthropic"],
+            },
+            {
+                "title": "Moonshot releases Kimi K3 open-source model",
+                "summary": "Moonshot's Kimi K3 release rattled global markets.",
+                "source": "Analysis D",
+                "url": "https://example.com/kimi-release",
+                "editorial_lane": "models_products",
+                "tracked_players": ["moonshot"],
+            },
+        ]))
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0]["event_article_count"], 4)
 
 
 class WeeklyLandscapeTests(unittest.TestCase):
@@ -198,12 +239,39 @@ class WeeklyLandscapeTests(unittest.TestCase):
             "under_the_radar": [{
                 "summary": "AI labor protests spread to another studio.",
                 "evidence_url": "https://news.example/protests",
+            }, {
+                "summary": "Kimi K3 may pressure incumbent valuations.",
+                "evidence_url": "https://news.example/kimi-valuation",
             }],
-            "hype_check": [],
-        }, max_duration=12)
+            "hype_check": [{
+                "summary": "Claims that Kimi K3 dominates every benchmark ran ahead of evidence.",
+                "evidence_url": "https://news.example/kimi-hype",
+            }],
+        }, [{
+            "title": "Moonshot launched Kimi K3",
+            "summary": "Moonshot released a new flagship.",
+            "url": "https://kimi.com/k3",
+            "tracked_players": ["moonshot"],
+            "editorial_lane": "models_products",
+            "supporting_articles": [
+                {"url": "https://news.example/kimi-valuation"},
+                {"url": "https://news.example/kimi-hype"},
+            ],
+        }, {
+            "title": "OpenAI released a new agent product",
+            "url": "https://openai.com/agent",
+            "tracked_players": ["openai"],
+            "editorial_lane": "models_products",
+        }, {
+            "title": "AI labor protests spread",
+            "url": "https://news.example/protests",
+            "tracked_players": [],
+            "editorial_lane": "models_products",
+        }], max_duration=12)
         self.assertEqual(profile["scale"], "standard")
         self.assertEqual(profile["target_duration_minutes"], 8)
         self.assertEqual(profile["weekly_review_share"], 0.5)
+        self.assertEqual(profile["distinct_weekly_events"], 3)
 
     def test_busy_friday_allows_weekly_review_to_dominate(self):
         events = [
