@@ -53,6 +53,25 @@ class ContextWindowSiteTests(unittest.TestCase):
         for episode in expected:
             self.assertIn(episode["date"], score_page)
 
+    def test_landscape_board_and_structured_source_are_published(self):
+        page = (self.site / "landscape" / "index.html").read_text()
+        source = json.loads((self.site / "static" / "landscape.json").read_text())
+        self.assertIn("The AI", page)
+        self.assertIn("landscape", page.lower())
+        self.assertIn("schema_version", source)
+        self.assertIn('/landscape/', (self.site / "sitemap.xml").read_text())
+
+    def test_populated_landscape_renders_player_status_and_metrics(self):
+        fixture = json.loads(
+            (ROOT / "tests" / "fixtures" / "landscape_populated.json").read_text()
+        )
+        rendered = site_build.build_landscape(fixture)
+        self.assertIn("Moonshot/Kimi", rendered)
+        self.assertIn("Kimi K3", rendered)
+        self.assertIn("MUST-COVER RECALL", rendered)
+        for player in fixture["players"]:
+            self.assertIn(player["name"], rendered)
+
 
 if __name__ == "__main__":
     unittest.main()

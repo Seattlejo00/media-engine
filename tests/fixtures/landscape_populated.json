@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "week_start": "2026-07-11",
+  "week_end": "2026-07-17",
+  "headline": "An open-model launch reshaped the week while several incumbents held position",
+  "summary": "Moonshot made the clearest verified move. Most other tracked labs had no sourced flagship change, and several positions remain deliberately unclear.",
+  "top_moves": [
+    {
+      "player_ids": ["moonshot"],
+      "summary": "Moonshot launched Kimi K3 and moved into the week's central frontier-model conversation.",
+      "evidence_url": "https://www.kimi.com/help/agent/agent-overview"
+    },
+    {
+      "player_ids": ["google"],
+      "summary": "Google DeepMind's governance proposals remained strategically important without constituting a new flagship release.",
+      "evidence_url": "https://deepmind.google/"
+    }
+  ],
+  "under_the_radar": [
+    {
+      "summary": "Availability and pricing may matter as much as benchmark leadership when developers choose among frontier models.",
+      "evidence_url": "https://www.kimi.com/help/agent/agent-overview"
+    }
+  ],
+  "hype_check": [],
+  "next_week": [
+    "Watch for independent Kimi K3 evaluations rather than relying only on launch benchmarks.",
+    "Watch whether other tracked labs answer with pricing, availability, or model updates.",
+    "Watch whether open-weight availability changes real developer adoption."
+  ],
+  "players": [
+    {
+      "id": "openai",
+      "name": "OpenAI",
+      "current_flagship": "Unknown",
+      "changed": false,
+      "change_summary": "No verified material flagship change in this week's evidence.",
+      "trajectory": "unclear",
+      "confidence": "low",
+      "evidence": [],
+      "last_covered": "2026-07-16",
+      "watch_next": "A sourced model, product, pricing, or availability change."
+    },
+    {
+      "id": "anthropic",
+      "name": "Anthropic",
+      "current_flagship": "Unknown",
+      "changed": false,
+      "change_summary": "IPO reporting affected the company narrative but did not verify a frontier-model change.",
+      "trajectory": "steady",
+      "confidence": "medium",
+      "evidence": [],
+      "last_covered": "2026-07-17",
+      "watch_next": "Whether company developments translate into a product or research change."
+    },
+    {
+      "id": "google",
+      "name": "Google DeepMind",
+      "current_flagship": "Unknown",
+      "changed": false,
+      "change_summary": "Governance and safety proposals dominated coverage; the supplied evidence did not verify a new flagship.",
+      "trajectory": "steady",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "claim": "DeepMind leadership advocated a standards body for frontier models.",
+          "source_title": "Google DeepMind",
+          "url": "https://deepmind.google/",
+          "date": "2026-07-17"
+        }
+      ],
+      "last_covered": "2026-07-18",
+      "watch_next": "Whether the governance proposal gains concrete institutional backing."
+    },
+    {
+      "id": "meta",
+      "name": "Meta",
+      "current_flagship": "Unknown",
+      "changed": false,
+      "change_summary": "No verified material model change in the weekly record.",
+      "trajectory": "unclear",
+      "confidence": "low",
+      "evidence": [],
+      "last_covered": "2026-07-16",
+      "watch_next": "A sourced Llama, product, or open-model announcement."
+    },
+    {
+      "id": "xai",
+      "name": "xAI",
+      "current_flagship": "Unknown",
+      "changed": false,
+      "change_summary": "No verified material change in the evidence window.",
+      "trajectory": "unclear",
+      "confidence": "low",
+      "evidence": [],
+      "last_covered": null,
+      "watch_next": "A verified Grok release, pricing change, or independent evaluation."
+    },
+    {
+      "id": "deepseek",
+      "name": "DeepSeek",
+      "current_flagship": "Unknown",
+      "changed": false,
+      "change_summary": "The weekly record contained business context but no sourced flagship update.",
+      "trajectory": "steady",
+      "confidence": "low",
+      "evidence": [],
+      "last_covered": "2026-07-15",
+      "watch_next": "A primary-source release or independent model evaluation."
+    },
+    {
+      "id": "moonshot",
+      "name": "Moonshot/Kimi",
+      "current_flagship": "Kimi K3",
+      "changed": true,
+      "change_summary": "Moonshot released Kimi K3, giving it the clearest verified player-level change of the week.",
+      "trajectory": "rising",
+      "confidence": "high",
+      "evidence": [
+        {
+          "claim": "Kimi's official timeline records the Kimi K3 release.",
+          "source_title": "Kimi Agent overview",
+          "url": "https://www.kimi.com/help/agent/agent-overview",
+          "date": "2026-07-16"
+        }
+      ],
+      "last_covered": "2026-07-17",
+      "watch_next": "Independent evaluations, real-world adoption, pricing response, and open-weight availability."
+    },
+    {
+      "id": "alibaba",
+      "name": "Alibaba/Qwen",
+      "current_flagship": "Unknown",
+      "changed": false,
+      "change_summary": "No verified material change appeared in the supplied weekly evidence.",
+      "trajectory": "unclear",
+      "confidence": "low",
+      "evidence": [],
+      "last_covered": null,
+      "watch_next": "A primary-source Qwen model or availability announcement."
+    },
+    {
+      "id": "mistral",
+      "name": "Mistral",
+      "current_flagship": "Unknown",
+      "changed": false,
+      "change_summary": "No verified material change appeared in the supplied weekly evidence.",
+      "trajectory": "unclear",
+      "confidence": "low",
+      "evidence": [],
+      "last_covered": null,
+      "watch_next": "A sourced model launch, enterprise deal, or availability change with measurable consequences."
+    }
+  ],
+  "coverage_metrics": {
+    "days_audited": 7,
+    "candidate_count": 126,
+    "must_cover_count": 4,
+    "must_cover_selected": 4,
+    "must_cover_recall_percent": 100.0,
+    "tracked_players_seen": ["openai", "anthropic", "google", "meta", "deepseek", "moonshot"],
+    "tracked_players_covered": ["openai", "anthropic", "google", "meta", "deepseek", "moonshot"],
+    "unresolved_must_cover": []
+  }
+}

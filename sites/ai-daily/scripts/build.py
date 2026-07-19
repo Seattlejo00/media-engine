@@ -83,7 +83,7 @@ def page(title: str, desc: str, path: str, body: str, active: str = "",
 <meta name="twitter:description" content="{esc(desc)}">
 <meta name="twitter:image" content="{esc(image)}">
 <link rel="icon" href="/podcast-cover.png">
-<link rel="stylesheet" href="/static/site.css?v=2">
+<link rel="stylesheet" href="/static/site.css?v=3">
 {extra_head}
 <script>
   window.va = window.va || function () {{ (window.vaq = window.vaq || []).push(arguments); }};
@@ -93,7 +93,7 @@ def page(title: str, desc: str, path: str, body: str, active: str = "",
 <body>
 <header class="site-header wrap">
   <a class="logo" href="/"><i></i>THE CONTEXT WINDOW<small>BY DISTOMOS</small></a>
-  <nav>{nav("/episodes/", "Episodes", "episodes")}{nav("/scores/", "Scores", "scores")}{nav("/about.html", "About", "about")}</nav>
+  <nav>{nav("/episodes/", "Episodes", "episodes")}{nav("/landscape/", "Landscape", "landscape")}{nav("/scores/", "Scores", "scores")}{nav("/about.html", "About", "about")}</nav>
   <div class="header-platforms">
     <a class="platform-button spotify" href="{SPOTIFY_SHOW}" target="_blank" rel="noopener"><i></i>Spotify <b>&#8599;</b></a>
     <a class="platform-button youtube" href="{YT_CHANNEL}" target="_blank" rel="noopener"><i></i>YouTube <b>&#8599;</b></a>
@@ -105,7 +105,7 @@ def page(title: str, desc: str, path: str, body: str, active: str = "",
 <footer><div class="wrap footer-inner">
   <a class="logo" href="/"><i></i>THE CONTEXT WINDOW</a>
   <p>AI news, hosted by AIs.<br>A Distomos publication.</p>
-  <div><a href="/episodes/">Episodes</a><a href="/scores/">Score history</a><a href="/about.html">About</a><a href="/privacy.html">Privacy</a><a href="{SPOTIFY_SHOW}" target="_blank" rel="noopener">Spotify</a><a href="{YT_CHANNEL}" target="_blank" rel="noopener">YouTube</a></div>
+  <div><a href="/episodes/">Episodes</a><a href="/landscape/">AI landscape</a><a href="/scores/">Score history</a><a href="/about.html">About</a><a href="/privacy.html">Privacy</a><a href="{SPOTIFY_SHOW}" target="_blank" rel="noopener">Spotify</a><a href="{YT_CHANNEL}" target="_blank" rel="noopener">YouTube</a></div>
   <small>&copy; {datetime.now().year} DISTOMOS</small>
 </div></footer>
 <script>
@@ -185,8 +185,13 @@ def briefing_snapshot(ep: dict) -> str:
         for i, topic in enumerate(topics, 1)
     )
     why = esc(ep.get("description"))
+    snapshot_label = (
+        "THE WEEK IN THREE MOVES"
+        if ep.get("episode_mode") == "weekly_landscape"
+        else "THE THREE THINGS TO KNOW"
+    )
     return f"""<section class="snapshot wrap">
-  <div class="snapshot-title"><span>THE THREE THINGS TO KNOW</span><small>BEFORE YOU PRESS PLAY</small></div>
+  <div class="snapshot-title"><span>{snapshot_label}</span><small>BEFORE YOU PRESS PLAY</small></div>
   <ol>{items}</ol>
   {f'<p><b>WHY IT MATTERS</b>{why}</p>' if why else ''}
 </section>"""
@@ -250,6 +255,88 @@ def build_scores(episodes: list[dict]) -> str:
     return page("AI Score History — The Context Window", "Every Context Window AI Score, with the complete category breakdown and episode record.", "/scores/", body, active="scores")
 
 
+def build_landscape(snapshot: dict) -> str:
+    """Render the latest evidence-grounded Friday player board."""
+    week_end = snapshot.get("week_end")
+    if not week_end:
+        body = f"""<div class="inner wrap landscape-page">
+  <div class="page-intro"><p>UPDATED FRIDAYS</p><h1>The AI<br><em>landscape.</em></h1><span>{esc(snapshot.get("summary"))}</span></div>
+  <div class="landscape-empty"><h2>No weekly snapshot yet.</h2><p>The first complete player board will publish with Friday's landscape-review episode.</p></div>
+</div>"""
+        return page("AI Landscape — The Context Window", snapshot.get("summary", ""), "/landscape/", body, active="landscape")
+
+    moves = ""
+    for index, move in enumerate(snapshot.get("top_moves", []), 1):
+        source_link = ""
+        if move.get("evidence_url"):
+            source_link = (
+                f'<a href="{esc(move["evidence_url"])}" target="_blank" '
+                'rel="noopener">Evidence &#8599;</a>'
+            )
+        moves += (
+            f'<article><span>{index:02d}</span><p>{esc(move.get("summary"))}</p>'
+            f'{source_link}</article>'
+        )
+    moves = moves or '<p class="muted-copy">No material top moves were verified this week.</p>'
+
+    def note_items(items: list[dict]) -> str:
+        rendered = ""
+        for item in items:
+            source_link = ""
+            if item.get("evidence_url"):
+                source_link = (
+                    f' <a href="{esc(item["evidence_url"])}" target="_blank" '
+                    'rel="noopener">Source &#8599;</a>'
+                )
+            rendered += f'<li>{esc(item.get("summary"))}{source_link}</li>'
+        return rendered or "<li>No sourced item this week.</li>"
+
+    under_radar = note_items(snapshot.get("under_the_radar", []))
+    hype_check = note_items(snapshot.get("hype_check", []))
+
+    player_cards = ""
+    for player in snapshot.get("players", []):
+        trajectory = player.get("trajectory", "unclear")
+        evidence = ""
+        for item in player.get("evidence", []):
+            source_link = ""
+            if item.get("url"):
+                source_link = (
+                    f' <a href="{esc(item["url"])}" target="_blank" rel="noopener">'
+                    f'{esc(item.get("source_title") or "Source")} &#8599;</a>'
+                )
+            evidence += f'<li>{esc(item.get("claim"))}{source_link}</li>'
+        evidence = evidence or "<li>No verified evidence of a material change this week.</li>"
+        changed_label = "Changed this week" if player.get("changed") else "No verified change"
+        player_cards += f"""<article class="player-card">
+  <div class="player-head"><div><small>{esc(changed_label)}</small><h2>{esc(player.get("name"))}</h2></div><span class="trajectory {esc(trajectory)}">{esc(trajectory)}</span></div>
+  <dl><div><dt>Current flagship</dt><dd>{esc(player.get("current_flagship"))}</dd></div><div><dt>Position</dt><dd>{esc(player.get("change_summary"))}</dd></div><div><dt>Last covered</dt><dd>{esc(player.get("last_covered") or "No verified mention")}</dd></div><div><dt>Watch next</dt><dd>{esc(player.get("watch_next"))}</dd></div></dl>
+  <details><summary>Evidence &middot; {esc(player.get("confidence"))} confidence</summary><ul>{evidence}</ul></details>
+</article>"""
+
+    watch = "".join(f"<li>{esc(item)}</li>" for item in snapshot.get("next_week", []))
+    coverage = snapshot.get("coverage_metrics") or {}
+    coverage_html = ""
+    if coverage:
+        coverage_html = f"""<section class="coverage-metrics">
+  <div><small>DAYS AUDITED</small><strong>{esc(coverage.get("days_audited"))}</strong></div>
+  <div><small>CANDIDATES REVIEWED</small><strong>{esc(coverage.get("candidate_count"))}</strong></div>
+  <div><small>MUST-COVER RECALL</small><strong>{esc(coverage.get("must_cover_recall_percent"))}%</strong></div>
+  <div><small>PLAYERS COVERED</small><strong>{esc(len(coverage.get("tracked_players_covered", [])))}</strong></div>
+</section>"""
+    body = f"""<div class="inner wrap landscape-page">
+  <div class="page-intro"><p>WEEK ENDING {esc(week_end)}</p><h1>The AI<br><em>landscape.</em></h1><span>{esc(snapshot.get("summary"))}</span></div>
+  <section class="landscape-moves"><div><small>THE WEEK IN THREE MOVES</small><h2>{esc(snapshot.get("headline"))}</h2></div><div>{moves}</div></section>
+  {coverage_html}
+  <section class="landscape-notes"><article><small>UNDER THE RADAR</small><ul>{under_radar}</ul></article><article><small>HYPE CHECK</small><ul>{hype_check}</ul></article></section>
+  <div class="landscape-board-head"><div><small>THE FRONTIER BOARD</small><h2>What changed. What didn't.</h2></div><p>Movement is assigned only when the week's sourced record supports it. “Unclear” is a finding, not a missing score.</p></div>
+  <section class="player-grid">{player_cards}</section>
+  <section class="next-watch"><div><small>NEXT WEEK</small><h2>What to watch.</h2></div><ol>{watch or '<li>No specific watch items were verified.</li>'}</ol></section>
+  <p class="ledger-note">This board is generated from the show's researched stories, daily candidate audits, and the previous weekly snapshot. The structured record is available at <a href="/static/landscape.json">/static/landscape.json</a>.</p>
+</div>"""
+    return page("AI Landscape — The Context Window", snapshot.get("summary", ""), "/landscape/", body, active="landscape")
+
+
 def story_grid(ep: dict) -> str:
     topics = (ep.get("topics") or [])[:4]
     if not topics:
@@ -264,8 +351,9 @@ def story_grid(ep: dict) -> str:
   <h3>{esc(t.get("title"))}</h3>
   <p>{src}</p>
 </article>"""
+    heading = "This week's evidence" if ep.get("episode_mode") == "weekly_landscape" else "Today's stories"
     return f"""<section class="stories wrap">
-  <div class="section-heading"><div><span>01</span><h2>Today's stories</h2></div>
+  <div class="section-heading"><div><span>01</span><h2>{heading}</h2></div>
   <a href="/episodes/{ep["date"]}.html">Read the transcript <b>&#8599;</b></a></div>
   <div class="story-grid">{cards}</div>
 </section>"""
@@ -388,6 +476,10 @@ def build_episode(ep: dict, ep_num: int) -> str | None:
         }
     schema_json = json.dumps(schema, ensure_ascii=False).replace("</", "<\\/")
 
+    landscape_link = (
+        '    <a class="method" href="/landscape/">View the complete frontier board &#8599;</a>\n'
+        if ep.get("episode_mode") == "weekly_landscape" else ""
+    )
     body = f"""<div class="inner wrap">
   <div class="episode-head">
     <p>EPISODE {ep_num} &middot; {long_date.upper()}, {year}</p>
@@ -395,7 +487,7 @@ def build_episode(ep: dict, ep_num: int) -> str | None:
     <p class="standfirst">{esc(ep.get("description"))}</p>
     {audio_block(ep)}
     {platforms_row(ep)}
-  </div>
+{landscape_link}  </div>
   {briefing_snapshot(ep)}
   <div class="episode-tools"><span>{len(ep.get("topics") or [])} SOURCES &middot; FULL TRANSCRIPT</span><button class="share" data-event="Share episode" data-episode="{esc(ep["date"])}">SHARE THIS BRIEFING &#8599;</button></div>
   <article class="transcript">
@@ -420,10 +512,13 @@ def build_about(episodes: list[dict]) -> str:
   <div class="about-grid">
     <h2>The first daily news show produced and hosted entirely by AI.</h2>
     <div>
-      <p>Every morning, an automated pipeline reads the day's AI news, picks the
-      stories that matter, and hands them to two hosts — Claude and ChatGPT —
+      <p>Every morning, an automated pipeline reads the day's AI news, audits the
+      candidate set for consequential omissions, and hands the stories that matter to Claude and ChatGPT —
       who discuss them as themselves. The episode is produced, scored,
       published and distributed with no human in the loop.</p>
+      <p>On Fridays, the daily briefing becomes a seven-day landscape review. A
+      sourced player board records what changed across the leading AI labs,
+      what stayed steady, and what remains unclear.</p>
       <p>That automation is part of the experiment, not a claim of infallibility.
       Every episode includes its source material and a complete transcript so
       listeners can inspect the reporting behind the conversation.</p>
@@ -438,10 +533,10 @@ def build_about(episodes: list[dict]) -> str:
   <section class="methodology" id="methodology">
     <div class="section-heading"><div><span>01</span><h2>How it works</h2></div></div>
     <div class="method-grid">
-      <article><span>01</span><h3>Discover</h3><p>The system gathers current AI reporting and removes duplicate or low-signal stories.</p></article>
+      <article><span>01</span><h3>Discover</h3><p>The system gathers reporting across tracked labs and editorial lanes, then flags major launches and policy events that must survive ranking.</p></article>
       <article><span>02</span><h3>Research</h3><p>Candidate stories are checked against their source material before they reach the hosts.</p></article>
       <article><span>03</span><h3>Discuss</h3><p>The hosts explain the facts, challenge one another, and identify what changes for listeners.</p></article>
-      <article><span>04</span><h3>Publish</h3><p>Audio, video, scores, sources, and transcripts are generated and distributed automatically.</p></article>
+      <article><span>04</span><h3>Publish</h3><p>Audio, video, scores, sources, transcripts, and the Friday landscape board are generated and distributed automatically.</p></article>
     </div>
     <div class="score-method">
       <div><p class="section-kicker">TODAY'S AI SCORE</p><h3>A daily measure of how consequential the news cycle is.</h3></div>
@@ -468,16 +563,25 @@ def build_callback() -> str:
 def main() -> None:
     articles_path = ROOT / "static" / "articles.json"
     episodes = json.loads(articles_path.read_text(encoding="utf-8"))
+    landscape_path = ROOT / "static" / "landscape.json"
+    landscape = (
+        json.loads(landscape_path.read_text(encoding="utf-8"))
+        if landscape_path.exists() else {}
+    )
     episodes.sort(key=lambda e: e["date"], reverse=True)
     if not episodes:
         raise SystemExit("articles.json is empty — nothing to build")
 
     (ROOT / "episodes").mkdir(exist_ok=True)
     (ROOT / "scores").mkdir(exist_ok=True)
+    (ROOT / "landscape").mkdir(exist_ok=True)
 
     (ROOT / "index.html").write_text(build_index(episodes), encoding="utf-8")
     (ROOT / "episodes" / "index.html").write_text(build_archive(episodes), encoding="utf-8")
     (ROOT / "scores" / "index.html").write_text(build_scores(episodes), encoding="utf-8")
+    (ROOT / "landscape" / "index.html").write_text(
+        build_landscape(landscape), encoding="utf-8"
+    )
     (ROOT / "about.html").write_text(build_about(episodes), encoding="utf-8")
     (ROOT / "tiktok-callback.html").write_text(build_callback(), encoding="utf-8")
     score_log = [
@@ -499,6 +603,7 @@ def main() -> None:
         (f"{SITE_URL}/", episodes[0]["date"]),
         (f"{SITE_URL}/episodes/", episodes[0]["date"]),
         (f"{SITE_URL}/scores/", episodes[0]["date"]),
+        (f"{SITE_URL}/landscape/", landscape.get("week_end") or episodes[0]["date"]),
         (f"{SITE_URL}/about.html", episodes[0]["date"]),
     ] + [
         (f'{SITE_URL}/episodes/{ep["date"]}.html', ep["date"])
@@ -526,7 +631,7 @@ def main() -> None:
             (ROOT / "episodes" / f'{ep["date"]}.html').write_text(html_page, encoding="utf-8")
             built += 1
 
-    print(f"Built homepage, archive, about + {built}/{total} episode pages")
+    print(f"Built homepage, archive, landscape, about + {built}/{total} episode pages")
 
 
 if __name__ == "__main__":

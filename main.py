@@ -20,7 +20,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import config
-from pipeline.topics import discover_topics
+from pipeline.topics import audit_existing_topics, discover_topics_with_audit
 from pipeline.script import SCRIPT_FORMAT_VERSION, generate_script, save_script
 from pipeline.episode_notes import resolve_episode_note
 from pipeline.tts import TTS_FORMAT_VERSION, synthesize_script
@@ -58,9 +58,29 @@ def _load_checkpoint(path: Path):
     return None
 
 
-def _episode_date() -> str:
+def _episode_date(override: str | None = None) -> str:
     """Return the production date in the configured editorial timezone."""
+    if override:
+        return datetime.strptime(override, "%Y-%m-%d").strftime("%Y-%m-%d")
     return datetime.now(ZoneInfo(config.TIMEZONE)).strftime("%Y-%m-%d")
+
+
+def _validate_episode_date_override(
+    episode_date: str | None,
+    *,
+    no_upload: bool,
+    script_only: bool,
+    dry_run: bool,
+) -> None:
+    """Keep historical/future date overrides confined to non-publishing tests."""
+    if not episode_date:
+        return
+    datetime.strptime(episode_date, "%Y-%m-%d")
+    if not (no_upload or script_only or dry_run):
+        raise ValueError(
+            "--episode-date is test-only and requires --no-upload, "
+            "--script-only, or --dry-run"
+        )
 
 
 def _clear_script_outputs(episode_dir: Path) -> None:
@@ -209,6 +229,7 @@ def run_pipeline(
     no_upload: bool = False,
     fresh: bool = False,
     special_note: str | None = None,
+    episode_date: str | None = None,
 ) -> dict:
     """
     Execute the full episode generation pipeline.
@@ -220,7 +241,13 @@ def run_pipeline(
 
     Returns a summary dict with paths and IDs.
     """
-    date_str = _episode_date()
+    _validate_episode_date_override(
+        episode_date,
+        no_upload=no_upload,
+        script_only=script_only,
+        dry_run=dry_run,
+    )
+    date_str = _episode_date(episode_date)
     episode_dir = config.OUTPUT_DIR / date_str
     episode_dir.mkdir(parents=True, exist_ok=True)
 
@@ -253,7 +280,8 @@ def run_pipeline(
             )
         roster = config.get_hosts() + [guest]
     else:
-        roster = config.get_episode_roster()
+        roster_date = datetime.strptime(date_str, "%Y-%m-%d")
+        roster = config.get_episode_roster(roster_date)
 
     is_guest_episode = len(roster) > len(config.get_hosts())
 
@@ -263,6 +291,11 @@ def run_pipeline(
         "roster": roster,
         "special_note": special_note or None,
     }
+
+    from pipeline.landscape import is_weekly_review
+    episode_mode = "weekly_landscape" if is_weekly_review(date_str) else "daily"
+    summary["episode_mode"] = episode_mode
+    logger.info("Editorial mode: %s", episode_mode)
 
     if is_guest_episode:
         guests = [s for s in roster if config.SPEAKERS[s]["role"] == "guest"]
@@ -274,11 +307,20 @@ def run_pipeline(
     logger.info("=" * 60)
 
     topics_path = episode_dir / "topics.json"
+    audit_path = episode_dir / "editorial_audit.json"
     topics = _load_checkpoint(topics_path)
+    editorial_audit = _load_checkpoint(audit_path) or {}
     if topics:
         logger.info("Reusing existing topics.json (use --fresh to regenerate)")
+        if not editorial_audit:
+            editorial_audit = audit_existing_topics(topics)
+            audit_path.write_text(
+                json.dumps(editorial_audit, indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            logger.info("Reconstructed editorial audit from older topics checkpoint")
     else:
-        topics = discover_topics()
+        topics, editorial_audit = discover_topics_with_audit()
 
         if not topics:
             logger.error("No topics found. Aborting.")
@@ -288,7 +330,12 @@ def run_pipeline(
 
         # Save topics
         topics_path.write_text(json.dumps(topics, indent=2), encoding="utf-8")
+        audit_path.write_text(
+            json.dumps(editorial_audit, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
     summary["topics"] = [t["title"] for t in topics]
+    summary["editorial_audit_path"] = str(audit_path)
     logger.info(f"Topics: {[t['title'] for t in topics]}")
 
     if dry_run:
@@ -299,7 +346,7 @@ def run_pipeline(
     # Daily "signal scores" for the website's scorecard (cheap, non-fatal)
     scores_path = episode_dir / "scores.json"
     if not scores_path.exists():
-        scores = _generate_signal_scores(topics)
+        scores = _generate_signal_scores(topics, editorial_audit)
         if scores:
             scores_path.write_text(json.dumps(scores, indent=2), encoding="utf-8")
 
@@ -319,6 +366,23 @@ def run_pipeline(
         research_path.write_text(
             json.dumps(topics, indent=2, ensure_ascii=False), encoding="utf-8"
         )
+
+    # Friday replaces the normal daily format with an evidence-grounded
+    # seven-day landscape review. The checkpoint is local until publication
+    # succeeds, then becomes the durable baseline for the following Friday.
+    landscape = None
+    landscape_path = episode_dir / "landscape.json"
+    if episode_mode == "weekly_landscape":
+        landscape = _load_checkpoint(landscape_path)
+        if landscape:
+            logger.info("Reusing existing Friday landscape snapshot")
+        else:
+            from pipeline.landscape import generate_landscape_snapshot
+            landscape = generate_landscape_snapshot(topics, editorial_audit, date_str)
+            landscape_path.write_text(
+                json.dumps(landscape, indent=2, ensure_ascii=False), encoding="utf-8"
+            )
+        summary["landscape_path"] = str(landscape_path)
 
     # === STEP 1c: Story memory — follow-ups + yesterday's predictions ===
     prior_predictions = None
@@ -340,6 +404,11 @@ def run_pipeline(
     if script and (
         script.get("script_format_version") != SCRIPT_FORMAT_VERSION
         or (script.get("special_note") or "") != special_note
+        or script.get("episode_mode", "daily") != episode_mode
+        or (
+            landscape
+            and script.get("landscape_week_end") != landscape.get("week_end")
+        )
     ):
         logger.info(
             "Editorial inputs changed — regenerating script, speech, video, and clips"
@@ -355,6 +424,8 @@ def run_pipeline(
             prior_predictions=prior_predictions,
             special_note=special_note,
             episode_date=date_str,
+            episode_mode=episode_mode,
+            landscape=landscape,
         )
         script_path = save_script(script, episode_dir)
     summary["script_path"] = str(script_path)
@@ -616,6 +687,17 @@ def run_pipeline(
     except Exception as e:
         logger.warning(f"Story memory update failed (non-fatal): {e}")
 
+    try:
+        from pipeline.landscape import (
+            persist_editorial_audit,
+            persist_landscape_snapshot,
+        )
+        persist_editorial_audit(editorial_audit, date_str)
+        if landscape:
+            persist_landscape_snapshot(landscape)
+    except Exception as e:
+        logger.warning(f"Landscape state update failed (non-fatal): {e}")
+
     # === STEP 8: Cost Report ===
     cost_summary = tracker.save_report(episode_dir)
     summary["cost_usd"] = cost_summary["total_cost_usd"]
@@ -629,7 +711,9 @@ def run_pipeline(
     return summary
 
 
-def _generate_signal_scores(topics: list[dict]) -> dict | None:
+def _generate_signal_scores(
+    topics: list[dict], editorial_audit: dict | None = None
+) -> dict | None:
     """
     Score today's news signal per category (0-10) for the website scorecard.
 
@@ -640,9 +724,15 @@ def _generate_signal_scores(topics: list[dict]) -> dict | None:
         from openai import OpenAI
 
         client = OpenAI(api_key=config.OPENAI_API_KEY)
-        headlines = "\n".join(
+        selected_headlines = "\n".join(
             f"- [{t.get('category', 'news')}] {t['title']}: {t.get('description', '')[:150]}"
             for t in topics
+        )
+        audited_context = "\n".join(
+            f"- {'SELECTED' if item.get('selected') else 'NOT SELECTED'}: "
+            f"{item.get('title', '')}"
+            for item in (editorial_audit or {}).get("candidates", [])
+            if item.get("selected") or item.get("must_cover")
         )
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -661,7 +751,13 @@ def _generate_signal_scores(topics: list[dict]) -> dict | None:
                         '"Industry": float, "Startups": float}}'
                     ),
                 },
-                {"role": "user", "content": f"Today's stories:\n{headlines}"},
+                {
+                    "role": "user",
+                    "content": (
+                        f"Selected stories:\n{selected_headlines}\n\n"
+                        f"Coverage-audit context:\n{audited_context or '(none)'}"
+                    ),
+                },
             ],
         )
         scores = json.loads(resp.choices[0].message.content)
@@ -680,8 +776,8 @@ def _generate_signal_scores(topics: list[dict]) -> dict | None:
 def _save_transcript(script: dict, episode_dir: Path, date_str: str):
     """Save a clean, readable transcript as a text file."""
     lines = []
-    title = script.get("title", f"The Context Window — {date_str}")
-    lines.append(f"THE CONTEXT WINDOW — {date_str}")
+    title = script.get("title", f"{config.PODCAST_TITLE} — {date_str}")
+    lines.append(f"{config.PODCAST_TITLE.upper()} — {date_str}")
     lines.append(f'"{title}"')
     lines.append("=" * 60)
     lines.append("")
@@ -725,7 +821,7 @@ def _update_rss_feed(
     # Add new episode
     episodes.append(
         {
-            "title": script.get("title", f"The Context Window — {date_str}"),
+            "title": script.get("title", f"{config.PODCAST_TITLE} — {date_str}"),
             "description": script.get("description", ""),
             "date": date_str,
             "published_at": datetime.now(timezone.utc).isoformat(),
@@ -831,6 +927,11 @@ def main():
         "--special-note", type=str, default=None,
         help="One-off editorial note the hosts must mention naturally in the intro",
     )
+    parser.add_argument(
+        "--episode-date", type=str, default=None, metavar="YYYY-MM-DD",
+        help="Test-only production date override; requires --no-upload, "
+             "--script-only, or --dry-run",
+    )
 
     args = parser.parse_args()
 
@@ -851,6 +952,7 @@ def main():
             no_upload=args.no_upload,
             fresh=args.fresh,
             special_note=args.special_note,
+            episode_date=args.episode_date,
         )
 
         if summary["status"] == "complete":

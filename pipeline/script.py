@@ -21,10 +21,7 @@ logger = logging.getLogger(__name__)
 SCRIPT_FORMAT_VERSION = 6
 MAX_TURN_WORDS = 48
 MAX_SENTENCE_WORDS = 22
-SIGNOFF_CTA = (
-    "If you enjoyed the show, subscribe to The Context Window on YouTube "
-    "and follow us on Spotify."
-)
+SIGNOFF_CTA = config.PODCAST_SIGNOFF_CTA
 
 _INVALID_JSON_ESCAPE = re.compile(r'\\(?!["\\/bfnrtu])')
 
@@ -62,7 +59,8 @@ def _topics_block(topics: list[dict]) -> str:
     blocks = []
     for t in topics:
         lines = [
-            f"### [{t.get('category', 'main').upper()}] {t['title']}",
+            f"### [{t.get('category', 'main').upper()}]"
+            f"{' [MUST COVER]' if t.get('must_cover') else ''} {t['title']}",
             f"Summary: {t.get('summary', '')}",
         ]
         if t.get("angle"):
@@ -100,9 +98,15 @@ def _build_episode_prompt(
     roster: list[str],
     prior_predictions: list[dict] | None = None,
     special_note: str = "",
+    episode_mode: str = "daily",
+    landscape: dict | None = None,
 ) -> str:
     """Fill in the showrunner template with today's topics and roster."""
-    template = _load_prompt("showrunner.txt")
+    template_name = (
+        "weekly_showrunner.txt" if episode_mode == "weekly_landscape"
+        else "showrunner.txt"
+    )
+    template = _load_prompt(template_name)
     duration = config.EPISODE_DURATION_MINUTES
     word_count = duration * 150  # ~150 words/min spoken
     min_word_count = int(word_count * 0.8)  # hard floor
@@ -172,16 +176,26 @@ def _build_episode_prompt(
         predictions_text = "(none on record — skip the accountability beat)"
 
     special_note_text = special_note or "(none — do not invent an announcement)"
+    if landscape:
+        from pipeline.landscape import compact_landscape_context
+        landscape_text = compact_landscape_context(landscape)
+    else:
+        landscape_text = "(not a weekly landscape episode)"
 
     return template.format(
         date=date,
         topics=topics_text,
         predictions=predictions_text,
         special_note=special_note_text,
+        landscape=landscape_text,
         duration=duration,
         word_count=word_count,
         min_word_count=min_word_count,
         hosts_description=hosts_description,
+        show_title=config.PODCAST_TITLE,
+        publication_format=config.PUBLICATION_FORMAT,
+        publication_audience=config.PUBLICATION_AUDIENCE,
+        signoff_instruction=config.PODCAST_SIGNOFF_INSTRUCTION,
         speaker_names=speaker_names,
         guest_segment=guest_segment,
         main_story_count=main_story_count,
@@ -198,6 +212,8 @@ def generate_script(
     prior_predictions: list[dict] | None = None,
     special_note: str = "",
     episode_date: str | None = None,
+    episode_mode: str = "daily",
+    landscape: dict | None = None,
 ) -> dict:
     """
     Generate the full episode script.
@@ -221,12 +237,23 @@ def generate_script(
 
     logger.info("Step 1: Showrunner pass — planning segments and beats...")
     plan = _generate_episode_plan(
-        topics, date_str, roster, prior_predictions, special_note=special_note
+        topics,
+        date_str,
+        roster,
+        prior_predictions,
+        special_note=special_note,
+        episode_mode=episode_mode,
+        landscape=landscape,
     )
 
     logger.info("Step 2: Turn-by-turn conversation — each host speaks for itself...")
     final_script = _run_conversation(
-        plan, topics, roster, date_str, special_note=special_note
+        plan,
+        topics,
+        roster,
+        date_str,
+        special_note=special_note,
+        landscape=landscape,
     )
     _enforce_signoff_cta(final_script, roster)
 
@@ -236,6 +263,8 @@ def generate_script(
     # Attach roster metadata for downstream consumers
     final_script["roster"] = roster
     final_script["special_note"] = special_note
+    final_script["episode_mode"] = episode_mode
+    final_script["landscape_week_end"] = (landscape or {}).get("week_end")
     final_script["script_format_version"] = SCRIPT_FORMAT_VERSION
 
     return final_script
@@ -247,11 +276,19 @@ def _generate_episode_plan(
     roster: list[str],
     prior_predictions: list[dict] | None = None,
     special_note: str = "",
+    episode_mode: str = "daily",
+    landscape: dict | None = None,
 ) -> dict:
     """Showrunner pass: Claude plans the episode structure — no dialogue."""
     client = Anthropic(api_key=config.ANTHROPIC_API_KEY)
     episode_prompt = _build_episode_prompt(
-        topics, date_str, roster, prior_predictions, special_note=special_note
+        topics,
+        date_str,
+        roster,
+        prior_predictions,
+        special_note=special_note,
+        episode_mode=episode_mode,
+        landscape=landscape,
     )
 
     response = client.messages.create(
@@ -262,7 +299,7 @@ def _generate_episode_plan(
         thinking={"type": "disabled"},
         messages=[{"role": "user", "content": episode_prompt}],
         system=(
-            "You are the showrunner of a daily podcast. Plan the episode as "
+            f"You are the showrunner of a {episode_mode.replace('_', ' ')} podcast. Plan the episode as "
             "specified. Return ONLY valid JSON — structure and beats, never "
             "dialogue."
         ),
@@ -382,7 +419,10 @@ def _load_personas(roster: list[str]) -> dict[str, str]:
     for speaker in roster:
         prompt_file = config.SPEAKERS[speaker]["persona_prompt"]
         try:
-            personas[speaker] = _load_prompt(prompt_file)
+            personas[speaker] = _load_prompt(prompt_file).format(
+                show_title=config.PODCAST_TITLE,
+                publication_format=config.PUBLICATION_FORMAT,
+            )
         except FileNotFoundError:
             logger.warning(f"No persona prompt found for {speaker}: {prompt_file}")
     return personas
@@ -433,6 +473,7 @@ def _turn_prompt(
     date_str: str,
     participants: list[str],
     special_note: str = "",
+    landscape: dict | None = None,
 ) -> str:
     """Build the user prompt for one conversational turn."""
     seg_type = seg.get("type", "")
@@ -440,7 +481,7 @@ def _turn_prompt(
     others = [p for p in participants if p != speaker]
 
     parts = [
-        f"Today is {date_str}. You're recording The Context Window with "
+        f"Today is {date_str}. You're recording {config.PODCAST_TITLE} with "
         f"{', '.join(others)}.",
         f"CURRENT SEGMENT: {seg_type}" + (f" — {topic_label}" if topic_label else ""),
     ]
@@ -482,6 +523,16 @@ def _turn_prompt(
                 f"high-level, do NOT invent specifics): {topic_data.get('summary', '')}"
             )
 
+    if landscape and seg_type in {
+        "week_in_review", "frontier_board", "under_the_radar", "hype_check"
+    }:
+        from pipeline.landscape import compact_landscape_context
+        parts.append(
+            "WEEKLY LANDSCAPE EVIDENCE — use only these sourced status claims. "
+            "Say when evidence is uncertain; do not manufacture movement:\n"
+            + compact_landscape_context(landscape)
+        )
+
     conflict = seg.get("conflict_of_interest")
     if conflict == speaker:
         parts.append(
@@ -505,7 +556,10 @@ def _turn_prompt(
 
     # Role-specific instruction for this turn
     if seg_type == "intro":
-        task = "Welcome listeners to The Context Window, mention today's date, and tee up the episode."
+        task = (
+            f"Welcome listeners to {config.PODCAST_TITLE}, mention today's date, "
+            "and tee up the episode."
+        )
         if special_note and turn_idx == 0:
             task += (
                 " Include this operator-supplied announcement clearly and naturally "
@@ -665,6 +719,7 @@ def _run_conversation(
     roster: list[str],
     date_str: str,
     special_note: str = "",
+    landscape: dict | None = None,
 ) -> dict:
     """
     Generate the episode as an actual conversation: each turn is written by
@@ -701,7 +756,7 @@ def _run_conversation(
             speaker = order[turn_idx % len(order)]
             prompt = _turn_prompt(
                 seg, topic_data, dialogue, completed, speaker,
-                turn_idx, total_turns, date_str, order, special_note,
+                turn_idx, total_turns, date_str, order, special_note, landscape,
             )
             text = None
             for attempt in (1, 2):
@@ -752,7 +807,7 @@ def _run_conversation(
         raise RuntimeError("Conversation produced no segments")
 
     return {
-        "title": plan.get("title", f"The Context Window — {date_str}"),
+        "title": plan.get("title", f"{config.PODCAST_TITLE} — {date_str}"),
         "description": plan.get("description", ""),
         "segments": segments_out,
     }
@@ -773,8 +828,8 @@ def _generate_youtube_title(script: dict, topics: list[dict]) -> str:
             {
                 "role": "system",
                 "content": (
-                    "You write YouTube video titles for an AI news podcast called "
-                    "'The Context Window' hosted by ChatGPT and Claude.\n\n"
+                    f"You write YouTube video titles for a {config.PUBLICATION_FORMAT} "
+                    f"called '{config.PODCAST_TITLE}' hosted by ChatGPT and Claude.\n\n"
                     "Rules for great YouTube titles:\n"
                     "- MAX 62 characters (hard limit)\n"
                     "- Lead with recognizable companies, people, or products\n"
