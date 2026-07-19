@@ -129,6 +129,23 @@ class SpokenEditorialTests(unittest.TestCase):
         self.assertIn("PLANNED CLIP MOMENT", prompt)
         self.assertIn("Open with a decisive, standalone sentence", prompt)
 
+    def test_structured_clip_moment_is_normalized_for_the_turn_prompt(self):
+        segment = {
+            "type": "frontier_board",
+            "topic": "Weekly model movement",
+            "beats": [],
+            "clip_moment": {
+                "hook": "Contrast the launch claim with independent evidence.",
+                "format": "challenge and response",
+            },
+        }
+        prompt = _turn_prompt(
+            segment, None, [], [], "Claude", 0, 2, "July 17, 2026",
+            ["Claude", "ChatGPT"], "",
+        )
+        self.assertIn("PLANNED CLIP MOMENT", prompt)
+        self.assertIn("Contrast the launch claim", prompt)
+
     def test_turn_prompt_requires_short_syntax_bound_sentences(self):
         prompt = self._prompt("main_story", 1)
         self.assertIn("24-48 words", prompt)

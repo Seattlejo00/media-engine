@@ -462,6 +462,23 @@ def _speech_shape_issues(text: str) -> list[str]:
     return issues
 
 
+def _clip_moment_text(value) -> str:
+    """Normalize the showrunner's free-form clip direction into prompt text."""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, dict):
+        for key in ("direction", "summary", "hook", "description", "text"):
+            candidate = value.get(key)
+            if isinstance(candidate, str) and candidate.strip():
+                return candidate.strip()
+        return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    if isinstance(value, list):
+        return "; ".join(
+            text for item in value if (text := _clip_moment_text(item))
+        )
+    return ""
+
+
 def _turn_prompt(
     seg: dict,
     topic_data: dict | None,
@@ -491,7 +508,7 @@ def _turn_prompt(
         parts.append("SHOWRUNNER BEATS (cover what's still uncovered, in your own way):\n"
                      + "\n".join(f"- {b}" for b in beats))
 
-    clip_moment = (seg.get("clip_moment") or "").strip()
+    clip_moment = _clip_moment_text(seg.get("clip_moment"))
     if clip_moment:
         parts.append(
             "PLANNED CLIP MOMENT — a self-contained, fact-grounded short-form "
