@@ -83,7 +83,7 @@ Status: Code is ready. Needs a Meta app + two secrets. Requires R2
     rotates refresh tokens; without the PAT you'll need to re-issue
     them manually.
 
-Posts INSTAGRAM_MAX_CLIPS Reels per day (default 2). Your own app
+Posts every clip that clears the editorial quality bar. Your own app
 posting to your own account works in dev mode — no Meta app review
 needed.
 
