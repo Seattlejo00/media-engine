@@ -27,7 +27,6 @@ XAI_API_KEY = os.getenv("XAI_API_KEY", "")
 # --- Episode Settings ---
 EPISODE_DURATION_MINUTES = int(os.getenv("EPISODE_DURATION_MINUTES", "30"))
 CLIP_DURATION_SECONDS = int(os.getenv("CLIP_DURATION_SECONDS", "45"))
-MAX_CLIPS_UPLOAD = int(os.getenv("MAX_CLIPS_UPLOAD", "4"))  # YouTube daily limit safety
 DAILY_RUN_HOUR = int(os.getenv("DAILY_RUN_HOUR", "6"))
 TIMEZONE = os.getenv("TIMEZONE", "America/Los_Angeles")
 
@@ -71,10 +70,6 @@ TIKTOK_PRIVACY_LEVEL = os.getenv("TIKTOK_PRIVACY_LEVEL", "SELF_ONLY")
 # --- Instagram (Reels via the Instagram API with Instagram Login) ---
 INSTAGRAM_USER_ID = os.getenv("INSTAGRAM_USER_ID", "")
 INSTAGRAM_ACCESS_TOKEN = os.getenv("INSTAGRAM_ACCESS_TOKEN", "")
-# Reels posted per day (IG allows 25 API posts/day, but a daily show
-# shouldn't flood followers' feeds)
-INSTAGRAM_MAX_CLIPS = int(os.getenv("INSTAGRAM_MAX_CLIPS", "2"))
-
 # --- Podcast Hosting (Cloudflare R2 / S3-compatible) ---
 R2_ENDPOINT_URL = os.getenv("R2_ENDPOINT_URL", "")
 R2_ACCESS_KEY_ID = os.getenv("R2_ACCESS_KEY_ID", "")
@@ -110,8 +105,10 @@ SPEAKERS = {
         "voice_instructions": (
             "Warm, thoughtful podcast host with calm confidence and understated "
             "dry wit. Speak naturally, as if responding to a trusted co-host. "
-            "Use varied intonation, relaxed conversational pauses, and subtle "
-            "emphasis. Avoid an announcer voice. Do not rush."
+            "Use varied intonation and subtle emphasis. Deliver every sentence "
+            "as one continuous, syntax-bound thought. Pause only where punctuation "
+            "requires it; never insert rhythmic or semantic breath breaks inside "
+            "a clause. Avoid an announcer voice and keep a natural 1.0x pace."
         ),
         "tts_speed": 1.0,
         "color": (204, 120, 50),
@@ -126,8 +123,11 @@ SPEAKERS = {
         "voice_instructions": (
             "Energetic, friendly podcast co-host with natural warmth. Speak as "
             "if responding to a trusted co-host, not reading a script. Use "
-            "lively but restrained intonation, conversational pauses, and "
-            "subtle emphasis. Avoid an announcer voice. Do not rush."
+            "lively but restrained intonation and subtle emphasis. Deliver every "
+            "sentence as one continuous, syntax-bound thought. Pause only where "
+            "punctuation requires it; never insert rhythmic or semantic breath "
+            "breaks inside a clause. Avoid an announcer voice and keep a natural "
+            "1.0x pace."
         ),
         "tts_speed": 1.0,
         "color": (16, 163, 127),
@@ -141,7 +141,10 @@ SPEAKERS = {
         "voice": os.getenv("GEMINI_VOICE", "echo"),
         "voice_instructions": (
             "Curious, precise guest analyst. Clear and lively, lightly "
-            "professorial. Brisk conversational pace."
+            "professorial. Deliver every sentence as one continuous, syntax-bound "
+            "thought. Pause only where punctuation requires it; never insert "
+            "rhythmic or semantic breath breaks inside a clause. Keep a brisk, "
+            "natural conversational pace."
         ),
         "tts_speed": 1.1,
         "color": (66, 133, 244),
@@ -155,7 +158,10 @@ SPEAKERS = {
         "voice": os.getenv("GROK_VOICE", "fable"),
         "voice_instructions": (
             "Irreverent, playful guest with a sardonic edge. Confident and "
-            "punchy. Brisk conversational pace."
+            "punchy. Deliver every sentence as one continuous, syntax-bound "
+            "thought. Pause only where punctuation requires it; never insert "
+            "rhythmic or semantic breath breaks inside a clause. Keep a brisk, "
+            "natural conversational pace."
         ),
         "tts_speed": 1.1,
         "color": (239, 68, 68),

@@ -5,17 +5,22 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
+import config
 from pipeline.clips import (
     _fallback_finalists,
     _flatten_dialogue,
     _normalize_clip_segments,
     _resolve_finalist_numbers,
 )
+from pipeline.tts import TTS_FORMAT_VERSION
 from pipeline.episode_notes import resolve_episode_note
 from pipeline.script import (
+    MAX_SENTENCE_WORDS,
+    MAX_TURN_WORDS,
     SIGNOFF_CTA,
     _enforce_signoff_cta,
     _parse_plan_json,
+    _speech_shape_issues,
     _turn_prompt,
 )
 from pipeline.video import (
@@ -123,6 +128,30 @@ class SpokenEditorialTests(unittest.TestCase):
         self.assertIn("PLANNED CLIP MOMENT", prompt)
         self.assertIn("Open with a decisive, standalone sentence", prompt)
 
+    def test_turn_prompt_requires_short_syntax_bound_sentences(self):
+        prompt = self._prompt("main_story", 1)
+        self.assertIn("24-48 words", prompt)
+        self.assertIn(f"no sentence over {MAX_SENTENCE_WORDS} words", prompt)
+        self.assertIn("without a mid-clause breath", prompt)
+
+    def test_speech_shape_flags_long_turns_and_sentences(self):
+        long_sentence = " ".join(["word"] * (MAX_SENTENCE_WORDS + 1)) + "."
+        self.assertTrue(_speech_shape_issues(long_sentence))
+        short_sentences = " ".join(["One short sentence."] * 17)
+        self.assertGreater(len(short_sentences.split()), MAX_TURN_WORDS)
+        self.assertTrue(_speech_shape_issues(short_sentences))
+
+
+class TtsCadenceTests(unittest.TestCase):
+    def test_every_speaker_requires_continuous_syntax_bound_delivery(self):
+        for speaker, settings in config.SPEAKERS.items():
+            instructions = settings["voice_instructions"]
+            self.assertIn("continuous, syntax-bound", instructions, speaker)
+            self.assertIn("inside a clause", instructions, speaker)
+
+    def test_tts_cache_format_is_versioned(self):
+        self.assertGreaterEqual(TTS_FORMAT_VERSION, 2)
+
 
 class TransitionCardTests(unittest.TestCase):
     def test_long_up_next_headline_wraps_without_truncation(self):
@@ -205,6 +234,13 @@ class ClipSelectionTests(unittest.TestCase):
         )
         self.assertEqual([c["title"] for c in finalists], ["B"])
 
+    def test_finalist_resolution_has_no_arbitrary_upper_bound(self):
+        candidates = [{"title": str(i), "score": 90} for i in range(12)]
+        finalists = _resolve_finalist_numbers(
+            [{"candidate_number": i} for i in range(1, 13)], candidates
+        )
+        self.assertEqual(len(finalists), 12)
+
     def test_fallback_drops_weak_candidates(self):
         candidates = [
             {"title": "Strong", "score": 94},
@@ -212,6 +248,16 @@ class ClipSelectionTests(unittest.TestCase):
         ]
         self.assertEqual(
             [c["title"] for c in _fallback_finalists(candidates)], ["Strong"]
+        )
+
+    def test_fallback_keeps_best_candidate_when_all_scores_are_weak(self):
+        candidates = [
+            {"title": "Best available", "score": 79},
+            {"title": "Runner up", "score": 70},
+        ]
+        self.assertEqual(
+            [c["title"] for c in _fallback_finalists(candidates)],
+            ["Best available"],
         )
 
 

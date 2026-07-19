@@ -18,7 +18,9 @@ from pipeline.cost_tracker import tracker
 
 logger = logging.getLogger(__name__)
 
-SCRIPT_FORMAT_VERSION = 5
+SCRIPT_FORMAT_VERSION = 6
+MAX_TURN_WORDS = 48
+MAX_SENTENCE_WORDS = 22
 SIGNOFF_CTA = (
     "If you enjoyed the show, subscribe to The Context Window on YouTube "
     "and follow us on Spotify."
@@ -407,6 +409,19 @@ def _clean_turn(text: str, speaker: str) -> str:
     return text
 
 
+def _speech_shape_issues(text: str) -> list[str]:
+    """Return cadence risks that should trigger one same-host rewrite."""
+    issues = []
+    words = text.split()
+    if len(words) > MAX_TURN_WORDS:
+        issues.append(f"turn has {len(words)} words")
+    sentences = [s for s in re.split(r"(?<=[.!?])\s+|\n+", text) if s.strip()]
+    longest = max((len(sentence.split()) for sentence in sentences), default=0)
+    if longest > MAX_SENTENCE_WORDS:
+        issues.append(f"sentence has {longest} words")
+    return issues
+
+
 def _turn_prompt(
     seg: dict,
     topic_data: dict | None,
@@ -544,9 +559,11 @@ def _turn_prompt(
 
     parts.append(
         f"YOUR TASK: {task}\n\n"
-        f"Write YOUR next spoken turn only — 30-70 words (this is a tight daily "
-        f"show; shorter is better), plain text. No name prefix, no quotes, no "
-        f"stage directions.\n{BANNED_FILLER}"
+        f"Write YOUR next spoken turn only — usually 24-48 words; cold opens and "
+        f"goodbyes may be shorter. Use two or three complete sentences, with no "
+        f"sentence over {MAX_SENTENCE_WORDS} words. Keep each sentence syntactically "
+        f"simple so it can be spoken continuously without a mid-clause breath. "
+        f"Plain text only. No name prefix, quotes, or stage directions.\n{BANNED_FILLER}"
     )
     return "\n\n".join(parts)
 
@@ -694,7 +711,26 @@ def _run_conversation(
                 except Exception as e:
                     logger.warning(f"Turn failed for {speaker} (attempt {attempt}): {e}")
             if text:
-                dialogue.append({"speaker": speaker, "text": _clean_turn(text, speaker)})
+                cleaned = _clean_turn(text, speaker)
+                issues = _speech_shape_issues(cleaned)
+                if issues:
+                    rewrite_prompt = (
+                        prompt
+                        + "\n\nREWRITE REQUIRED: Your previous draft creates TTS cadence risks ("
+                        + "; ".join(issues)
+                        + "). Preserve its facts and point, but rewrite it in 24-48 words "
+                        f"using two or three complete sentences of no more than "
+                        f"{MAX_SENTENCE_WORDS} words each. DRAFT:\n{cleaned}"
+                    )
+                    try:
+                        rewritten = _speak(
+                            clients[speaker], speaker, personas[speaker], rewrite_prompt
+                        )
+                        if rewritten:
+                            cleaned = _clean_turn(rewritten, speaker)
+                    except Exception as e:
+                        logger.warning("Cadence rewrite failed for %s: %s", speaker, e)
+                dialogue.append({"speaker": speaker, "text": cleaned})
 
         if dialogue:
             segments_out.append(

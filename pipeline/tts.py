@@ -14,6 +14,10 @@ from pipeline.cost_tracker import tracker
 
 logger = logging.getLogger(__name__)
 
+# Bump whenever voice prompting or synthesis semantics change. Cached manifests
+# without the current version are regenerated with all downstream media.
+TTS_FORMAT_VERSION = 2
+
 def synthesize_line(
     client: OpenAI, text: str, speaker: str, output_path: Path
 ) -> Path:
@@ -79,6 +83,7 @@ def synthesize_script(script: dict, output_dir: Path) -> list[dict]:
                 synthesize_line(client, text, speaker, audio_path)
                 audio_manifest.append(
                     {
+                        "tts_format_version": TTS_FORMAT_VERSION,
                         "speaker": speaker,
                         "text": text,
                         "audio_path": audio_path,

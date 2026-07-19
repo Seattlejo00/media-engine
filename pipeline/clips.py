@@ -33,8 +33,6 @@ logger = logging.getLogger(__name__)
 
 MIN_CLIP_SECONDS = 20
 MAX_CLIP_SECONDS = 58
-CANDIDATE_LIMIT = 8
-MAX_CLIPS = 3
 MIN_FALLBACK_SCORE = 82
 CTA_SECONDS = 1.8
 
@@ -76,7 +74,7 @@ def _score_value(clip: dict) -> float:
 
 
 def _normalize_clip_segments(
-    raw_clips: list[dict], all_lines: list[dict], limit: int = CANDIDATE_LIMIT
+    raw_clips: list[dict], all_lines: list[dict], limit: int | None = None
 ) -> list[dict]:
     """Validate, de-overlap, duration-fit, and rank model-selected clips."""
     by_index = {line["global_index"]: line for line in all_lines}
@@ -151,19 +149,20 @@ def _normalize_clip_segments(
                 "estimated_duration_seconds": round(duration, 1),
             }
         )
-        if len(normalized) >= limit:
+        if limit is not None and len(normalized) >= limit:
             break
 
     return normalized
 
 
 def _fallback_finalists(candidates: list[dict]) -> list[dict]:
-    """Keep only candidates whose first-pass score clears the quality floor."""
-    return [c for c in candidates if _score_value(c) >= MIN_FALLBACK_SCORE][:MAX_CLIPS]
+    """Keep every strong candidate, with the best valid candidate as the floor."""
+    strong = [c for c in candidates if _score_value(c) >= MIN_FALLBACK_SCORE]
+    return strong or candidates[:1]
 
 
 def _resolve_finalist_numbers(raw: object, candidates: list[dict]) -> list[dict]:
-    """Resolve a model's 1-based candidate numbers, de-duplicated and bounded."""
+    """Resolve a model's 1-based candidate numbers without an arbitrary cap."""
     if not isinstance(raw, list):
         return []
     chosen: list[dict] = []
@@ -178,13 +177,11 @@ def _resolve_finalist_numbers(raw: object, candidates: list[dict]) -> list[dict]
             continue
         seen.add(number)
         chosen.append(candidates[number - 1])
-        if len(chosen) >= MAX_CLIPS:
-            break
     return chosen
 
 
 def _select_finalists(client: OpenAI, candidates: list[dict]) -> list[dict]:
-    """Run a second, stricter editorial pass; zero finalists is a valid answer."""
+    """Run a strict editorial pass that always keeps at least one valid clip."""
     if not candidates:
         return []
     slate = [
@@ -205,13 +202,14 @@ def _select_finalists(client: OpenAI, candidates: list[dict]) -> list[dict]:
                 {
                     "role": "system",
                     "content": (
-                        "You are the final short-form programming editor. Select zero to three "
-                        "clips that are genuinely strong enough to publish. Do not fill a quota. "
+                        "You are the final short-form programming editor. Select every clip that "
+                        "is genuinely strong enough to publish, with no arbitrary maximum. You "
+                        "must select at least the single strongest candidate. "
                         "Reject openings that need prior context, sound like setup, or merely agree. "
                         "Favor an instantly legible claim, surprise, tension, useful specificity, "
                         "and a satisfying payoff. Return JSON only: {\"finalists\": "
-                        "[{\"candidate_number\": 1}]}. An empty list is encouraged when nothing "
-                        "would stop a smart AI-news viewer from scrolling."
+                        "[{\"candidate_number\": 1}]}. Include all candidates that independently "
+                        "clear the bar; never return an empty list."
                     ),
                 },
                 {"role": "user", "content": json.dumps(slate, ensure_ascii=False)},
@@ -227,7 +225,11 @@ def _select_finalists(client: OpenAI, candidates: list[dict]) -> list[dict]:
                 output_tokens=usage.completion_tokens,
             )
         result = json.loads(response.choices[0].message.content)
-        return _resolve_finalist_numbers(result.get("finalists"), candidates)
+        finalists = _resolve_finalist_numbers(result.get("finalists"), candidates)
+        if not finalists:
+            logger.info("Final clip editor returned none; keeping the strongest candidate")
+            return candidates[:1]
+        return finalists
     except Exception as exc:
         logger.warning("Final clip selection failed; using quality-floor fallback: %s", exc)
         return _fallback_finalists(candidates)
@@ -236,7 +238,7 @@ def _select_finalists(client: OpenAI, candidates: list[dict]) -> list[dict]:
 def identify_clip_segments(script: dict) -> list[dict]:
     """
     Use AI to identify the most clip-worthy moments in the script.
-    Returns validated indices and metadata for up to three publishable clips.
+    Returns every validated, publishable clip and at least one when candidates exist.
     """
     client = OpenAI(api_key=config.OPENAI_API_KEY)
 
@@ -258,7 +260,7 @@ def identify_clip_segments(script: dict) -> list[dict]:
                     "role": "system",
                     "content": (
                     "You are the ruthless short-form editor for a smart AI-news show. "
-                    "Find up to eight candidate moments most likely to stop a scroll and earn a "
+                    "Find every candidate moment likely to stop a scroll and earn a "
                     "share. The first selected spoken line must itself be the hook; "
                     "the editor cannot reorder or rewrite the audio.\n\n"
                     "Rank candidates on:\n"
@@ -273,7 +275,7 @@ def identify_clip_segments(script: dict) -> list[dict]:
                     "- target 20-58 seconds using the per-line duration estimates\n"
                     "- never use intro or sign_off lines\n"
                     "- clips may not overlap or repeat the same argument\n"
-                    "- prefer fewer exceptional clips over filler\n"
+                    "- include every moment that independently clears a high quality bar\n"
                     "- title: specific, curiosity-driving, 4-9 words, no clickbait lie\n"
                     "- on_screen_hook: 3-8 punchy words that accurately frame the moment\n\n"
                     "Return JSON only: {\"clips\": [{\"start_index\": N, "

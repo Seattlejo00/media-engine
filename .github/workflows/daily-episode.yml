@@ -17,6 +17,10 @@ on:
         description: "Regenerate all of today's artifacts instead of reusing cached checkpoints (upload ledger is preserved)"
         type: boolean
         default: false
+      clips_only:
+        description: "Regenerate and upload only today's clips from cached script and speech"
+        type: boolean
+        default: false
       special_note:
         description: "Optional one-off announcement or editorial note for the hosts to mention naturally in this episode"
         type: string
@@ -41,9 +45,9 @@ jobs:
         run: |
           TODAY=$(TZ=America/Los_Angeles date +%F)
           echo "today=$TODAY" >> "$GITHUB_OUTPUT"
-          if [ "${{ inputs.test_mode }}" = "true" ]; then
+          if [ "${{ inputs.test_mode }}" = "true" ] || [ "${{ inputs.clips_only }}" = "true" ]; then
             echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "Test mode — running regardless of published state."
+            echo "Explicit recovery/test mode — running regardless of published state."
           elif python3 -c "import json,sys; eps=json.load(open('sites/ai-daily/static/articles.json')); sys.exit(0 if any(e['date']=='$TODAY' for e in eps) else 1)"; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
             echo "Episode for $TODAY already published — skipping."
@@ -114,10 +118,10 @@ jobs:
           EPISODE_DURATION_MINUTES: "12"
           TIMEZONE: America/Los_Angeles
           EPISODE_SPECIAL_NOTE: ${{ inputs.special_note }}
-        run: python main.py ${{ inputs.test_mode == true && '--no-upload' || '' }} ${{ inputs.fresh == true && '--fresh' || '' }}
+        run: python main.py ${{ inputs.test_mode == true && '--no-upload' || '' }} ${{ inputs.fresh == true && '--fresh' || '' }} ${{ inputs.clips_only == true && '--clips-only' || '' }}
 
       - name: Publish article to website
-        if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true
+        if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true && inputs.clips_only != true
         run: |
           python publish_site.py --episode-dir "output/${{ steps.guard.outputs.today }}" --site-dir sites/ai-daily
           # Podcast feed rides along with the site (Spotify/Apple poll it)
@@ -127,11 +131,11 @@ jobs:
           fi
 
       - name: Validate website links
-        if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true
+        if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true && inputs.clips_only != true
         run: python scripts/check_site_links.py sites/ai-daily
 
       - name: Push website update
-        if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true
+        if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true && inputs.clips_only != true
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

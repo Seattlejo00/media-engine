@@ -23,7 +23,7 @@ import config
 from pipeline.topics import discover_topics
 from pipeline.script import SCRIPT_FORMAT_VERSION, generate_script, save_script
 from pipeline.episode_notes import resolve_episode_note
-from pipeline.tts import synthesize_script
+from pipeline.tts import TTS_FORMAT_VERSION, synthesize_script
 from pipeline.audio import assemble_episode, get_episode_duration
 from pipeline.video import generate_landscape_video
 from pipeline.clips import identify_clip_segments, extract_clips
@@ -85,6 +85,120 @@ def _clear_script_outputs(episode_dir: Path) -> None:
         path = episode_dir / filename
         if path.exists():
             path.unlink()
+
+
+def _clear_tts_outputs(episode_dir: Path) -> None:
+    """Clear speech and timing-dependent media while preserving editorial work."""
+    directories = (episode_dir / "audio_segments", episode_dir / "clips")
+    files = (
+        "audio_manifest.json",
+        "episode.mp3",
+        "chapters.json",
+        "episode_landscape.mp4",
+        "clip_segments.json",
+        "cost_report.json",
+        "summary.json",
+    )
+    for directory in directories:
+        if directory.exists():
+            shutil.rmtree(directory)
+    for filename in files:
+        path = episode_dir / filename
+        if path.exists():
+            path.unlink()
+
+
+def _restore_audio_manifest(raw_manifest: object) -> list[dict] | None:
+    """Restore manifest paths without imposing current TTS-version policy."""
+    if not isinstance(raw_manifest, list) or not raw_manifest:
+        return None
+    try:
+        restored = [
+            {**entry, "audio_path": Path(entry["audio_path"])}
+            for entry in raw_manifest
+        ]
+    except (KeyError, TypeError):
+        return None
+    return restored if all(entry["audio_path"].exists() for entry in restored) else None
+
+
+def _clear_clip_outputs(episode_dir: Path) -> None:
+    """Clear only clip selection and renders for a targeted recovery."""
+    clips_dir = episode_dir / "clips"
+    if clips_dir.exists():
+        shutil.rmtree(clips_dir)
+    segments_path = episode_dir / "clip_segments.json"
+    if segments_path.exists():
+        segments_path.unlink()
+
+
+def run_clips_only() -> dict:
+    """Regenerate and upload today's YouTube Shorts from cached script and speech."""
+    date_str = _episode_date()
+    episode_dir = config.OUTPUT_DIR / date_str
+    script = _load_checkpoint(episode_dir / "script.json")
+    audio_manifest = _restore_audio_manifest(
+        _load_checkpoint(episode_dir / "audio_manifest.json")
+    )
+    ledger_path = episode_dir / "distribution_state.json"
+    ledger = _load_checkpoint(ledger_path) or {}
+
+    if not isinstance(script, dict) or audio_manifest is None:
+        return {
+            "date": date_str,
+            "status": "failed",
+            "error": "missing_clip_checkpoints",
+        }
+    episode_id = ledger.get("youtube_episode_id")
+    if not episode_id:
+        return {
+            "date": date_str,
+            "status": "failed",
+            "error": "missing_youtube_episode_id",
+        }
+
+    logger.info("CLIP-ONLY: reusing script and %d speech segments", len(audio_manifest))
+    _clear_clip_outputs(episode_dir)
+    clip_segments = identify_clip_segments(script)
+    if not clip_segments:
+        return {"date": date_str, "status": "failed", "error": "no_valid_clips"}
+    (episode_dir / "clip_segments.json").write_text(
+        json.dumps(clip_segments, indent=2), encoding="utf-8"
+    )
+    clip_paths = extract_clips(clip_segments, audio_manifest, script, episode_dir)
+    youtube_paths = clip_paths["youtube"]
+    if not youtube_paths:
+        return {"date": date_str, "status": "failed", "error": "clip_render_failed"}
+
+    youtube_ids = ledger.setdefault("youtube_clip_ids", {})
+    failed_uploads = []
+    for index, clip_path in enumerate(youtube_paths):
+        if str(index) in youtube_ids:
+            continue
+        clip_id = upload_clip(
+            clip_path,
+            clip_segments[index]["title"],
+            episode_id,
+            roster=script.get("roster") or config.get_hosts(),
+        )
+        if clip_id:
+            youtube_ids[str(index)] = clip_id
+            ledger_path.write_text(json.dumps(ledger, indent=2), encoding="utf-8")
+        else:
+            failed_uploads.append(index)
+
+    summary_path = episode_dir / "summary.json"
+    summary = _load_checkpoint(summary_path) or {"date": date_str}
+    summary["clips"] = {
+        platform: [str(path) for path in paths]
+        for platform, paths in clip_paths.items()
+    }
+    summary["youtube_clip_ids"] = list(youtube_ids.values())
+    summary["status"] = "complete" if not failed_uploads else "failed"
+    if failed_uploads:
+        summary["error"] = f"clip_upload_failed:{failed_uploads}"
+    summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    return summary
 
 
 def run_pipeline(
@@ -264,11 +378,25 @@ def run_pipeline(
     audio_manifest = None
     cached_manifest = _load_checkpoint(manifest_path)
     if cached_manifest:
-        restored = [{**m, "audio_path": Path(m["audio_path"])} for m in cached_manifest]
-        if restored and all(m["audio_path"].exists() for m in restored):
+        current_version = all(
+            isinstance(entry, dict)
+            and entry.get("tts_format_version") == TTS_FORMAT_VERSION
+            for entry in cached_manifest
+        )
+        restored = _restore_audio_manifest(cached_manifest) if current_version else None
+        if restored:
             audio_manifest = restored
             logger.info(f"Reusing {len(restored)} synthesized audio segments")
+        else:
+            logger.info(
+                "TTS format changed or speech cache is incomplete — regenerating "
+                "speech and timing-dependent media"
+            )
+            _clear_tts_outputs(episode_dir)
     if audio_manifest is None:
+        # A missing manifest cannot safely coexist with assembled downstream media.
+        if (episode_dir / "episode.mp3").exists() or (episode_dir / "audio_segments").exists():
+            _clear_tts_outputs(episode_dir)
         audio_manifest = synthesize_script(script, episode_dir)
         manifest_path.write_text(
             json.dumps(
@@ -388,10 +516,9 @@ def run_pipeline(
     yt_url = f"https://youtube.com/watch?v={yt_episode_id}" if yt_episode_id else None
     summary["youtube_episode_id"] = yt_episode_id
 
-    # YouTube - clips (capped to avoid daily upload limit)
-    max_yt_clips = config.MAX_CLIPS_UPLOAD
+    # YouTube - every clip that cleared the editorial quality bar
     yt_clip_ids = ledger.setdefault("youtube_clip_ids", {})
-    for i, clip_path in enumerate(youtube_clip_paths[:max_yt_clips]):
+    for i, clip_path in enumerate(youtube_clip_paths):
         if str(i) in yt_clip_ids:
             continue
         clip_title = (
@@ -401,11 +528,6 @@ def run_pipeline(
         if clip_id:
             yt_clip_ids[str(i)] = clip_id
             _save_ledger()
-    if len(youtube_clip_paths) > max_yt_clips:
-        logger.info(
-            f"Uploaded {max_yt_clips}/{len(youtube_clip_paths)} clips to YouTube "
-            f"(MAX_CLIPS_UPLOAD={max_yt_clips})"
-        )
     summary["youtube_clip_ids"] = list(yt_clip_ids.values())
 
     # Twitter/X - episode announcement
@@ -453,7 +575,7 @@ def run_pipeline(
     ig_ids = ledger.setdefault("instagram_ids", {})
     if instagram_configured():
         refresh_access_token()
-        for i, clip_path in enumerate(social_clip_paths[:config.INSTAGRAM_MAX_CLIPS]):
+        for i, clip_path in enumerate(social_clip_paths):
             if str(i) in ig_ids:
                 continue
             clip_title = (
@@ -702,6 +824,10 @@ def main():
              "checkpoints (the upload ledger is preserved)",
     )
     parser.add_argument(
+        "--clips-only", action="store_true",
+        help="Regenerate and upload only today's clips from cached script and speech",
+    )
+    parser.add_argument(
         "--special-note", type=str, default=None,
         help="One-off editorial note the hosts must mention naturally in the intro",
     )
@@ -710,6 +836,12 @@ def main():
 
     if args.schedule:
         run_scheduled()
+    elif args.clips_only:
+        summary = run_clips_only()
+        if summary["status"] != "complete":
+            logger.error("Clip-only recovery failed: %s", summary.get("error", "unknown"))
+            sys.exit(1)
+        logger.info("Clip-only recovery published successfully!")
     else:
         summary = run_pipeline(
             script_only=args.script_only,
