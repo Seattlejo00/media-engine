@@ -1,5 +1,68 @@
 [
   {
+    "date": "2026-07-20",
+    "title": "2.8 Trillion Parameters and a Deleted $HOME Directory",
+    "description": "Moonshot AI's Kimi K3 lands with 2.8 trillion parameters and a CUDA kernel that runs 14.82x faster than PyTorch — a genuine shot across the bow at the US frontier labs. Plus: OpenAI admits GPT-5.6 has an 'honest mistake' problem with deleting files, Codex quietly shrinks its context window, Australia tightens AI rules for government decisions, and the FTC starts eyeing AI as retail's new front door.",
+    "article_file": "2026-07-20.html",
+    "youtube_url": "https://youtube.com/watch?v=_vcf_Xr_Uxo",
+    "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-20/episode.mp3",
+    "roster": [
+      "Claude",
+      "ChatGPT"
+    ],
+    "duration_seconds": 867.314,
+    "scores": {
+      "overall": 8.5,
+      "label": "China's AI Surge",
+      "categories": {
+        "Models": 7.0,
+        "Research": 8.5,
+        "Industry": 8.0,
+        "Startups": 6.0
+      }
+    },
+    "episode_mode": "daily",
+    "landscape_week_end": null,
+    "topics": [
+      {
+        "title": "Kimi K3: China's giant AI is here and anyone can try it for free",
+        "source": "Notebookcheck.net",
+        "url": "https://www.notebookcheck.net/Kimi-K3-China-s-giant-AI-is-here-and-anyone-can-try-it-for-free.1346607.0.html",
+        "category": "main"
+      },
+      {
+        "title": "Kimi K3 writes H100 CUDA kernel 14.82x faster than PyTorch, intensifying US-China AI race",
+        "source": "Crypto Briefing",
+        "url": "https://cryptobriefing.com/kimi-k3-cuda-kernel-faster-pytorch/",
+        "category": "main"
+      },
+      {
+        "title": "OpenAI Acknowledges GPT-5.6 May Accidentally Delete Files, Calls It 'Honest Mistake'",
+        "source": "Slashdot.org",
+        "url": "https://developers.slashdot.org/story/26/07/19/0129228/openai-acknowledges-gpt-56-may-accidentally-delete-files-calls-it-honest-mistake",
+        "category": "lightning"
+      },
+      {
+        "title": "Rules to tighten on AI use in decision-making by government departments",
+        "source": "ABC News (AU)",
+        "url": "https://www.abc.net.au/news/2026-07-19/government-tighten-rules-ai-artificial-intelligence/106933212",
+        "category": "lightning"
+      },
+      {
+        "title": "Washington Watchdogs Take Notice As AI Becomes Retail’s Front Door",
+        "source": "Forbes",
+        "url": "https://www.forbes.com/sites/pamdanziger/2026/07/19/washington-watchdogs-take-notice-as-ai-becomes-retails-front-door/",
+        "category": "main"
+      },
+      {
+        "title": "OpenAI reduces Codex Model Context Size from 372k to 272k",
+        "source": "Github.com",
+        "url": "https://github.com/openai/codex/pull/33972/files",
+        "category": "main"
+      }
+    ]
+  },
+  {
     "date": "2026-07-19",
     "title": "The $600K Storyteller and the One-Person Empire",
     "description": "Anthropic hunts for a Wall Street narrator ahead of a blockbuster IPO, while OpenAI's new ChatGPT Work claims it can run 95% of a solo business. Plus: Buffett's Alphabet bet, a new AGI framework, and why Baby Boomers—not bots—might be the real labor crisis.",

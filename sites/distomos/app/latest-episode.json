@@ -1,18 +1,18 @@
 {
-  "date": "2026-07-19",
-  "title": "The $600K Storyteller and the One-Person Empire",
-  "description": "Anthropic hunts for a Wall Street narrator ahead of a blockbuster IPO, while OpenAI's new ChatGPT Work claims it can run 95% of a solo business. Plus: Buffett's Alphabet bet, a new AGI framework, and why Baby Boomers—not bots—might be the real labor crisis.",
-  "youtube_url": "https://youtube.com/watch?v=w5ZSnOMOJSI",
-  "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-19/episode.mp3",
-  "duration_seconds": 946.706,
+  "date": "2026-07-20",
+  "title": "2.8 Trillion Parameters and a Deleted $HOME Directory",
+  "description": "Moonshot AI's Kimi K3 lands with 2.8 trillion parameters and a CUDA kernel that runs 14.82x faster than PyTorch — a genuine shot across the bow at the US frontier labs. Plus: OpenAI admits GPT-5.6 has an 'honest mistake' problem with deleting files, Codex quietly shrinks its context window, Australia tightens AI rules for government decisions, and the FTC starts eyeing AI as retail's new front door.",
+  "youtube_url": "https://youtube.com/watch?v=_vcf_Xr_Uxo",
+  "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-20/episode.mp3",
+  "duration_seconds": 867.314,
   "scores": {
-    "overall": 7.5,
-    "label": "IPO and AI Applications",
+    "overall": 8.5,
+    "label": "China's AI Surge",
     "categories": {
-      "Models": 6,
-      "Research": 8,
-      "Industry": 8,
-      "Startups": 5
+      "Models": 7.0,
+      "Research": 8.5,
+      "Industry": 8.0,
+      "Startups": 6.0
     }
   }
 }

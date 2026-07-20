@@ -102,5 +102,18 @@
       "Industry": 8,
       "Startups": 5
     }
+  },
+  {
+    "date": "2026-07-20",
+    "episode": "/episodes/2026-07-20.html",
+    "title": "2.8 Trillion Parameters and a Deleted $HOME Directory",
+    "overall": 8.5,
+    "label": "China's AI Surge",
+    "categories": {
+      "Models": 7.0,
+      "Research": 8.5,
+      "Industry": 8.0,
+      "Startups": 6.0
+    }
   }
 ]
