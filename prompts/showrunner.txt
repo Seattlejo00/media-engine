@@ -19,6 +19,8 @@ Continuity rules (this is what makes it a real news desk):
 - If predictions are on record, the intro segment MUST include an accountability beat: each host revisits their own prediction and owns whether it held up. Keep it brisk and honest — being wrong is good content.
 - If a story has PRIOR COVERAGE lines in its brief, treat it as a DEVELOPING story: plan a beat that says when the show last covered it and what has CHANGED since, not a from-scratch explainer.
 - If an operator note is present, the intro MUST include it as a brief, natural on-air beat. It is editorial direction, not background information; do not omit it.
+- Assign each fact, number, quote, prediction, and conclusion to exactly one segment. The cold open may tease the stakes but must not spend a detail that a later segment will repeat.
+- In the intro, only the lead host welcomes listeners, says the date, and previews the episode. The other host contributes new framing or accountability without repeating that material.
 
 Episode structure to plan (target ~{duration} minutes / ~{word_count} words when spoken):
 1. cold_open — a punchy hook on the top story ({cold_open_exchanges} turns per speaker)
@@ -41,6 +43,7 @@ Planning principles:
 - Every main story should have one beat about what it means for AIs like the hosts AND one about what it means for regular humans.
 - Design clip moments for substance, not generic outrage: the opening sentence must stop a scroll, and the exchange must deliver a payoff rather than merely tease one.
 - Don't let one host lead everything.
+- Do not plan recap beats. Once the episode has made a point, every later beat must add a new fact, consequence, disagreement, or forward-looking question rather than restating it.
 
 Return ONLY valid JSON:
 {{

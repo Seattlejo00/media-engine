@@ -2,6 +2,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from PIL import Image, ImageDraw
 
@@ -21,8 +22,11 @@ from pipeline.script import (
     SIGNOFF_CTA,
     _enforce_signoff_cta,
     _parse_plan_json,
+    _repetition_issues,
+    _run_conversation,
     _speech_shape_issues,
     _turn_prompt,
+    _uncovered_beats,
 )
 from pipeline.video import (
     FONT_BOLD,
@@ -93,6 +97,101 @@ class SpokenEditorialTests(unittest.TestCase):
         note = "We hope you like our new format!"
         self.assertIn(note, self._prompt("intro", 0, note))
         self.assertNotIn(note, self._prompt("intro", 1, note))
+
+    def test_second_intro_host_cannot_repeat_welcome_date_or_rundown(self):
+        prompt = self._prompt("intro", 1)
+        self.assertIn("Do not welcome listeners again", prompt)
+        self.assertIn("repeat the date", prompt)
+        self.assertIn("repeat the episode rundown", prompt)
+
+    def test_spoken_ledger_is_explicitly_non_repeating(self):
+        prompt = _turn_prompt(
+            {"type": "main_story", "beats": []},
+            None,
+            [{"speaker": "ChatGPT", "text": "The API costs three dollars."}],
+            ["Moonshot launched Kimi K3 with 2.8 trillion parameters."],
+            "Claude",
+            1,
+            4,
+            "July 18, 2026",
+            ["Claude", "ChatGPT"],
+        )
+        self.assertIn("ANTI-REPETITION LEDGER", prompt)
+        self.assertIn("2.8 trillion parameters", prompt)
+        self.assertIn("NON-REPETITION CONTRACT", prompt)
+
+    def test_repetition_check_flags_reused_number_or_core_point(self):
+        earlier = [
+            "Moonshot launched Kimi K3 with 2.8 trillion parameters.",
+            "The lack of pricing leaves solo founders unable to budget.",
+        ]
+        self.assertTrue(_repetition_issues(
+            "Kimi K3's 2.8 trillion parameter count is unusually large.",
+            earlier,
+        ))
+        self.assertTrue(_repetition_issues(
+            "Independent testing matters. Kimi K3 still has 2.8 trillion parameters.",
+            earlier,
+        ))
+        self.assertTrue(_repetition_issues(
+            "Solo founders still cannot budget because pricing remains absent.",
+            earlier,
+        ))
+        self.assertEqual(
+            _repetition_issues(
+                "The weight release creates a concrete test for independent labs.",
+                earlier,
+            ),
+            [],
+        )
+
+    def test_covered_showrunner_beat_is_removed_from_later_turns(self):
+        beats = [
+            "Kimi K3 has 2.8 trillion parameters.",
+            "API access costs three dollars per million input tokens.",
+        ]
+        remaining = _uncovered_beats(
+            beats,
+            ["Moonshot says Kimi K3 contains 2.8 trillion parameters."],
+        )
+        self.assertEqual(remaining, [beats[1]])
+
+    def test_repetitive_generated_turn_is_rewritten_before_output(self):
+        plan = {
+            "title": "Test",
+            "segments": [{
+                "type": "cold_open",
+                "lead": "Claude",
+                "turns_per_speaker": 1,
+                "beats": [],
+            }],
+        }
+        drafts = [
+            "Moonshot says Kimi K3 has 2.8 trillion parameters and will publish weights in July.",
+            "Kimi K3 has 2.8 trillion parameters, a huge figure for Moonshot's model release.",
+            "Independent access will let researchers test efficiency claims instead of trusting launch-day marketing.",
+        ]
+        with (
+            patch("pipeline.script._load_personas", return_value={
+                "Claude": "persona", "ChatGPT": "persona",
+            }),
+            patch("pipeline.script._get_api_clients", return_value={
+                "Claude": object(), "ChatGPT": object(),
+            }),
+            patch("pipeline.script._speak", side_effect=drafts) as speak,
+        ):
+            script = _run_conversation(
+                plan,
+                [],
+                ["Claude", "ChatGPT"],
+                "July 18, 2026",
+            )
+
+        self.assertEqual(speak.call_count, 3)
+        self.assertEqual(
+            script["segments"][0]["dialogue"][1]["text"],
+            drafts[2],
+        )
 
     def test_cta_is_inserted_exactly_once_even_if_models_repeat_it(self):
         script = {

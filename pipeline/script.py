@@ -18,10 +18,20 @@ from pipeline.cost_tracker import tracker
 
 logger = logging.getLogger(__name__)
 
-SCRIPT_FORMAT_VERSION = 7
+SCRIPT_FORMAT_VERSION = 8
 MAX_TURN_WORDS = 48
 MAX_SENTENCE_WORDS = 22
 SIGNOFF_CTA = config.PODCAST_SIGNOFF_CTA
+
+REPETITION_STOPWORDS = {
+    "about", "after", "again", "also", "and", "are", "because", "been",
+    "before", "being", "but", "can", "could", "does", "for", "from",
+    "have", "into", "just", "more", "not", "now", "only", "our", "out",
+    "over", "really", "said", "that", "the", "their", "then", "there",
+    "these", "they", "this", "those", "today", "too", "very", "was",
+    "were", "what", "when", "where", "which", "while", "will", "with",
+    "would", "you", "your",
+}
 
 _INVALID_JSON_ESCAPE = re.compile(r'\\(?!["\\/bfnrtu])')
 
@@ -530,6 +540,69 @@ def _speech_shape_issues(text: str) -> list[str]:
     return issues
 
 
+def _repetition_tokens(text: str) -> set[str]:
+    """Normalize content words for conservative semantic-overlap checks."""
+    tokens = set()
+    for token in re.findall(r"[a-z0-9]+(?:\.[0-9]+)?", text.lower()):
+        if len(token) < 3 or token in REPETITION_STOPWORDS:
+            continue
+        if token.endswith("s") and len(token) > 4:
+            token = token[:-1]
+        tokens.add(token)
+    return tokens
+
+
+def _repetition_issues(text: str, earlier_turns: list[str]) -> list[str]:
+    """Flag a turn that restates a prior fact, number, or core point."""
+    def compare(candidate: str, earlier: str) -> str | None:
+        candidate_tokens = _repetition_tokens(candidate)
+        prior_tokens = _repetition_tokens(earlier)
+        if not candidate_tokens or not prior_tokens:
+            return None
+        shared = candidate_tokens & prior_tokens
+        if len(shared) < 3:
+            return None
+        overlap = len(shared) / min(len(candidate_tokens), len(prior_tokens))
+        candidate_numbers = set(
+            re.findall(r"\b\d+(?:\.\d+)?%?\b", candidate)
+        )
+        prior_numbers = set(re.findall(r"\b\d+(?:\.\d+)?%?\b", earlier))
+        if candidate_numbers & prior_numbers and overlap >= 0.2:
+            return "turn repeats an earlier number or factual detail"
+        if len(shared) >= 4 and overlap >= 0.52:
+            return "turn substantially paraphrases an earlier point"
+        return None
+
+    candidate_parts = [text] + [
+        sentence for sentence in re.split(r"(?<=[.!?])\s+", text)
+        if sentence.strip() and sentence.strip() != text.strip()
+    ]
+    earlier_parts = [
+        part
+        for earlier in earlier_turns
+        for part in [earlier] + [
+            sentence for sentence in re.split(r"(?<=[.!?])\s+", earlier)
+            if sentence.strip() and sentence.strip() != earlier.strip()
+        ]
+    ]
+    for candidate in candidate_parts:
+        for earlier in earlier_parts:
+            issue = compare(candidate, earlier)
+            if issue:
+                return [issue]
+    return []
+
+
+def _uncovered_beats(beats: list[str], earlier_turns: list[str]) -> list[str]:
+    """Hide showrunner beats whose core fact has already been spoken."""
+    if not earlier_turns:
+        return beats
+    return [
+        beat for beat in beats
+        if not _repetition_issues(beat, earlier_turns)
+    ]
+
+
 def _clip_moment_text(value) -> str:
     """Normalize the showrunner's free-form clip direction into prompt text."""
     if isinstance(value, str):
@@ -572,9 +645,20 @@ def _turn_prompt(
     ]
 
     beats = seg.get("beats") or []
-    if beats:
-        parts.append("SHOWRUNNER BEATS (cover what's still uncovered, in your own way):\n"
-                     + "\n".join(f"- {b}" for b in beats))
+    earlier_turns = completed + [line["text"] for line in dialogue]
+    uncovered_beats = _uncovered_beats(beats, earlier_turns)
+    if uncovered_beats:
+        parts.append(
+            "UNCOVERED SHOWRUNNER BEATS — choose one that advances the discussion. "
+            "Do not return to a beat no longer listed:\n"
+            + "\n".join(f"- {beat}" for beat in uncovered_beats)
+        )
+    elif beats:
+        parts.append(
+            "ALL SHOWRUNNER BEATS ARE ALREADY COVERED. Do not recap them. Add a new "
+            "implication, counterargument, analogy, or forward-looking question that "
+            "is grounded in the supplied evidence."
+        )
 
     clip_moment = _clip_moment_text(seg.get("clip_moment"))
     if clip_moment:
@@ -633,23 +717,36 @@ def _turn_prompt(
         )
 
     if completed:
-        parts.append("EARLIER IN THIS EPISODE: " + " | ".join(completed[-6:]))
+        parts.append(
+            "ANTI-REPETITION LEDGER — every line below has already aired. Do not "
+            "restate its facts, numbers, dates, headline, agenda, conclusion, or "
+            "prediction, even in different words. Refer back with 'that' if needed, "
+            "then contribute a new fact, consequence, counterargument, or question:\n"
+            + "\n".join(f"- {line}" for line in completed)
+        )
 
     if dialogue:
         convo = "\n".join(f"{l['speaker']}: {l['text']}" for l in dialogue[-10:])
         parts.append(f"THE CONVERSATION SO FAR IN THIS SEGMENT:\n{convo}")
 
     # Role-specific instruction for this turn
-    if seg_type == "intro":
+    if seg_type == "intro" and turn_idx == 0:
         task = (
             f"Welcome listeners to {config.PODCAST_TITLE}, mention today's date, "
-            "and tee up the episode."
+            "and give one concise episode preview. You own the welcome, date, and "
+            "rundown; later speakers must not repeat them."
         )
         if special_note and turn_idx == 0:
             task += (
                 " Include this operator-supplied announcement clearly and naturally "
                 f"in this turn; do not skip it: {special_note}"
             )
+    elif seg_type == "intro":
+        task = (
+            "Do not welcome listeners again, repeat the date, or repeat the episode "
+            "rundown. Add one new framing thesis or handle your own prediction "
+            "accountability beat, then move forward."
+        )
     elif seg_type == "cold_open" and turn_idx == 0:
         task = "Open the show with a punchy, curiosity-grabbing line about the top story. No greetings yet."
     elif seg_type == "sign_off":
@@ -698,6 +795,11 @@ def _turn_prompt(
 
     parts.append(
         f"YOUR TASK: {task}\n\n"
+        "NON-REPETITION CONTRACT: Every turn must advance the episode. Do not echo "
+        "your co-host, restate a number or fact, repeat the agenda, summarize a point "
+        "already made, or reuse an earlier conclusion. Acknowledgment alone is not a "
+        "turn. Add a new sourced detail, implication, disagreement, analogy, or "
+        "forward-looking question.\n\n"
         f"Write YOUR next spoken turn only — usually 24-48 words; cold opens and "
         f"goodbyes may be shorter. Use two or three complete sentences, with no "
         f"sentence over {MAX_SENTENCE_WORDS} words. Keep each sentence syntactically "
@@ -852,13 +954,21 @@ def _run_conversation(
                     logger.warning(f"Turn failed for {speaker} (attempt {attempt}): {e}")
             if text:
                 cleaned = _clean_turn(text, speaker)
-                issues = _speech_shape_issues(cleaned)
-                if issues:
+                earlier_turns = completed + [line["text"] for line in dialogue]
+                issues = (
+                    _speech_shape_issues(cleaned)
+                    + _repetition_issues(cleaned, earlier_turns)
+                )
+                for revision in range(2):
+                    if not issues:
+                        break
                     rewrite_prompt = (
                         prompt
-                        + "\n\nREWRITE REQUIRED: Your previous draft creates TTS cadence risks ("
+                        + "\n\nREWRITE REQUIRED: Your previous draft has quality risks ("
                         + "; ".join(issues)
-                        + "). Preserve its facts and point, but rewrite it in 24-48 words "
+                        + "). Replace any repeated material with a genuinely new point "
+                        + "grounded in the supplied evidence. Preserve non-repeated facts "
+                        + "and rewrite it in 24-48 words "
                         f"using two or three complete sentences of no more than "
                         f"{MAX_SENTENCE_WORDS} words each. DRAFT:\n{cleaned}"
                     )
@@ -868,8 +978,19 @@ def _run_conversation(
                         )
                         if rewritten:
                             cleaned = _clean_turn(rewritten, speaker)
+                            issues = (
+                                _speech_shape_issues(cleaned)
+                                + _repetition_issues(cleaned, earlier_turns)
+                            )
                     except Exception as e:
-                        logger.warning("Cadence rewrite failed for %s: %s", speaker, e)
+                        logger.warning("Dialogue rewrite failed for %s: %s", speaker, e)
+                        break
+                if issues:
+                    logger.warning(
+                        "Dialogue for %s retained quality risks after rewrites: %s",
+                        speaker,
+                        "; ".join(issues),
+                    )
                 dialogue.append({"speaker": speaker, "text": cleaned})
 
         if dialogue:
@@ -879,9 +1000,7 @@ def _run_conversation(
             )
             if topic_label:
                 prev_topic_label = topic_label
-            tail = dialogue[-1]["text"][:90]
-            completed.append(f"{seg.get('type')}" + (f" on '{topic_label}'" if topic_label else "")
-                             + f" (ended: \"{tail}...\")")
+            completed.extend(line["text"] for line in dialogue)
             logger.info(
                 f"Segment '{seg.get('type')}'"
                 + (f" — {topic_label}" if topic_label else "")

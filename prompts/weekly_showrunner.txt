@@ -42,6 +42,9 @@ Editorial rules:
 - If predictions are on record, the intro includes a brisk accountability beat. If an operator note is present, include it naturally.
 - The full player board is published on the website; focus the audio on meaningful changes rather than reading every row.
 - Do not tack a disposable rhetorical question onto the end of a turn. A question must advance the conversation or be omitted.
+- Assign every fact, number, agenda item, prediction, and conclusion to one segment only. The cold open may tease stakes but cannot spend details that later segments will repeat.
+- Only the lead intro host welcomes listeners, says the date, and gives the rundown. The second host must add new framing or accountability without repeating any of those items.
+- Do not plan recap beats. A later weekly segment may refer to an earlier event, but it must add a new consequence or comparison and cannot repeat the launch facts.
 
 Flexible structure:
 - Required: cold_open, intro, and sign_off.
