@@ -231,13 +231,16 @@ def _normalize_snapshot(
     raw: dict,
     previous: dict | None,
     date_str: str,
-    allowed_urls: set[str] | None = None,
+    allowed_evidence: dict[str, dict] | None = None,
 ) -> dict:
     prior_players = {
         item.get("id"): item for item in (previous or {}).get("players", [])
     }
+    raw_players = raw.get("players") or []
+    if not isinstance(raw_players, list):
+        raw_players = []
     returned_players = {
-        item.get("id"): item for item in raw.get("players", [])
+        item.get("id"): item for item in raw_players if isinstance(item, dict)
         if item.get("id") in TRACKED_PLAYERS
     }
     players = []
@@ -247,10 +250,20 @@ def _normalize_snapshot(
         trajectory = item.get("trajectory", "unclear")
         confidence = item.get("confidence", "low")
         evidence = (item.get("evidence") or [])[:4]
-        if allowed_urls is not None:
-            evidence = [
-                source for source in evidence if source.get("url") in allowed_urls
-            ]
+        if allowed_evidence is not None:
+            verified_evidence = []
+            for source in evidence:
+                if not isinstance(source, dict):
+                    continue
+                record = allowed_evidence.get(source.get("url"))
+                if not record or player_id not in (record.get("players") or []):
+                    continue
+                verified_evidence.append({
+                    **source,
+                    "source_title": record.get("title") or source.get("source_title", ""),
+                    "date": record.get("date") or source.get("date", ""),
+                })
+            evidence = verified_evidence
         changed = bool(item.get("changed"))
         if trajectory in {"rising", "slipping"}:
             if evidence:
@@ -266,7 +279,7 @@ def _normalize_snapshot(
         if str(proposed_flagship or "").lower() == "unknown":
             proposed_flagship = None
         if (
-            allowed_urls is not None
+            allowed_evidence is not None
             and proposed_flagship
             and proposed_flagship != prior_flagship
             and not evidence
@@ -289,10 +302,31 @@ def _normalize_snapshot(
             "watch_next": item.get("watch_next") or prior.get("watch_next") or "No specific watch item.",
         })
     end = datetime.strptime(date_str, "%Y-%m-%d")
-    def sourced(items: list[dict], url_field: str = "evidence_url") -> list[dict]:
-        if allowed_urls is None:
+    def sourced(
+        items: list[dict],
+        url_field: str = "evidence_url",
+        require_players: bool = False,
+    ) -> list[dict]:
+        if allowed_evidence is None:
             return items
-        return [item for item in items if item.get(url_field) in allowed_urls]
+        verified = []
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            record = allowed_evidence.get(item.get(url_field))
+            if not record:
+                continue
+            if require_players:
+                player_ids = [
+                    player_id for player_id in (item.get("player_ids") or [])
+                    if player_id in TRACKED_PLAYERS
+                    and player_id in (record.get("players") or [])
+                ]
+                if not player_ids:
+                    continue
+                item = {**item, "player_ids": player_ids}
+            verified.append(item)
+        return verified
 
     return {
         "schema_version": 1,
@@ -300,10 +334,23 @@ def _normalize_snapshot(
         "week_end": date_str,
         "headline": raw.get("headline") or "The AI landscape this week",
         "summary": raw.get("summary") or "A sourced weekly status of the leading AI labs.",
-        "top_moves": sourced((raw.get("top_moves") or [])[:3]),
-        "under_the_radar": sourced((raw.get("under_the_radar") or [])[:2]),
-        "hype_check": sourced((raw.get("hype_check") or [])[:2]),
-        "next_week": (raw.get("next_week") or [])[:4],
+        "top_moves": sourced(
+            raw.get("top_moves")[:3]
+            if isinstance(raw.get("top_moves"), list) else [],
+            require_players=True,
+        ),
+        "under_the_radar": sourced(
+            raw.get("under_the_radar")[:2]
+            if isinstance(raw.get("under_the_radar"), list) else []
+        ),
+        "hype_check": sourced(
+            raw.get("hype_check")[:2]
+            if isinstance(raw.get("hype_check"), list) else []
+        ),
+        "next_week": (
+            raw.get("next_week")[:4]
+            if isinstance(raw.get("next_week"), list) else []
+        ),
         "players": players,
     }
 
@@ -363,8 +410,10 @@ def generate_landscape_snapshot(
             output_tokens=usage.completion_tokens,
         )
     raw = json.loads(response.choices[0].message.content)
-    allowed_urls = {item["url"] for item in evidence if item.get("url")}
-    snapshot = _normalize_snapshot(raw, previous, date_str, allowed_urls)
+    allowed_evidence = {
+        item["url"]: item for item in evidence if item.get("url")
+    }
+    snapshot = _normalize_snapshot(raw, previous, date_str, allowed_evidence)
     snapshot["evidence_count"] = len(evidence)
     snapshot["coverage_metrics"] = _weekly_coverage_metrics(audit, date_str)
     return snapshot

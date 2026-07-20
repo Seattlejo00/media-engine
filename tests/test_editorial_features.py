@@ -156,6 +156,13 @@ class SpokenEditorialTests(unittest.TestCase):
         )
         self.assertEqual(remaining, [beats[1]])
 
+    def test_structured_showrunner_beat_is_normalized_before_overlap_check(self):
+        remaining = _uncovered_beats(
+            [{"fact": "Kimi K3 has 2.8 trillion parameters."}],
+            ["A different sourced point has already aired."],
+        )
+        self.assertEqual(remaining, ["Kimi K3 has 2.8 trillion parameters."])
+
     def test_repetitive_generated_turn_is_rewritten_before_output(self):
         plan = {
             "title": "Test",

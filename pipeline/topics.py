@@ -423,6 +423,15 @@ def _force_priority_stories(
             "angle": article.get("must_cover_reason") or "High-impact landscape event",
             "category": "main",
             "selection_reason": "coverage_audit",
+            "url": article.get("url", ""),
+            "source": article.get("source", ""),
+            "alt_sources": article.get("alt_sources", [])[:2],
+            "tracked_players": article.get("tracked_players", []),
+            "editorial_lane": article.get("editorial_lane"),
+            "must_cover": bool(article.get("must_cover")),
+            "must_cover_reason": article.get("must_cover_reason", ""),
+            "event_article_count": article.get("event_article_count", 1),
+            "supporting_articles": article.get("supporting_articles", []),
         }
         if len(stories) >= limit:
             replace_at = next(
@@ -560,10 +569,9 @@ def rank_topics(articles: list[dict], audit: dict | None = None) -> list[dict]:
             audit["model_high_impact_omissions"] = model_omissions
             audit["priority_indexes"] = priority_indexes
         return stories
-    except (json.JSONDecodeError, IndexError) as e:
+    except (json.JSONDecodeError, IndexError, TypeError, AttributeError) as e:
         logger.error(f"Failed to parse ranked topics: {e}")
-        # Fallback: return first 5 articles as-is
-        return [
+        fallback = [
             {
                 "rank": i + 1,
                 "index": i + 1,
@@ -583,6 +591,13 @@ def rank_topics(articles: list[dict], audit: dict | None = None) -> list[dict]:
             }
             for i, a in enumerate(articles[:5])
         ]
+        priority_indexes = [
+            i for i, article in enumerate(articles, 1) if article.get("must_cover")
+        ]
+        if audit is not None:
+            audit["model_high_impact_omissions"] = []
+            audit["priority_indexes"] = priority_indexes
+        return _force_priority_stories(fallback, articles, priority_indexes)
 
 
 def _build_editorial_audit(

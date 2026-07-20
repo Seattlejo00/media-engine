@@ -595,6 +595,9 @@ def _repetition_issues(text: str, earlier_turns: list[str]) -> list[str]:
 
 def _uncovered_beats(beats: list[str], earlier_turns: list[str]) -> list[str]:
     """Hide showrunner beats whose core fact has already been spoken."""
+    if not isinstance(beats, list):
+        beats = [beats]
+    beats = [text for beat in beats if (text := _clip_moment_text(beat))]
     if not earlier_turns:
         return beats
     return [
@@ -608,7 +611,10 @@ def _clip_moment_text(value) -> str:
     if isinstance(value, str):
         return value.strip()
     if isinstance(value, dict):
-        for key in ("direction", "summary", "hook", "description", "text"):
+        for key in (
+            "direction", "summary", "hook", "description", "text",
+            "beat", "fact", "point", "implication", "question",
+        ):
             candidate = value.get(key)
             if isinstance(candidate, str) and candidate.strip():
                 return candidate.strip()

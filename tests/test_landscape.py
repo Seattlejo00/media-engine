@@ -2,7 +2,8 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 import config
 import main
@@ -20,6 +21,7 @@ from pipeline.topics import (
     _force_priority_stories,
     audit_candidates,
     consolidate_topic_events,
+    rank_topics,
 )
 
 
@@ -71,6 +73,34 @@ class CoverageAuditTests(unittest.TestCase):
         selected = _force_priority_stories([], articles, list(range(1, 9)), limit=6)
         self.assertEqual(len(selected), 6)
         self.assertEqual([item["index"] for item in selected], list(range(1, 7)))
+
+    def test_malformed_ranking_fallback_preserves_late_must_cover_story(self):
+        articles = audit_candidates([
+            {
+                "title": f"Routine AI item {index}",
+                "description": "Routine product coverage.",
+                "source": "News",
+                "url": f"https://example.com/{index}",
+            }
+            for index in range(1, 6)
+        ] + [{
+            "title": "Moonshot launches Kimi K3 frontier model",
+            "description": "Moonshot released its new flagship model.",
+            "source": "Kimi",
+            "url": "https://kimi.com/k3",
+        }])
+        response = SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content="{bad json"))],
+            usage=None,
+        )
+        client = MagicMock()
+        client.chat.completions.create.return_value = response
+        with patch("openai.OpenAI", return_value=client):
+            selected = rank_topics(articles)
+        self.assertIn(6, [item["index"] for item in selected])
+        kimi = next(item for item in selected if item["index"] == 6)
+        self.assertTrue(kimi["must_cover"])
+        self.assertEqual(kimi["url"], "https://kimi.com/k3")
 
     def test_no_newsapi_key_skips_official_source_request_cleanly(self):
         with patch.object(topics_module.config, "NEWS_API_KEY", ""):
@@ -350,7 +380,14 @@ class WeeklyLandscapeTests(unittest.TestCase):
             }]},
             previous=None,
             date_str="2026-07-17",
-            allowed_urls={"https://trusted.example/story"},
+            allowed_evidence={
+                "https://trusted.example/story": {
+                    "url": "https://trusted.example/story",
+                    "title": "Trusted story",
+                    "date": "2026-07-17",
+                    "players": ["moonshot"],
+                }
+            },
         )
         moonshot = next(
             player for player in snapshot["players"] if player["id"] == "moonshot"
@@ -359,6 +396,66 @@ class WeeklyLandscapeTests(unittest.TestCase):
         self.assertEqual(moonshot["trajectory"], "unclear")
         self.assertEqual(moonshot["evidence"], [])
         self.assertEqual(moonshot["current_flagship"], "Unknown")
+
+    def test_recognized_evidence_for_another_player_cannot_support_movement(self):
+        url = "https://trusted.example/kimi-launch"
+        snapshot = _normalize_snapshot(
+            {"players": [{
+                "id": "openai",
+                "current_flagship": "Invented Model X",
+                "changed": True,
+                "change_summary": "OpenAI shipped Invented Model X.",
+                "trajectory": "rising",
+                "confidence": "high",
+                "evidence": [{
+                    "claim": "OpenAI shipped Invented Model X.",
+                    "source_title": "Invented source title",
+                    "url": url,
+                    "date": "2026-07-17",
+                }],
+            }]},
+            previous=None,
+            date_str="2026-07-17",
+            allowed_evidence={
+                url: {
+                    "url": url,
+                    "title": "Moonshot launches Kimi K3",
+                    "date": "2026-07-17",
+                    "players": ["moonshot"],
+                }
+            },
+        )
+        openai = next(
+            player for player in snapshot["players"] if player["id"] == "openai"
+        )
+        self.assertFalse(openai["changed"])
+        self.assertEqual(openai["trajectory"], "unclear")
+        self.assertEqual(openai["evidence"], [])
+        self.assertEqual(openai["current_flagship"], "Unknown")
+
+    def test_top_move_drops_players_not_named_by_its_evidence(self):
+        url = "https://trusted.example/kimi-launch"
+        snapshot = _normalize_snapshot(
+            {
+                "top_moves": [{
+                    "player_ids": ["openai"],
+                    "summary": "OpenAI supposedly moved.",
+                    "evidence_url": url,
+                }],
+                "players": [],
+            },
+            previous=None,
+            date_str="2026-07-17",
+            allowed_evidence={
+                url: {
+                    "url": url,
+                    "title": "Moonshot launches Kimi K3",
+                    "date": "2026-07-17",
+                    "players": ["moonshot"],
+                }
+            },
+        )
+        self.assertEqual(snapshot["top_moves"], [])
 
     def test_duplicate_player_rows_collapse_to_one_registry_entry(self):
         snapshot = _normalize_snapshot(
