@@ -111,8 +111,13 @@ def update_after_episode(topics: list[dict], script: dict, date_str: str) -> Non
         brief = t.get("brief") or {}
         stories.append({
             "title": t["title"],
+            "summary": t.get("summary", ""),
             "category": t.get("category", "main"),
             "facts": (brief.get("key_facts") or [])[:3],
+            "source": t.get("source", ""),
+            "url": t.get("url", ""),
+            "tracked_players": t.get("tracked_players", []),
+            "must_cover": bool(t.get("must_cover")),
         })
 
     threads.append({

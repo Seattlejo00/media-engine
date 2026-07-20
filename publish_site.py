@@ -14,6 +14,7 @@ Usage:
 import argparse
 import html
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -46,6 +47,11 @@ def build_fragment(script: dict, topics: list[dict]) -> str:
             parts.append("<h2>Sign Off</h2>")
         elif seg_type in ("main_story", "lightning_round") and topic:
             parts.append(f"<h2>{html.escape(topic)}</h2>")
+        elif seg_type in {
+            "week_in_review", "frontier_board", "under_the_radar", "hype_check"
+        }:
+            heading = topic or seg_type.replace("_", " ").title()
+            parts.append(f"<h2>{html.escape(heading)}</h2>")
 
         for line in segment.get("dialogue", []):
             speaker = (line.get("speaker") or "").strip()
@@ -129,6 +135,14 @@ def publish(episode_dir: Path, site_dir: Path) -> None:
     if scores_path.exists():
         scores = json.loads(scores_path.read_text(encoding="utf-8"))
 
+    landscape = None
+    landscape_path = episode_dir / "landscape.json"
+    if landscape_path.exists():
+        landscape = json.loads(landscape_path.read_text(encoding="utf-8"))
+        target = site_dir / "static" / "landscape.json"
+        shutil.copyfile(landscape_path, target)
+        print(f"Updated weekly landscape source: {target}")
+
     entry = {
         "date": date_str,
         "title": script.get("title") or f"The Context Window — {date_str}",
@@ -139,6 +153,8 @@ def publish(episode_dir: Path, site_dir: Path) -> None:
         "roster": script.get("roster") or ["Claude", "ChatGPT"],
         "duration_seconds": summary.get("duration_seconds"),
         "scores": scores,
+        "episode_mode": script.get("episode_mode", "daily"),
+        "landscape_week_end": (landscape or {}).get("week_end"),
         "topics": [
             {
                 "title": (t.get("title") or "").strip(),

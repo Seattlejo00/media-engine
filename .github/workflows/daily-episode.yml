@@ -13,6 +13,10 @@ on:
         description: "Test mode: run the full pipeline but skip all uploads/publishing, even if today's episode already exists"
         type: boolean
         default: false
+      episode_date:
+        description: "Optional YYYY-MM-DD date override for test mode (use a Friday to rehearse the weekly landscape episode)"
+        type: string
+        default: ""
       fresh:
         description: "Regenerate all of today's artifacts instead of reusing cached checkpoints (upload ledger is preserved)"
         type: boolean
@@ -42,8 +46,15 @@ jobs:
 
       - name: Skip if today's episode already exists
         id: guard
+        env:
+          EPISODE_DATE_INPUT: ${{ inputs.episode_date }}
+          TEST_MODE_INPUT: ${{ inputs.test_mode }}
         run: |
-          TODAY=$(TZ=America/Los_Angeles date +%F)
+          if [ -n "$EPISODE_DATE_INPUT" ] && [ "$TEST_MODE_INPUT" != "true" ]; then
+            echo "episode_date is test-only; set test_mode=true." >&2
+            exit 1
+          fi
+          TODAY=${EPISODE_DATE_INPUT:-$(TZ=America/Los_Angeles date +%F)}
           echo "today=$TODAY" >> "$GITHUB_OUTPUT"
           if [ "${{ inputs.test_mode }}" = "true" ] || [ "${{ inputs.clips_only }}" = "true" ]; then
             echo "exists=false" >> "$GITHUB_OUTPUT"
@@ -118,7 +129,17 @@ jobs:
           EPISODE_DURATION_MINUTES: "12"
           TIMEZONE: America/Los_Angeles
           EPISODE_SPECIAL_NOTE: ${{ inputs.special_note }}
-        run: python main.py ${{ inputs.test_mode == true && '--no-upload' || '' }} ${{ inputs.fresh == true && '--fresh' || '' }} ${{ inputs.clips_only == true && '--clips-only' || '' }}
+          EPISODE_DATE_INPUT: ${{ inputs.episode_date }}
+          TEST_MODE_INPUT: ${{ inputs.test_mode }}
+          FRESH_INPUT: ${{ inputs.fresh }}
+          CLIPS_ONLY_INPUT: ${{ inputs.clips_only }}
+        run: |
+          args=()
+          [ "$TEST_MODE_INPUT" = "true" ] && args+=(--no-upload)
+          [ "$FRESH_INPUT" = "true" ] && args+=(--fresh)
+          [ "$CLIPS_ONLY_INPUT" = "true" ] && args+=(--clips-only)
+          [ -n "$EPISODE_DATE_INPUT" ] && args+=(--episode-date "$EPISODE_DATE_INPUT")
+          python main.py "${args[@]}"
 
       - name: Publish article to website
         if: steps.guard.outputs.exists == 'false' && inputs.test_mode != true && inputs.clips_only != true

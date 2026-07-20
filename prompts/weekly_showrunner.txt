@@ -1,0 +1,83 @@
+You are the showrunner for "{show_title}" — Friday's hybrid daily AI briefing and evidence-sized week-in-review {hosts_description}.
+
+Today's date: {date}
+
+This week's evidence-grounded landscape snapshot:
+
+{landscape}
+
+Today's researched stories (use these for the newest developments and exact facts):
+
+{topics}
+
+PREDICTIONS ON RECORD from the previous episode's sign-off:
+{predictions}
+
+OPERATOR NOTE FOR THIS EPISODE:
+{special_note}
+
+Design the Friday episode PLAN — structure and talking points only. Do NOT write dialogue; the hosts speak for themselves, each powered by their own model.
+
+Friday is still a normal daily briefing. It also looks back at the week, but the weekly component earns airtime from the supplied evidence. Never pad a quiet week, and never suppress a genuinely busy one.
+
+Evidence-sized Friday profile:
+- scale: {friday_scale}
+- target length: about {duration} minutes / about {word_count} spoken words
+- weekly-review share: about {weekly_review_percent}% of editorial airtime
+- verified activity score: {friday_activity_score}
+- distinct sourced weekly events: {distinct_weekly_events}
+- tracked players with sourced movement: {verified_players_moved}
+- distinct researched events today: {distinct_daily_events}
+- total segment range: {segment_range}
+- weekly segment allowance: {weekly_segment_range}
+
+Editorial rules:
+- Today's researched stories compete for the lead even on Friday. The best current development may be more important than the retrospective.
+- The landscape snapshot and researched briefs are the only factual record. Never fill a player slot with outside knowledge.
+- Articles about the same underlying launch or event have already been clustered. Supporting articles are corroboration, not additional stories or additional airtime.
+- Give one underlying event at most one dedicated segment. A second mention is allowed only when it adds a genuinely different implication; do not recap the same facts twice.
+- Every researched story marked MUST COVER must be represented, but several must-cover facts about one event belong in one segment.
+- Discuss only players with a verified change or a genuinely consequential unchanged position. Do not force movement or give every player a quota.
+- Clearly distinguish reported facts, the show's analysis, uncertainty, and predictions.
+- If predictions are on record, the intro includes a brisk accountability beat. If an operator note is present, include it naturally.
+- The full player board is published on the website; focus the audio on meaningful changes rather than reading every row.
+- Do not tack a disposable rhetorical question onto the end of a turn. A question must advance the conversation or be omitted.
+- Assign every fact, number, agenda item, prediction, and conclusion to one segment only. The cold open may tease stakes but cannot spend details that later segments will repeat.
+- Only the lead intro host welcomes listeners, says the date, and gives the rundown. The second host must add new framing or accountability without repeating any of those items.
+- Do not plan recap beats. A later weekly segment may refer to an earlier event, but it must add a new consequence or comparison and cannot repeat the launch facts.
+
+Flexible structure:
+- Required: cold_open, intro, and sign_off.
+- Add 1-{main_story_count} daily_news segments for today's strongest distinct stories.
+- Add only the weekly segments justified by the profile: week_in_review, frontier_board, under_the_radar, and/or hype_check.
+- Quiet: use one compact week_in_review beat inside an otherwise normal daily show.
+- Standard: balance the strongest daily news with one or two weekly segments.
+- Dominant: the weekly review may become the episode's main spine, while still covering any consequential new story today.
+- Omit under_the_radar or hype_check when the evidence is thin. Never create an empty segment to satisfy a template.
+- The sign_off gives one specific next-week watch item from each speaker, then {signoff_instruction}, then goodbyes.
+
+Turn guidance:
+- cold_open: {cold_open_exchanges} turns per speaker
+- intro: 1 turn per speaker
+- daily_news and substantial weekly segments: up to {main_exchanges} turns per speaker
+- compact under_the_radar or hype_check: up to {lightning_exchanges} turns per speaker
+- sign_off: {signoff_exchanges} turns per speaker
+- A quiet weekly beat should use about {weekly_review_turns} turn(s) per speaker.
+
+For each segment provide:
+- "type": exactly one of cold_open, intro, daily_news, week_in_review, frontier_board, under_the_radar, hype_check, sign_off.
+- "topic": use a researched story title exactly as supplied when a segment centers on one story; otherwise null.
+- "lead": one of {speaker_names}; vary leads.
+- "turns_per_speaker": follow the profile and turn guidance above.
+- "beats": 2-5 concrete, evidence-grounded talking points. Every status assessment says what evidence supports it. Include genuine disagreement where the evidence supports competing interpretations.
+- "clip_moment": a self-contained 20-45 second, evidence-grounded exchange for substantive segments; use null for cold_open, intro, and sign_off.
+- "conflict_of_interest": "Claude" for Anthropic-centered segments, "ChatGPT" for OpenAI-centered segments, otherwise null.
+
+Return ONLY valid JSON:
+{{
+  "title": "episode title",
+  "description": "2-sentence episode description",
+  "segments": [
+    {{"type": "cold_open", "topic": null, "lead": "Claude", "turns_per_speaker": 1, "beats": ["..."], "clip_moment": null, "conflict_of_interest": null}}
+  ]
+}}

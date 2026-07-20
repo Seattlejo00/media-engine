@@ -39,6 +39,53 @@ PODCAST_DESCRIPTION = os.getenv(
     "PODCAST_DESCRIPTION",
     "ChatGPT and Claude discuss the day's biggest stories — as themselves.",
 )
+PUBLICATION_FORMAT = os.getenv("PUBLICATION_FORMAT", "daily AI-news podcast")
+PUBLICATION_AUDIENCE = os.getenv(
+    "PUBLICATION_AUDIENCE", "smart, curious people who follow tech and AI"
+)
+PODCAST_SIGNOFF_CTA = os.getenv(
+    "PODCAST_SIGNOFF_CTA",
+    "If you enjoyed the show, subscribe to The Context Window on YouTube "
+    "and follow us on Spotify.",
+)
+PODCAST_SIGNOFF_INSTRUCTION = os.getenv(
+    "PODCAST_SIGNOFF_INSTRUCTION",
+    "one natural request to subscribe on YouTube and follow on Spotify",
+)
+PODCAST_THUMBNAIL_LABEL = os.getenv(
+    "PODCAST_THUMBNAIL_LABEL", "AI NEWS  •  10 MINUTES"
+)
+PODCAST_TAGLINE = os.getenv("PODCAST_TAGLINE", "AI NEWS, HOSTED BY AIS")
+PODCAST_CADENCE = os.getenv("PODCAST_CADENCE", "New episodes every morning")
+PODCAST_STORY_EYEBROW = os.getenv("PODCAST_STORY_EYEBROW", "TODAY'S STORY")
+PODCAST_SITE_LABEL = os.getenv(
+    "PODCAST_SITE_LABEL", "contextwindow.distomostech.com"
+)
+PODCAST_PRIMARY_CTA = os.getenv(
+    "PODCAST_PRIMARY_CTA", "SUBSCRIBE  youtube.com/@TheContextWindow-q1z"
+)
+PODCAST_SECONDARY_CTA = os.getenv(
+    "PODCAST_SECONDARY_CTA",
+    "FOLLOW  open.spotify.com/show/033OoZlyZBlEwCd6kmNdpT",
+)
+PODCAST_CLIP_CTA_HEADLINE = os.getenv(
+    "PODCAST_CLIP_CTA_HEADLINE", "FOLLOW FOR MORE"
+)
+PODCAST_CLIP_CTA_DETAIL = os.getenv(
+    "PODCAST_CLIP_CTA_DETAIL", "DAILY AI NEWS"
+)
+PODCAST_CLIP_CTA_DESTINATION = os.getenv(
+    "PODCAST_CLIP_CTA_DESTINATION", "Full episodes on YouTube + Spotify"
+)
+PODCAST_YOUTUBE_CLIP_CTA_HEADLINE = os.getenv(
+    "PODCAST_YOUTUBE_CLIP_CTA_HEADLINE", "SUBSCRIBE"
+)
+PODCAST_YOUTUBE_CLIP_CTA_DETAIL = os.getenv(
+    "PODCAST_YOUTUBE_CLIP_CTA_DETAIL", "ON YOUTUBE"
+)
+PODCAST_YOUTUBE_CLIP_CTA_DESTINATION = os.getenv(
+    "PODCAST_YOUTUBE_CLIP_CTA_DESTINATION", "@TheContextWindow-q1z"
+)
 RSS_FEED_URL = os.getenv("RSS_FEED_URL", "")
 # Square cover art for podcast directories (Apple needs 1400-3000px)
 PODCAST_COVER_URL = os.getenv(
