@@ -525,6 +525,8 @@ def _speech_shape_issues(text: str) -> list[str]:
     longest = max((len(sentence.split()) for sentence in sentences), default=0)
     if longest > MAX_SENTENCE_WORDS:
         issues.append(f"sentence has {longest} words")
+    if text.count('"') % 2:
+        issues.append("turn has an unmatched quotation mark")
     return issues
 
 

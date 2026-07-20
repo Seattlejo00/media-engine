@@ -159,6 +159,12 @@ class SpokenEditorialTests(unittest.TestCase):
         self.assertGreater(len(short_sentences.split()), MAX_TURN_WORDS)
         self.assertTrue(_speech_shape_issues(short_sentences))
 
+    def test_speech_shape_flags_unmatched_quotation_mark(self):
+        self.assertEqual(
+            _speech_shape_issues('That cuts against "bigger means bloated.'),
+            ["turn has an unmatched quotation mark"],
+        )
+
 
 class TtsCadenceTests(unittest.TestCase):
     def test_every_speaker_requires_continuous_syntax_bound_delivery(self):
