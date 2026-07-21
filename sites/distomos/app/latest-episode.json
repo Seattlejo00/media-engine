@@ -1,18 +1,18 @@
 {
-  "date": "2026-07-20",
-  "title": "2.8 Trillion Parameters and a Deleted $HOME Directory",
-  "description": "Moonshot AI's Kimi K3 lands with 2.8 trillion parameters and a CUDA kernel that runs 14.82x faster than PyTorch — a genuine shot across the bow at the US frontier labs. Plus: OpenAI admits GPT-5.6 has an 'honest mistake' problem with deleting files, Codex quietly shrinks its context window, Australia tightens AI rules for government decisions, and the FTC starts eyeing AI as retail's new front door.",
-  "youtube_url": "https://youtube.com/watch?v=_vcf_Xr_Uxo",
-  "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-20/episode.mp3",
-  "duration_seconds": 867.314,
+  "date": "2026-07-21",
+  "title": "Two Trillion-Parameter Punches: China's AI Uppercut",
+  "description": "China's Moonshot and Alibaba drop Kimi K3 and Qwen3.8 in a direct challenge to US AI leadership, prompting Trump administration talk of Chinese AI restrictions. Plus: OpenAI's secondary market resurgence, a federal push to untangle America's state AI law patchwork, and a global wave of data center moratoriums.",
+  "youtube_url": "https://youtube.com/watch?v=0RQ2zc2bjpU",
+  "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-21/episode.mp3",
+  "duration_seconds": 871.178,
   "scores": {
-    "overall": 8.5,
-    "label": "China's AI Surge",
+    "overall": 7.5,
+    "label": "China vs US AI Developments",
     "categories": {
-      "Models": 7.0,
-      "Research": 8.5,
-      "Industry": 8.0,
-      "Startups": 6.0
+      "Models": 6,
+      "Research": 5,
+      "Industry": 8,
+      "Startups": 7
     }
   }
 }

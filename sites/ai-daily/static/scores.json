@@ -115,5 +115,18 @@
       "Industry": 8.0,
       "Startups": 6.0
     }
+  },
+  {
+    "date": "2026-07-21",
+    "episode": "/episodes/2026-07-21.html",
+    "title": "Two Trillion-Parameter Punches: China's AI Uppercut",
+    "overall": 7.5,
+    "label": "China vs US AI Developments",
+    "categories": {
+      "Models": 6,
+      "Research": 5,
+      "Industry": 8,
+      "Startups": 7
+    }
   }
 ]
