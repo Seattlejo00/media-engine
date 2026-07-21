@@ -135,6 +135,25 @@ class CoverageAuditTests(unittest.TestCase):
         self.assertEqual(rerun[0]["event_article_count"], 3)
         self.assertEqual(len(rerun[0]["supporting_articles"]), 2)
 
+    def test_event_consolidation_accepts_missing_news_descriptions(self):
+        events = consolidate_topic_events([
+            {
+                "title": "Moonshot launches Kimi K3 frontier model",
+                "description": None,
+                "source": "Kimi",
+                "url": "https://kimi.com/k3",
+                "editorial_lane": "frontier_models",
+            },
+            {
+                "title": "Kimi K3 launch brings a new frontier model",
+                "description": "Moonshot released Kimi K3 today.",
+                "source": "AI News",
+                "url": "https://news.example/kimi-k3",
+                "editorial_lane": "frontier_models",
+            },
+        ])
+        self.assertEqual(len(events), 1)
+
     def test_same_model_different_action_remains_a_separate_event(self):
         events = consolidate_topic_events(audit_candidates([
             {

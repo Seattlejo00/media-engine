@@ -347,11 +347,12 @@ def _same_event(left: dict, right: dict) -> bool:
 
 
 def _canonical_event_score(article: dict) -> tuple[int, int, int]:
-    title = article.get("title", "")
+    title = article.get("title") or ""
+    description = article.get("description") or ""
     return (
         _source_priority(article),
         0 if MAJOR_EVENT_PATTERN.search(title) else 1,
-        -len(article.get("description", "")),
+        -len(description),
     )
 
 
