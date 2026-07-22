@@ -34,7 +34,9 @@ from pipeline.video import (
     SPOTIFY_OUTRO_URL,
     YOUTUBE_OUTRO_URL,
     _fit_wrapped_text,
+    _pixel_anchor,
     _render_clip_cta_card,
+    _render_frame_image,
     _render_transition_card,
 )
 
@@ -356,6 +358,22 @@ class TransitionCardTests(unittest.TestCase):
         self.assertEqual(youtube.size, PORTRAIT)
         self.assertEqual(social.size, PORTRAIT)
         self.assertNotEqual(youtube.tobytes(), social.tobytes())
+
+
+class PixelAnchorTests(unittest.TestCase):
+    def test_every_configured_speaker_has_a_pixel_anchor(self):
+        for speaker in config.SPEAKERS:
+            portrait = _pixel_anchor(speaker, 192)
+            self.assertIsNotNone(portrait, speaker)
+            self.assertEqual(portrait.size, (192, 192))
+            self.assertEqual(portrait.mode, "RGBA")
+            self.assertLess(portrait.getextrema()[3][0], 255)
+
+    def test_unknown_speaker_uses_safe_fallback(self):
+        frame = _render_frame_image(
+            "Guest", "A short line for the fallback frame.", LANDSCAPE
+        )
+        self.assertEqual(frame.size, LANDSCAPE)
 
 
 class ClipSelectionTests(unittest.TestCase):

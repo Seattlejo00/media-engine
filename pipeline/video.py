@@ -54,6 +54,8 @@ SPOTIFY_OUTRO_URL = "open.spotify.com/show/033OoZlyZBlEwCd6kmNdpT"
 # Backgrounds are expensive (gaussian-blurred glow) but identical for every
 # line a speaker says — cache per (speaker, size).
 _BG_CACHE: dict = {}
+_ANCHOR_CACHE: dict = {}
+PIXEL_ANCHOR_DIR = config.BASE_DIR / "assets" / "pixel_anchors"
 
 
 def _font(path: str, px: int) -> ImageFont.FreeTypeFont:
@@ -103,6 +105,24 @@ def _fit_text(draw: ImageDraw.ImageDraw, text: str, font_path: str,
     return font
 
 
+def _pixel_anchor(speaker: str, display_size: int) -> Image.Image | None:
+    """Load a speaker's transparent pixel portrait at a crisp display size."""
+    key = (speaker, display_size)
+    if key in _ANCHOR_CACHE:
+        return _ANCHOR_CACHE[key].copy()
+
+    asset_path = PIXEL_ANCHOR_DIR / f"{speaker.lower()}.png"
+    if not asset_path.is_file():
+        return None
+
+    with Image.open(asset_path) as source:
+        portrait = source.convert("RGBA").resize(
+            (display_size, display_size), Image.Resampling.NEAREST
+        )
+    _ANCHOR_CACHE[key] = portrait
+    return portrait.copy()
+
+
 def _render_frame_image(
     speaker: str,
     text: str,
@@ -136,20 +156,28 @@ def _render_frame_image(
         draw.rectangle([margin, rule_y, width - margin, rule_y + 3], fill=(*color, 160))
         banner_bottom = rule_y
 
-    # --- Speaker avatar (colored circle + initial) ---
+    # --- Speaker avatar (pixel anchor, with an initial-based fallback) ---
     r = 70 if is_landscape else 84
     cx = width // 2
     cy = int(height * (0.24 if is_landscape else 0.26))
-    # outer ring
-    draw.ellipse([cx - r - 8, cy - r - 8, cx + r + 8, cy + r + 8],
-                 outline=(*color, 200), width=4)
-    draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(*color, 255))
-    initial_font = _font(FONT_BOLD, int(r * 1.1))
-    draw.text((cx, cy), speaker[0], font=initial_font, fill=(255, 255, 255, 255), anchor="mm")
+    portrait_size = 190 if is_landscape else 224
+    portrait = _pixel_anchor(speaker, portrait_size)
+    if portrait is not None:
+        overlay.alpha_composite(
+            portrait, (cx - portrait_size // 2, cy - portrait_size // 2)
+        )
+    else:
+        draw.ellipse([cx - r - 8, cy - r - 8, cx + r + 8, cy + r + 8],
+                     outline=(*color, 200), width=4)
+        draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(*color, 255))
+        initial_font = _font(FONT_BOLD, int(r * 1.1))
+        initial = speaker[0] if speaker else "?"
+        draw.text((cx, cy), initial, font=initial_font,
+                  fill=(255, 255, 255, 255), anchor="mm")
 
     # --- Name + company ---
     name_font = _font(FONT_BOLD, 48 if is_landscape else 52)
-    name_y = cy + r + 36
+    name_y = cy + portrait_size // 2 + 18 if portrait is not None else cy + r + 36
     draw.text((cx, name_y), speaker, font=name_font, fill=(255, 255, 255, 255), anchor="ma")
     company_font = _font(FONT_REGULAR, 26 if is_landscape else 30)
     draw.text((cx, name_y + name_font.size + 12), company,
