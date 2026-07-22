@@ -22,6 +22,7 @@ from openai import OpenAI
 import config
 from pipeline.cost_tracker import tracker
 from pipeline.video import (
+    ANIMATION_FPS,
     PORTRAIT,
     _create_speaker_frames,
     _estimate_duration,
@@ -389,6 +390,7 @@ def _render_clip(
             _create_speaker_frames(
                 entry["speaker"], entry["text"], duration, PORTRAIT,
                 topic=on_screen_hook,
+                speech_duration=duration,
             )
         )
 
@@ -421,7 +423,7 @@ def _render_clip(
 
     video.write_videofile(
         str(content_path),
-        fps=1,
+        fps=ANIMATION_FPS,
         codec="libx264",
         audio_codec="aac",
         preset="ultrafast",

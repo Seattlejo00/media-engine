@@ -1,11 +1,13 @@
 # Pixel anchors
 
-These transparent robotic anchor portraits are original, trademark-neutral show
-assets. Regenerate all four deterministically from the repository root:
+The production art uses one canonical morning-newsroom frame and four sparse
+transparent overlays for the presenters' talking and blinking states. Keeping
+the background, bodies, and palette in a single base image prevents the visual
+noise that appears when image-generation variants are animated as full frames.
 
-```bash
-python scripts/generate_pixel_anchors.py
-```
+`newsroom.png` contains both presenters with closed mouths. The other PNGs are
+full-canvas overlays whose transparent pixels leave the base unchanged. The
+renderer uses nearest-neighbor scaling so the pixel edges stay crisp.
 
-The video renderer scales them with nearest-neighbor sampling to preserve the
-hard pixel edges.
+Only ChatGPT and Claude are currently supported. Other configured speakers use
+the renderer's existing safe fallback.

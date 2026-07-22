@@ -9,12 +9,14 @@ Creates video from the podcast audio with animated visuals:
 
 import json
 import logging
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
 from moviepy import (
     AudioFileClip,
     ImageClip,
+    VideoClip,
     concatenate_videoclips,
 )
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -54,8 +56,13 @@ SPOTIFY_OUTRO_URL = "open.spotify.com/show/033OoZlyZBlEwCd6kmNdpT"
 # Backgrounds are expensive (gaussian-blurred glow) but identical for every
 # line a speaker says — cache per (speaker, size).
 _BG_CACHE: dict = {}
-_ANCHOR_CACHE: dict = {}
 PIXEL_ANCHOR_DIR = config.BASE_DIR / "assets" / "pixel_anchors"
+ANIMATION_FPS = 8
+_NEWSROOM_SPEAKERS = frozenset({"ChatGPT", "Claude"})
+_BUBBLE_BOXES = {
+    "ChatGPT": (24, 142, 336, 367),
+    "Claude": (1325, 142, 1648, 367),
+}
 
 
 def _font(path: str, px: int) -> ImageFont.FreeTypeFont:
@@ -105,22 +112,160 @@ def _fit_text(draw: ImageDraw.ImageDraw, text: str, font_path: str,
     return font
 
 
-def _pixel_anchor(speaker: str, display_size: int) -> Image.Image | None:
-    """Load a speaker's transparent pixel portrait at a crisp display size."""
-    key = (speaker, display_size)
-    if key in _ANCHOR_CACHE:
-        return _ANCHOR_CACHE[key].copy()
+def _newsroom_supported(speaker: str) -> bool:
+    """Return whether the layered newsroom art supports this speaker."""
+    return speaker in _NEWSROOM_SPEAKERS and (
+        PIXEL_ANCHOR_DIR / "newsroom.png"
+    ).is_file()
 
-    asset_path = PIXEL_ANCHOR_DIR / f"{speaker.lower()}.png"
-    if not asset_path.is_file():
-        return None
 
-    with Image.open(asset_path) as source:
-        portrait = source.convert("RGBA").resize(
-            (display_size, display_size), Image.Resampling.NEAREST
+@lru_cache(maxsize=8)
+def _newsroom_source(
+    speaker: str, mouth_open: bool = False, blink: bool = False
+) -> Image.Image:
+    """Compose one stable source frame from the base and sparse face layers."""
+    with Image.open(PIXEL_ANCHOR_DIR / "newsroom.png") as source:
+        frame = source.convert("RGBA")
+
+    states = []
+    if mouth_open:
+        states.append("talk")
+    if blink:
+        states.append("blink")
+    for state in states:
+        path = PIXEL_ANCHOR_DIR / f"{speaker.lower()}_{state}.png"
+        if path.is_file():
+            with Image.open(path) as overlay:
+                frame.alpha_composite(overlay.convert("RGBA"))
+    return frame.convert("RGB")
+
+
+def _newsroom_canvas(
+    speaker: str,
+    size: tuple[int, int],
+    mouth_open: bool,
+    blink: bool,
+) -> tuple[Image.Image, tuple[int, int, int, int]]:
+    """Scale the two-anchor set for landscape or crop one anchor for Shorts."""
+    source = _newsroom_source(speaker, mouth_open, blink)
+    source_width, source_height = source.size
+    width, height = size
+    bubble = _BUBBLE_BOXES[speaker]
+
+    if width > height:
+        canvas = source.resize(size, Image.Resampling.NEAREST)
+        sx, sy = width / source_width, height / source_height
+        bubble_box = tuple(
+            int(value * (sx if index % 2 == 0 else sy))
+            for index, value in enumerate(bubble)
         )
-    _ANCHOR_CACHE[key] = portrait
-    return portrait.copy()
+        return canvas, bubble_box
+
+    half = source_width // 2
+    crop_left = 0 if speaker == "ChatGPT" else half
+    crop = source.crop((crop_left, 0, crop_left + half, source_height))
+    scale = width / crop.width
+    scaled_height = int(crop.height * scale)
+    crop = crop.resize((width, scaled_height), Image.Resampling.NEAREST)
+
+    canvas = _background(speaker, size).copy()
+    offset_y = int(height * 0.14)
+    canvas.paste(crop, (0, offset_y))
+    bubble_box = (
+        int((bubble[0] - crop_left) * scale),
+        int(bubble[1] * scale + offset_y),
+        int((bubble[2] - crop_left) * scale),
+        int(bubble[3] * scale + offset_y),
+    )
+    return canvas, bubble_box
+
+
+def _render_newsroom_frame(
+    speaker: str,
+    size: tuple[int, int],
+    topic: str | None,
+    page_lines: list[str],
+    mouth_open: bool = False,
+    blink: bool = False,
+) -> Image.Image:
+    """Render the animated-anchor scene and active speaker's speech bubble."""
+    width, height = size
+    is_landscape = width > height
+    color = config.SPEAKERS[speaker]["color"]
+    canvas, bubble = _newsroom_canvas(speaker, size, mouth_open, blink)
+    draw = ImageDraw.Draw(canvas)
+
+    if topic:
+        if is_landscape:
+            title = f"TODAY'S STORY  —  {topic}"
+            title_font = _fit_text(
+                draw, title, FONT_BOLD, 29, int(width * 0.52), min_px=20
+            )
+            draw.text(
+                (width // 2, 30), title, font=title_font,
+                fill=(235, 238, 245), anchor="ma",
+            )
+        else:
+            eyebrow = _font(FONT_BOLD, 28)
+            draw.text((54, 58), "TODAY'S STORY", font=eyebrow, fill=color)
+            title_font, title_lines = _fit_wrapped_text(
+                draw, topic, FONT_BOLD, 46, width - 108, 2, 30
+            )
+            draw.multiline_text(
+                (54, 100), "\n".join(title_lines), font=title_font,
+                fill=(245, 245, 248), spacing=8,
+            )
+
+    x0, y0, x1, y1 = bubble
+    label_font = _font(FONT_BOLD, 25 if is_landscape else 32)
+    draw.text(
+        ((x0 + x1) // 2, y0 + (20 if is_landscape else 26)),
+        speaker.upper(), font=label_font, fill=color, anchor="ma",
+    )
+
+    text_top = y0 + (58 if is_landscape else 70)
+    max_width = x1 - x0 - (44 if is_landscape else 56)
+    max_height = y1 - text_top - 22
+    font_px = 27 if is_landscape else 36
+    min_px = 18 if is_landscape else 25
+    text = "\n".join(page_lines)
+    font = _font(FONT_BOLD, font_px)
+    while font_px > min_px:
+        bbox = draw.multiline_textbbox(
+            (0, 0), text, font=font, align="center", spacing=7
+        )
+        if bbox[2] - bbox[0] <= max_width and bbox[3] - bbox[1] <= max_height:
+            break
+        font_px -= 1
+        font = _font(FONT_BOLD, font_px)
+    draw.multiline_text(
+        ((x0 + x1) // 2, text_top), text, font=font,
+        fill=(34, 40, 52), anchor="ma", align="center", spacing=7,
+    )
+
+    wm_font = _font(FONT_BOLD, 22 if is_landscape else 27)
+    draw.text(
+        (width // 2, height - (18 if is_landscape else 62)),
+        "THE CONTEXT WINDOW", font=wm_font, fill=(*MUTED_TEXT, 255),
+        anchor="ms",
+    )
+    return canvas
+
+
+@lru_cache(maxsize=8)
+def _cached_newsroom_frame(
+    speaker: str,
+    size: tuple[int, int],
+    topic: str | None,
+    page_lines: tuple[str, ...],
+    mouth_open: bool,
+    blink: bool,
+) -> np.ndarray:
+    return np.asarray(
+        _render_newsroom_frame(
+            speaker, size, topic, list(page_lines), mouth_open, blink
+        )
+    )
 
 
 def _render_frame_image(
@@ -129,8 +274,16 @@ def _render_frame_image(
     size: tuple[int, int],
     topic: str | None = None,
     page_lines: list[str] | None = None,
+    mouth_open: bool = False,
+    blink: bool = False,
 ) -> Image.Image:
     """Draw one fully-styled still frame (PIL) for a spoken line."""
+    if _newsroom_supported(speaker):
+        lines = page_lines or _wrap_text(text, 22).split("\n")[:5]
+        return _render_newsroom_frame(
+            speaker, size, topic, lines, mouth_open=mouth_open, blink=blink
+        )
+
     width, height = size
     is_landscape = width > height
     color = config.SPEAKERS.get(speaker, config.SPEAKERS["ChatGPT"])["color"]
@@ -156,28 +309,21 @@ def _render_frame_image(
         draw.rectangle([margin, rule_y, width - margin, rule_y + 3], fill=(*color, 160))
         banner_bottom = rule_y
 
-    # --- Speaker avatar (pixel anchor, with an initial-based fallback) ---
+    # --- Speaker avatar fallback for guests without production art ---
     r = 70 if is_landscape else 84
     cx = width // 2
     cy = int(height * (0.24 if is_landscape else 0.26))
-    portrait_size = 190 if is_landscape else 224
-    portrait = _pixel_anchor(speaker, portrait_size)
-    if portrait is not None:
-        overlay.alpha_composite(
-            portrait, (cx - portrait_size // 2, cy - portrait_size // 2)
-        )
-    else:
-        draw.ellipse([cx - r - 8, cy - r - 8, cx + r + 8, cy + r + 8],
-                     outline=(*color, 200), width=4)
-        draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(*color, 255))
-        initial_font = _font(FONT_BOLD, int(r * 1.1))
-        initial = speaker[0] if speaker else "?"
-        draw.text((cx, cy), initial, font=initial_font,
-                  fill=(255, 255, 255, 255), anchor="mm")
+    draw.ellipse([cx - r - 8, cy - r - 8, cx + r + 8, cy + r + 8],
+                 outline=(*color, 200), width=4)
+    draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(*color, 255))
+    initial_font = _font(FONT_BOLD, int(r * 1.1))
+    initial = speaker[0] if speaker else "?"
+    draw.text((cx, cy), initial, font=initial_font,
+              fill=(255, 255, 255, 255), anchor="mm")
 
     # --- Name + company ---
     name_font = _font(FONT_BOLD, 48 if is_landscape else 52)
-    name_y = cy + portrait_size // 2 + 18 if portrait is not None else cy + r + 36
+    name_y = cy + r + 36
     draw.text((cx, name_y), speaker, font=name_font, fill=(255, 255, 255, 255), anchor="ma")
     company_font = _font(FONT_REGULAR, 26 if is_landscape else 30)
     draw.text((cx, name_y + name_font.size + 12), company,
@@ -228,8 +374,8 @@ def _render_frame_image(
 
 
 # Lines per subtitle page before splitting onto a new frame
-_PAGE_LINES_LANDSCAPE = 7
-_PAGE_LINES_PORTRAIT = 8
+_PAGE_LINES_LANDSCAPE = 5
+_PAGE_LINES_PORTRAIT = 5
 
 
 def _create_speaker_frames(
@@ -238,6 +384,7 @@ def _create_speaker_frames(
     duration: float,
     size: tuple[int, int] = LANDSCAPE,
     topic: str | None = None,
+    speech_duration: float | None = None,
 ) -> list:
     """
     Create the video frame(s) for one spoken line.
@@ -247,7 +394,9 @@ def _create_speaker_frames(
     count — nothing gets truncated.
     """
     is_landscape = size[0] > size[1]
-    max_chars = 46 if is_landscape else 26
+    max_chars = (
+        22 if _newsroom_supported(speaker) else (46 if is_landscape else 26)
+    )
     per_page = _PAGE_LINES_LANDSCAPE if is_landscape else _PAGE_LINES_PORTRAIT
 
     lines = _wrap_text(text, max_chars).split("\n")
@@ -258,14 +407,32 @@ def _create_speaker_frames(
 
     frames = []
     allocated = 0.0
+    speech_duration = duration if speech_duration is None else speech_duration
     for i, page in enumerate(pages):
         if i == len(pages) - 1:
             page_duration = max(duration - allocated, 0.5)
         else:
             page_duration = duration * (weights[i] / total_words)
             allocated += page_duration
-        frame = _render_frame_image(speaker, text, size, topic=topic, page_lines=page)
-        frames.append(ImageClip(np.asarray(frame)).with_duration(page_duration))
+        if _newsroom_supported(speaker):
+            page_start = allocated - page_duration if i < len(pages) - 1 else allocated
+            page_key = tuple(page)
+
+            def frame_function(t, *, start=page_start, lines=page_key):
+                line_t = start + t
+                speaking = line_t < speech_duration
+                blink = speaking and 3.45 <= (line_t % 3.6) <= 3.57
+                mouth_open = speaking and not blink and int(line_t / 0.14) % 3 != 0
+                return _cached_newsroom_frame(
+                    speaker, size, topic, lines, mouth_open, blink
+                )
+
+            frames.append(VideoClip(frame_function, duration=page_duration))
+        else:
+            frame = _render_frame_image(
+                speaker, text, size, topic=topic, page_lines=page
+            )
+            frames.append(ImageClip(np.asarray(frame)).with_duration(page_duration))
     return frames
 
 
@@ -275,9 +442,13 @@ def _create_speaker_frame(
     duration: float,
     size: tuple[int, int] = LANDSCAPE,
     topic: str | None = None,
+    speech_duration: float | None = None,
 ):
     """Single-frame variant kept for callers that concatenate their own lists."""
-    return _create_speaker_frames(speaker, text, duration, size, topic=topic)
+    return _create_speaker_frames(
+        speaker, text, duration, size, topic=topic,
+        speech_duration=speech_duration,
+    )
 
 
 def _topic_by_index(script: dict) -> dict[int, str | None]:
@@ -601,6 +772,7 @@ def generate_video(
                 entry_s,
                 size,
                 topic=topic_map.get(entry.get("index")),
+                speech_duration=duration,
             )
         )
         # Extend this speaker's window (merge back-to-back turns)
@@ -645,7 +817,7 @@ def generate_video(
 
     video.write_videofile(
         str(output_path),
-        fps=1,  # Static frames, no motion — 1fps is fine and 24x faster
+        fps=ANIMATION_FPS,
         codec="libx264",
         audio_codec="aac",
         preset="ultrafast",
@@ -711,9 +883,8 @@ def _overlay_waveform(
     if not layers:
         layers = [("0x9EA0B8", None)]
 
-    # Base video renders at 1fps (static frames) — pad its fractional final
-    # second, then lift to 24fps so the waveform remains smooth through the
-    # last spoken word.
+    # Pad the base video's fractional final second, then lift to 24fps so the
+    # waveform remains smooth through the last spoken word.
     parts = ["[0:v]tpad=stop_mode=clone:stop_duration=1,fps=24[vb]"]
     last = "[vb]"
     for i, (color, enable) in enumerate(layers):
