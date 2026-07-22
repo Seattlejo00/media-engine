@@ -197,7 +197,7 @@ def _render_newsroom_frame(
 
     if topic:
         if is_landscape:
-            title = f"TODAY'S STORY  —  {topic}"
+            title = f"TODAY'S STORY  |  {topic}"
             title_font = _fit_text(
                 draw, title, FONT_BOLD, 29, int(width * 0.52), min_px=20
             )
