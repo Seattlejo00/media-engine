@@ -128,5 +128,18 @@
       "Industry": 8,
       "Startups": 7
     }
+  },
+  {
+    "date": "2026-07-22",
+    "episode": "/episodes/2026-07-22.html",
+    "title": "The 2 Trillion+ Club: Kimi K3, the AI Arms Race, and Who Gets to Say No",
+    "overall": 7.0,
+    "label": "Regulation and AI Advances",
+    "categories": {
+      "Models": 7.5,
+      "Research": 8.0,
+      "Industry": 7.0,
+      "Startups": 6.5
+    }
   }
 ]
