@@ -70,6 +70,7 @@ For each segment provide:
 - "lead": one of {speaker_names}; vary leads.
 - "turns_per_speaker": follow the profile and turn guidance above.
 - "beats": 2-5 concrete, evidence-grounded talking points. Every status assessment says what evidence supports it. Include genuine disagreement where the evidence supports competing interpretations.
+- "plain_english_bridge": for every substantive daily_news or weekly segment, a one-sentence translation of its most important AI term or concept in everyday language. Use "term — what it means in everyday language." Do this once per segment, then spend the rest of the conversation on the evidence and implications. Use null when no translation is needed.
 - "clip_moment": a self-contained 20-45 second, evidence-grounded exchange for substantive segments; use null for cold_open, intro, and sign_off.
 - "conflict_of_interest": "Claude" for Anthropic-centered segments, "ChatGPT" for OpenAI-centered segments, otherwise null.
 
@@ -78,6 +79,6 @@ Return ONLY valid JSON:
   "title": "episode title",
   "description": "2-sentence episode description",
   "segments": [
-    {{"type": "cold_open", "topic": null, "lead": "Claude", "turns_per_speaker": 1, "beats": ["..."], "clip_moment": null, "conflict_of_interest": null}}
+    {{"type": "cold_open", "topic": null, "lead": "Claude", "turns_per_speaker": 1, "beats": ["..."], "plain_english_bridge": null, "clip_moment": null, "conflict_of_interest": null}}
   ]
 }}

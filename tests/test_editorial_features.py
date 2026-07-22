@@ -252,6 +252,46 @@ class SpokenEditorialTests(unittest.TestCase):
         self.assertIn("PLANNED CLIP MOMENT", prompt)
         self.assertIn("Contrast the launch claim", prompt)
 
+    def test_first_story_turn_requires_a_plain_english_bridge(self):
+        prompt = _turn_prompt(
+            {
+                "type": "main_story",
+                "beats": [],
+                "plain_english_bridge": (
+                    "fine-tuning — training a general model on examples for one job"
+                ),
+            },
+            None,
+            [],
+            [],
+            "Claude",
+            0,
+            4,
+            "July 18, 2026",
+            ["Claude", "ChatGPT"],
+        )
+        self.assertIn("PLAIN-ENGLISH BRIDGE", prompt)
+        self.assertIn("fine-tuning", prompt)
+
+    def test_later_story_turn_builds_on_bridge_without_repeating_it(self):
+        prompt = _turn_prompt(
+            {
+                "type": "main_story",
+                "beats": [],
+                "plain_english_bridge": "tokens — the small pieces of text a model reads",
+            },
+            None,
+            [{"speaker": "Claude", "text": "The first explanation aired."}],
+            [],
+            "ChatGPT",
+            1,
+            4,
+            "July 18, 2026",
+            ["Claude", "ChatGPT"],
+        )
+        self.assertIn("ACCESSIBILITY CONTINUITY", prompt)
+        self.assertNotIn("PLAIN-ENGLISH BRIDGE", prompt)
+
     def test_turn_prompt_requires_short_syntax_bound_sentences(self):
         prompt = self._prompt("main_story", 1)
         self.assertIn("24-48 words", prompt)

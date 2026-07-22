@@ -18,7 +18,7 @@ from pipeline.cost_tracker import tracker
 
 logger = logging.getLogger(__name__)
 
-SCRIPT_FORMAT_VERSION = 8
+SCRIPT_FORMAT_VERSION = 9
 MAX_TURN_WORDS = 48
 MAX_SENTENCE_WORDS = 22
 SIGNOFF_CTA = config.PODCAST_SIGNOFF_CTA
@@ -671,6 +671,22 @@ def _turn_prompt(
         parts.append(
             "PLANNED CLIP MOMENT — a self-contained, fact-grounded short-form "
             f"exchange this segment must create: {clip_moment}"
+        )
+
+    accessibility_bridge = _clip_moment_text(seg.get("plain_english_bridge"))
+    if accessibility_bridge and turn_idx == 0:
+        parts.append(
+            "PLAIN-ENGLISH BRIDGE — work this short translation into your opening "
+            "naturally, before relying on the term. Treat listeners as smart people "
+            "who may not work in AI. Explain it once in everyday language, then get "
+            "to the real stakes; do not turn it into a lecture: "
+            f"{accessibility_bridge}"
+        )
+    elif accessibility_bridge:
+        parts.append(
+            "ACCESSIBILITY CONTINUITY — the lead host was asked to introduce this "
+            "story's plain-English bridge. Build on it without repeating a textbook "
+            "definition, and keep any new specialist term understandable from context."
         )
 
     if topic_data:
