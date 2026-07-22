@@ -364,7 +364,9 @@ class TransitionCardTests(unittest.TestCase):
 class PixelAnchorTests(unittest.TestCase):
     def test_host_face_states_leave_the_rest_of_the_scene_stable(self):
         expected_regions = {
-            "ChatGPT": (500, 355, 625, 430),
+            # ChatGPT uses one canonical jaw/chin shape in every state; only
+            # the compact facial-expression patch changes while she talks.
+            "ChatGPT": (520, 365, 608, 414),
             "Claude": (1060, 350, 1200, 430),
         }
         for speaker, region in expected_regions.items():

@@ -2,7 +2,6 @@
 Video generator.
 Creates video from the podcast audio with animated visuals:
 - Speaker indicators (who's talking)
-- Animated waveform or equalizer
 - Captions/subtitles
 - Branded overlays
 """
@@ -730,15 +729,10 @@ def generate_video(
     prev_speaker = None
     prev_key = None  # (segment_type, topic) — mirror of audio assembly
 
-    # Track who is speaking when, so the waveform can wear their color
-    speaker_windows: dict[str, list[list[float]]] = {}
-    cursor = 0.0
-
     # Intro title card — holds until the first words start (the music's
     # crossfade tail plays under the first speaker's frame)
     intro_s = max(stings["intro"] - INTRO_OVERLAP, 500) / 1000.0
     clips.append(_transition_clip("intro", size, intro_s))
-    cursor += intro_s
 
     for entry in audio_manifest:
         duration = _estimate_duration(entry["audio_path"])
@@ -755,7 +749,6 @@ def generate_video(
             label = _chapter_title(segment_type, entry.get("topic"))
             card_s = max(stings["stinger"] - 2 * SEG_OVERLAP, 500) / 1000.0
             clips.append(_transition_clip("upnext", size, card_s, label=label))
-            cursor += card_s
             pause_ms = 0
         elif prev_speaker is not None and speaker != prev_speaker:
             pause_ms = PAUSE_BETWEEN_LINES
@@ -775,13 +768,6 @@ def generate_video(
                 speech_duration=duration,
             )
         )
-        # Extend this speaker's window (merge back-to-back turns)
-        wins = speaker_windows.setdefault(speaker, [])
-        if wins and abs(wins[-1][1] - cursor) < 0.05:
-            wins[-1][1] = cursor + entry_s
-        else:
-            wins.append([cursor, cursor + entry_s])
-        cursor += entry_s
         prev_speaker = speaker
         prev_key = seg_key
 
@@ -827,9 +813,6 @@ def generate_video(
 
     video.close()
     audio.close()
-
-    if size == LANDSCAPE:
-        _overlay_waveform(output_path, speaker_windows)
 
     logger.info(f"Video saved: {output_path}")
     return output_path
