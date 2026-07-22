@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageChops, ImageDraw
 
 import config
 from pipeline.clips import (
@@ -34,7 +34,10 @@ from pipeline.video import (
     SPOTIFY_OUTRO_URL,
     YOUTUBE_OUTRO_URL,
     _fit_wrapped_text,
+    _create_speaker_frames,
+    _newsroom_source,
     _render_clip_cta_card,
+    _render_frame_image,
     _render_transition_card,
 )
 
@@ -356,6 +359,48 @@ class TransitionCardTests(unittest.TestCase):
         self.assertEqual(youtube.size, PORTRAIT)
         self.assertEqual(social.size, PORTRAIT)
         self.assertNotEqual(youtube.tobytes(), social.tobytes())
+
+
+class PixelAnchorTests(unittest.TestCase):
+    def test_host_face_states_leave_the_rest_of_the_scene_stable(self):
+        expected_regions = {
+            # ChatGPT uses one canonical jaw/chin shape in every state; only
+            # the compact facial-expression patch changes while she talks.
+            "ChatGPT": (520, 365, 608, 414),
+            "Claude": (1060, 350, 1200, 430),
+        }
+        for speaker, region in expected_regions.items():
+            closed = _newsroom_source(speaker)
+            talking = _newsroom_source(speaker, mouth_open=True)
+            self.assertEqual(closed.size, talking.size)
+            changed = ImageChops.difference(closed, talking).getbbox()
+            self.assertIsNotNone(changed, speaker)
+            self.assertGreaterEqual(changed[0], region[0], speaker)
+            self.assertGreaterEqual(changed[1], region[1], speaker)
+            self.assertLessEqual(changed[2], region[2], speaker)
+            self.assertLessEqual(changed[3], region[3], speaker)
+
+    def test_host_frames_animate_and_portrait_uses_one_speaker(self):
+        clips = _create_speaker_frames(
+            "ChatGPT", "A friendly plain English explanation.", 1.0,
+            LANDSCAPE, speech_duration=0.8,
+        )
+        self.assertNotEqual(
+            clips[0].get_frame(0).tobytes(),
+            clips[0].get_frame(0.2).tobytes(),
+        )
+        for clip in clips:
+            clip.close()
+        portrait = _render_frame_image(
+            "Claude", "A short explanation.", (1080, 1920)
+        )
+        self.assertEqual(portrait.size, (1080, 1920))
+
+    def test_unknown_speaker_uses_safe_fallback(self):
+        frame = _render_frame_image(
+            "Guest", "A short line for the fallback frame.", LANDSCAPE
+        )
+        self.assertEqual(frame.size, LANDSCAPE)
 
 
 class ClipSelectionTests(unittest.TestCase):

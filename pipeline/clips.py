@@ -22,10 +22,10 @@ from openai import OpenAI
 import config
 from pipeline.cost_tracker import tracker
 from pipeline.video import (
+    ANIMATION_FPS,
     PORTRAIT,
     _create_speaker_frames,
     _estimate_duration,
-    _overlay_waveform,
     _render_clip_cta_card,
 )
 
@@ -370,18 +370,12 @@ def _render_clip(
     clip_idx: int,
     output_dir: Path,
 ) -> dict[str, Path]:
-    """Render one portrait clip with waveform, then add two CTA variants."""
+    """Render one portrait clip, then add two CTA variants."""
     video_clips = []
     audio_clips = []
 
-    speaker_windows: dict[str, list[list[float]]] = {}
-    elapsed = 0.0
     for entry in entries:
         duration = _estimate_duration(entry["audio_path"])
-        speaker_windows.setdefault(entry["speaker"], []).append(
-            [elapsed, elapsed + duration]
-        )
-        elapsed += duration
 
         # The short hook is optimized for a phone screen; the longer title is
         # retained for filenames and distribution metadata.
@@ -389,6 +383,7 @@ def _render_clip(
             _create_speaker_frames(
                 entry["speaker"], entry["text"], duration, PORTRAIT,
                 topic=on_screen_hook,
+                speech_duration=duration,
             )
         )
 
@@ -414,14 +409,13 @@ def _render_clip(
             clip_idx, video.duration,
         )
 
-    # Export the spoken content once, then add the animated waveform before
-    # creating platform-specific copies.
+    # Export the spoken content once before creating platform-specific copies.
     safe_title = "".join(c for c in title if c.isalnum() or c in " -_")[:40]
     content_path = output_dir / f".clip_{clip_idx}_{safe_title}_content.mp4"
 
     video.write_videofile(
         str(content_path),
-        fps=1,
+        fps=ANIMATION_FPS,
         codec="libx264",
         audio_codec="aac",
         preset="ultrafast",
@@ -432,8 +426,6 @@ def _render_clip(
     video.close()
     for ac in audio_clips:
         ac.close()
-
-    _overlay_waveform(content_path, speaker_windows, size=PORTRAIT)
 
     variants: dict[str, Path] = {}
     for platform in ("youtube", "social"):

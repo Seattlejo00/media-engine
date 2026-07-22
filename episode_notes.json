@@ -1,4 +1,5 @@
 {
   "2026-07-18": "Briefly acknowledge that today's episode has new theme music and a refreshed visual format, and naturally say: We hope you like our new format!",
-  "2026-07-19": "Briefly acknowledge once in the intro that the hosts sound more natural today. Keep it casual and short, for example: You may notice we sound a little more natural today—we've upgraded our voices. Do not mention model or voice names, and do not repeat it later."
+  "2026-07-19": "Briefly acknowledge once in the intro that the hosts sound more natural today. Keep it casual and short, for example: You may notice we sound a little more natural today—we've upgraded our voices. Do not mention model or voice names, and do not repeat it later.",
+  "2026-07-23": "Set ChatGPT as the intro segment lead. In that opening turn, ChatGPT should briefly acknowledge the show's new visual look with friendly animated pixel-art hosts. Keep it casual, to one sentence, and do not repeat it later. Claude should not make this announcement."
 }
