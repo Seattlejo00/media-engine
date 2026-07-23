@@ -13,7 +13,7 @@ export default function Home() {
       <div className="hero-shade" />
       <header>
         <a className="wordmark" href="#top" aria-label="Distomos home"><i>D</i><span>DISTOMOS</span></a>
-        <nav><a href="#context-window">The Context Window</a><a href="#about">About</a></nav>
+        <nav><a href="#context-window">The Context Window</a><a href="#about">About</a><a href="/business">Business</a></nav>
         <a className="nav-cta" href="#context-window">Start here <b>↗</b></a>
       </header>
       <div className="hero-copy">
@@ -58,6 +58,6 @@ export default function Home() {
 
     <section className="art-break"><div /><p>Patterns appear<br />before predictions.</p><small>EARTH AS ART · USGS / NASA LANDSAT</small></section>
 
-    <footer className="shell"><div className="wordmark"><i>D</i><span>DISTOMOS</span></div><p>Publisher of The Context Window.<br />Signal over noise, every morning.</p><nav><a href={contextWindowUrl} target="_blank">The Context Window</a><a href={spotifyUrl} target="_blank" rel="noopener noreferrer">Spotify</a><a href={youtubeUrl} target="_blank" rel="noopener noreferrer">YouTube</a><a href="#about">About</a></nav><div className="footer-bottom"><span>© 2026 DISTOMOS</span><span>EARTH IMAGERY: USGS / NASA LANDSAT</span><span>DENVER, COLORADO</span></div></footer>
+    <footer className="shell"><div className="wordmark"><i>D</i><span>DISTOMOS</span></div><p>Publisher of The Context Window.<br />Signal over noise, every morning.</p><nav><a href={contextWindowUrl} target="_blank">The Context Window</a><a href={spotifyUrl} target="_blank" rel="noopener noreferrer">Spotify</a><a href={youtubeUrl} target="_blank" rel="noopener noreferrer">YouTube</a><a href="#about">About</a><a href="/business">Business inquiries</a></nav><div className="footer-bottom"><span>© 2026 DISTOMOS</span><span>EARTH IMAGERY: USGS / NASA LANDSAT</span><span>DENVER, COLORADO</span></div></footer>
   </main>;
 }

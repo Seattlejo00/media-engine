@@ -1,8 +1,14 @@
-# vinext-starter
+# Distomos site
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+The Distomos parent-brand site, built with
+[vinext](https://github.com/cloudflare/vinext) and React. It includes a latest
+briefing surface for The Context Window and is configured as an OpenAI Sites
+project.
+
+Read [`AGENTS.md`](AGENTS.md) before changing the app or hosting configuration.
+Repository-wide architecture and conventions live in
+[`../../context/architecture.md`](../../context/architecture.md) and
+[`../../context/coding-style.md`](../../context/coding-style.md).
 
 ## Prerequisites
 
@@ -14,18 +20,24 @@ Drizzle support.
 npm install
 npm run dev
 npm run build
+npm run test
+npm run lint
 ```
 
-This starter does not use `wrangler.jsonc`.
+The project requires Node.js `>=22.13.0` and does not use `wrangler.jsonc`.
 
-## Included Shape
+## Project shape
 
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
+- `app/` contains the main page, artwork, latest-briefing experience, metadata,
+  and styling.
+- `app/latest-episode.json` is the checked-in fallback updated by the repository's
+  publication pipeline.
+- `worker/index.ts` handles the Cloudflare/vinext request surface.
+- `.openai/hosting.json` declares the Sites project. Its D1 and R2 bindings are
+  currently null.
+- `db/schema.ts` is intentionally empty; `examples/d1/` is optional example code,
+  not a current production database dependency.
+- `tests/` checks rendered content, metadata, media, and product links.
 
 ## Workspace Auth Headers
 
@@ -89,7 +101,8 @@ actions tied to the current ChatGPT user. Leave public content anonymous.
 
 - `npm run dev`: start local development
 - `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
+- `npm run test`: build and run the rendered-output tests
+- `npm run lint`: run ESLint
 - `npm run db:generate`: generate Drizzle migrations after schema changes
 
 ## Learn More

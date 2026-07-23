@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import test from "node:test";
 
-async function render() {
+async function render(path = "/") {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
   const { default: worker } = await import(workerUrl.href);
   return worker.fetch(
-    new Request("http://localhost/", { headers: { accept: "text/html" } }),
+    new Request(`http://localhost${path}`, { headers: { accept: "text/html" } }),
     { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } },
     { waitUntil() {}, passThroughOnException() {} },
   );
@@ -26,8 +26,22 @@ test("server-renders the finished Distomos homepage", async () => {
   assert.match(html, /https:\/\/contextwindow\.distomostech\.com/);
   assert.match(html, /https:\/\/open\.spotify\.com\/show\/033OoZlyZBlEwCd6kmNdpT/);
   assert.match(html, /https:\/\/www\.youtube\.com\/@TheContextWindow-q1z/);
+  assert.match(html, /href="\/business"/);
+  assert.match(html, /class="playback-icon"/);
+  assert.doesNotMatch(html, /▶|Ⅱ/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|SoundHelix/i);
   assert.doesNotMatch(html, /<form|type="email"/i);
+});
+
+test("server-renders the business inquiries page", async () => {
+  const response = await render("/business");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /Business inquiries — Distomos/);
+  assert.match(html, /Good work starts/);
+  assert.match(html, /mailto:james@disomostech\.com/);
+  assert.match(html, /Partnerships/);
+  assert.match(html, /Sponsorships/);
 });
 
 test("ships the required imagery and pipeline-owned episode data", async () => {

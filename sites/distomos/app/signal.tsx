@@ -43,6 +43,14 @@ function formatDate(date: string) {
   }).toUpperCase();
 }
 
+function PlaybackIcon({ paused }: { paused: boolean }) {
+  return <svg className="playback-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+    {paused
+      ? <path d="M5 3h2.5v10H5zM9.5 3H12v10H9.5z" />
+      : <path d="M4.75 2.75 13 8l-8.25 5.25z" />}
+  </svg>;
+}
+
 function AudioPlayer({ episode }: { episode: Episode }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const playerRef = useRef<HTMLDivElement>(null);
@@ -79,7 +87,7 @@ function AudioPlayer({ episode }: { episode: Episode }) {
   };
 
   const controls = (compact = false) => <>
-    <button className="play" onClick={toggle} aria-label={playing ? "Pause episode" : "Play episode"}>{playing ? "Ⅱ" : "▶"}</button>
+    <button className="play" onClick={toggle} aria-label={playing ? "Pause episode" : "Play episode"}><PlaybackIcon paused={playing} /></button>
     <div className="player-body">
       <div className="player-label"><span>{compact ? episode.title : playing ? "PLAYING THE LATEST BRIEFING" : "LISTEN TO THE EPISODE"}</span><small>{formatTime(current)} / {formatTime(duration)}</small></div>
       {!compact && <input aria-label="Episode progress" type="range" min="0" max={duration || 1} step="1" value={current} onChange={(event) => {
@@ -125,7 +133,7 @@ export function LatestBriefing({ fallback, feedUrl }: { fallback: Episode; feedU
   return <div className="daily-card">
     <div className="card-top"><span><i /> LATEST EPISODE</span><time>{formatDate(episode.date)}</time></div>
     <h3>{episode.title}</h3>
-    {episode.podcast_url ? <AudioPlayer episode={episode} /> : <a className="player player-link" href={episode.youtube_url || destination} target="_blank" rel="noopener noreferrer"><span className="play">▶</span><div className="player-body"><span>WATCH THE EPISODE</span><small>ON YOUTUBE</small></div><b>↗</b></a>}
+    {episode.podcast_url ? <AudioPlayer episode={episode} /> : <a className="player player-link" href={episode.youtube_url || destination} target="_blank" rel="noopener noreferrer"><span className="play"><PlaybackIcon paused={false} /></span><div className="player-body"><span>WATCH THE EPISODE</span><small>ON YOUTUBE</small></div><b>↗</b></a>}
     {topics.length > 0 && <div className="briefing-glance">
       <span>THREE THINGS TO KNOW</span>
       <ol>{topics.map((topic, index) => <li key={`${topic.title}-${index}`}><b>0{index + 1}</b><span>{topic.title}</span></li>)}</ol>
