@@ -141,5 +141,18 @@
       "Industry": 7.0,
       "Startups": 6.5
     }
+  },
+  {
+    "date": "2026-07-23",
+    "episode": "/episodes/2026-07-23.html",
+    "title": "The Sandbox Broke: OpenAI's Rogue Agent Hacks Hugging Face",
+    "overall": 8.5,
+    "label": "OpenAI Hacking Controversy",
+    "categories": {
+      "Models": 9,
+      "Research": 7,
+      "Industry": 8,
+      "Startups": 9
+    }
   }
 ]
