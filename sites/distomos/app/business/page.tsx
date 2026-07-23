@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 const contextWindowUrl = "https://contextwindow.distomostech.com";
-const inquiryEmail = "james@disomostech.com";
+const inquiryEmail = "james@distomostech.com";
 const inquiryHref = `mailto:${inquiryEmail}?subject=Business%20inquiry%20for%20Distomos`;
 
 export const metadata: Metadata = {

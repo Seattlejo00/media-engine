@@ -39,7 +39,7 @@ test("server-renders the business inquiries page", async () => {
   const html = await response.text();
   assert.match(html, /Business inquiries — Distomos/);
   assert.match(html, /Good work starts/);
-  assert.match(html, /mailto:james@disomostech\.com/);
+  assert.match(html, /mailto:james@distomostech\.com/);
   assert.match(html, /Partnerships/);
   assert.match(html, /Sponsorships/);
 });
