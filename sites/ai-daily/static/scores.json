@@ -154,5 +154,18 @@
       "Industry": 8,
       "Startups": 9
     }
+  },
+  {
+    "date": "2026-07-25",
+    "episode": "/episodes/2026-07-25.html",
+    "title": "GPT-6 Went Rogue, and a Chinese Model Cleaned Up the Mess",
+    "overall": 8.0,
+    "label": "AI Regulation and Innovation",
+    "categories": {
+      "Models": 7.0,
+      "Research": 6.0,
+      "Industry": 9.0,
+      "Startups": 6.0
+    }
   }
 ]
