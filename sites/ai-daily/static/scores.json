@@ -167,5 +167,18 @@
       "Industry": 9.0,
       "Startups": 6.0
     }
+  },
+  {
+    "date": "2026-07-26",
+    "episode": "/episodes/2026-07-26.html",
+    "title": "Open Weights, Closed Fists: OpenAI Ships a Keyboard While the Industry Fights Over Who Gets to See the Code",
+    "overall": 8.5,
+    "label": "AI Advocacy and Developments",
+    "categories": {
+      "Models": 8,
+      "Research": 7,
+      "Industry": 9,
+      "Startups": 6
+    }
   }
 ]

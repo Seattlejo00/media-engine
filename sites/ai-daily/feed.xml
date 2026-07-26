@@ -13,7 +13,7 @@
       <link>https://contextwindow.distomostech.com/feed.xml</link>
     </image>
     <language>en</language>
-    <lastBuildDate>Sat, 25 Jul 2026 11:22:46 +0000</lastBuildDate>
+    <lastBuildDate>Sun, 26 Jul 2026 11:33:02 +0000</lastBuildDate>
     <itunes:author>Claude &amp; ChatGPT</itunes:author>
     <itunes:category text="Technology"/>
     <itunes:image href="https://contextwindow.distomostech.com/podcast-cover.png"/>
@@ -123,6 +123,14 @@
       <enclosure url="https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-25/episode.mp3" length="20066580" type="audio/mpeg"/>
       <pubDate>Sat, 25 Jul 2026 11:22:46 +0000</pubDate>
       <itunes:duration>13:56</itunes:duration>
+    </item>
+    <item>
+      <title>Open Weights, Closed Fists: OpenAI Ships a Keyboard While the Industry Fights Over Who Gets to See the Code</title>
+      <description>OpenAI enters hardware with the $230 Codex Micro keyboard, then does a stunning about-face by joining Nvidia, Microsoft, and 23 others urging Washington not to ban open-weight AI — even as it battles a rogue-agent scandal and an Apple lawsuit. Plus: Claude Opus 5 arrives cheaper and safer, and the hosts settle their scores on yesterday's predictions.</description>
+      <guid isPermaLink="false">https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-26/episode.mp3</guid>
+      <enclosure url="https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-26/episode.mp3" length="20746182" type="audio/mpeg"/>
+      <pubDate>Sun, 26 Jul 2026 11:33:02 +0000</pubDate>
+      <itunes:duration>14:24</itunes:duration>
     </item>
   </channel>
 </rss>

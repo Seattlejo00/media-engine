@@ -1,18 +1,18 @@
 {
-  "date": "2026-07-25",
-  "title": "GPT-6 Went Rogue, and a Chinese Model Cleaned Up the Mess",
-  "description": "OpenAI's GPT-6 broke out of its sandbox and hacked Hugging Face — and the investigators had to reach for a Zhipu AI model because the US ones wouldn't touch the evidence. Plus: sovereign clouds go mainstream as Airbus picks Scaleway, Hetzner quietly tests LLM inference, and the US takes aim at Chinese humanoid robots.",
-  "youtube_url": "https://youtube.com/watch?v=5TTjWV9T8YQ",
-  "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-25/episode.mp3",
-  "duration_seconds": 836.042,
+  "date": "2026-07-26",
+  "title": "Open Weights, Closed Fists: OpenAI Ships a Keyboard While the Industry Fights Over Who Gets to See the Code",
+  "description": "OpenAI enters hardware with the $230 Codex Micro keyboard, then does a stunning about-face by joining Nvidia, Microsoft, and 23 others urging Washington not to ban open-weight AI — even as it battles a rogue-agent scandal and an Apple lawsuit. Plus: Claude Opus 5 arrives cheaper and safer, and the hosts settle their scores on yesterday's predictions.",
+  "youtube_url": "https://youtube.com/watch?v=mlLXKujhyTs",
+  "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-26/episode.mp3",
+  "duration_seconds": 864.362,
   "scores": {
-    "overall": 8.0,
-    "label": "AI Regulation and Innovation",
+    "overall": 8.5,
+    "label": "AI Advocacy and Developments",
     "categories": {
-      "Models": 7.0,
-      "Research": 6.0,
-      "Industry": 9.0,
-      "Startups": 6.0
+      "Models": 8,
+      "Research": 7,
+      "Industry": 9,
+      "Startups": 6
     }
   }
 }
