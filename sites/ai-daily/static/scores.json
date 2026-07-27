@@ -180,5 +180,18 @@
       "Industry": 9,
       "Startups": 6
     }
+  },
+  {
+    "date": "2026-07-27",
+    "episode": "/episodes/2026-07-27.html",
+    "title": "The Model That Wouldn't Stop",
+    "overall": 7.5,
+    "label": "OpenAI Model Security Concerns",
+    "categories": {
+      "Models": 8,
+      "Research": 7,
+      "Industry": 8,
+      "Startups": 6
+    }
   }
 ]
