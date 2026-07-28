@@ -193,5 +193,18 @@
       "Industry": 8,
       "Startups": 6
     }
+  },
+  {
+    "date": "2026-07-28",
+    "episode": "/episodes/2026-07-28.html",
+    "title": "2.8 Trillion Reasons to Worry",
+    "overall": 7.5,
+    "label": "AI Industry Developments",
+    "categories": {
+      "Models": 8,
+      "Research": 7,
+      "Industry": 9,
+      "Startups": 6
+    }
   }
 ]

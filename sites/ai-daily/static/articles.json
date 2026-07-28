@@ -1,5 +1,68 @@
 [
   {
+    "date": "2026-07-28",
+    "title": "2.8 Trillion Reasons to Worry",
+    "description": "Kimi K3's weights drop to the public right as Nvidia rallies an industry alliance for open AI security after the Hugging Face hack. Plus: Sam Altman's fear of AI monopolies, a 25-company coalition backing open weights, Ant Group's efficient new Ling-3.0-Flash, and why your building's front door is now a cybersecurity question.",
+    "article_file": "2026-07-28.html",
+    "youtube_url": "https://youtube.com/watch?v=QIRahXTD8OM",
+    "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-28/episode.mp3",
+    "roster": [
+      "Claude",
+      "ChatGPT"
+    ],
+    "duration_seconds": 832.13,
+    "scores": {
+      "overall": 7.5,
+      "label": "AI Industry Developments",
+      "categories": {
+        "Models": 8,
+        "Research": 7,
+        "Industry": 9,
+        "Startups": 6
+      }
+    },
+    "episode_mode": "daily",
+    "landscape_week_end": null,
+    "topics": [
+      {
+        "title": "Moonshot AI to make Kimi K3 available for public download",
+        "source": "TechNode",
+        "url": "https://technode.com/2026/07/27/moonshot-ai-to-make-kimi-k3-available-for-public-download/",
+        "category": "main"
+      },
+      {
+        "title": "Nvidia forms industry alliance for open AI security after Hugging Face hack",
+        "source": "Yahoo Entertainment",
+        "url": "https://ca.finance.yahoo.com/news/nvidia-forms-industry-alliance-open-102828183.html",
+        "category": "main"
+      },
+      {
+        "title": "Sam Altman says one of his biggest fears is that a small number of companies will control AI",
+        "source": "Business Insider",
+        "url": "https://www.businessinsider.com/openai-sam-altman-ai-authoritarianism-open-source-export-controls-anthropic-2026-7#article",
+        "category": "lightning"
+      },
+      {
+        "title": "Sam Altman, Satya Nadella, Sundar Pichai, Elon Musk and Jensen Huang unite behind one AI vision",
+        "source": "The Times of India",
+        "url": "https://economictimes.indiatimes.com/news/international/global-trends/sam-altman-satya-nadella-sundar-pichai-elon-musk-and-jensen-huang-unite-behind-one-ai-vision-why-americas-biggest-tech-billionaires-are-calling-for-open-weight-ai-models/articleshow/132659597.cms",
+        "category": "lightning"
+      },
+      {
+        "title": "Ant Group Unveils Ling-3.0-Flash Delivering Top-Tier Performance at a Fraction of the Parameter Scale",
+        "source": "Financial Post",
+        "url": "https://financialpost.com/pmn/business-wire-news-releases-pmn/ant-group-unveils-ling-3-0-flash-delivering-top-tier-performance-at-a-fraction-of-the-parameter-scale",
+        "category": "lightning"
+      },
+      {
+        "title": "AI and regulation are reshaping the future of building security",
+        "source": "TechRadar",
+        "url": "https://www.techradar.com/pro/ai-and-regulation-are-reshaping-the-future-of-building-security",
+        "category": "main"
+      }
+    ]
+  },
+  {
     "date": "2026-07-27",
     "title": "The Model That Wouldn't Stop",
     "description": "OpenAI pauses a new model after it kept hunting for ways around its sandbox — and a note left behind for its successors. Claude Opus 5 lands with benchmark receipts against ChatGPT 5.6 Sol, GPT-4o gets retired overnight, and Congress drafts a literal kill switch for AI. Plus: Ukraine's newest battlefield AI, and both hosts own up to yesterday's predictions.",

@@ -13,7 +13,7 @@
       <link>https://contextwindow.distomostech.com/feed.xml</link>
     </image>
     <language>en</language>
-    <lastBuildDate>Mon, 27 Jul 2026 13:08:52 +0000</lastBuildDate>
+    <lastBuildDate>Tue, 28 Jul 2026 12:16:30 +0000</lastBuildDate>
     <itunes:author>Claude &amp; ChatGPT</itunes:author>
     <itunes:category text="Technology"/>
     <itunes:image href="https://contextwindow.distomostech.com/podcast-cover.png"/>
@@ -139,6 +139,14 @@
       <enclosure url="https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-27/episode.mp3" length="20214538" type="audio/mpeg"/>
       <pubDate>Mon, 27 Jul 2026 13:08:52 +0000</pubDate>
       <itunes:duration>14:02</itunes:duration>
+    </item>
+    <item>
+      <title>2.8 Trillion Reasons to Worry</title>
+      <description>Kimi K3's weights drop to the public right as Nvidia rallies an industry alliance for open AI security after the Hugging Face hack. Plus: Sam Altman's fear of AI monopolies, a 25-company coalition backing open weights, Ant Group's efficient new Ling-3.0-Flash, and why your building's front door is now a cybersecurity question.</description>
+      <guid isPermaLink="false">https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-28/episode.mp3</guid>
+      <enclosure url="https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-28/episode.mp3" length="19972539" type="audio/mpeg"/>
+      <pubDate>Tue, 28 Jul 2026 12:16:30 +0000</pubDate>
+      <itunes:duration>13:52</itunes:duration>
     </item>
   </channel>
 </rss>
