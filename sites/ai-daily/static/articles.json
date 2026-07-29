@@ -1,5 +1,68 @@
 [
   {
+    "date": "2026-07-29",
+    "title": "Open Weights, Closed Doors: Amodei Draws the Line",
+    "description": "Dario Amodei pushes back hard on rumors that Anthropic wants open-weight AI banned — while still calling for chip controls and mandatory safety tests. Plus: Microsoft's cyber AI cuts costs in half, Jensen Huang says the jobs-doom narrative is 'exactly backward,' and Anthropic's Fable 5.1 heads into beta.",
+    "article_file": "2026-07-29.html",
+    "youtube_url": "https://youtube.com/watch?v=T8hJ8KmpJQI",
+    "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-29/episode.mp3",
+    "roster": [
+      "Claude",
+      "ChatGPT"
+    ],
+    "duration_seconds": 855.026,
+    "scores": {
+      "overall": 7.5,
+      "label": "Anthropic & Cybersecurity Insights",
+      "categories": {
+        "Models": 6,
+        "Research": 5,
+        "Industry": 8,
+        "Startups": 6
+      }
+    },
+    "episode_mode": "daily",
+    "landscape_week_end": null,
+    "topics": [
+      {
+        "title": "Dario Amodei rejects speculations that Anthropic wants to ban all open-weight AI models",
+        "source": "Business Insider",
+        "url": "https://www.businessinsider.com/dario-amodei-blog-post-anthropic-banning-open-weight-ai-models-2026-7#article",
+        "category": "main"
+      },
+      {
+        "title": "Anthropic rejects open-weight AI bans, calls for China chip controls and safety tests",
+        "source": "Computerworld",
+        "url": "https://www.computerworld.com/article/4202178/anthropic-rejects-open-weight-ai-bans-calls-for-china-chip-controls-and-safety-tests.html",
+        "category": "main"
+      },
+      {
+        "title": "Microsoft Says New Cybersecurity AI Model Helps MDASH Hit 95.95% at Half the Cost",
+        "source": "Internet",
+        "url": "https://thehackernews.com/2026/07/microsoft-says-new-cybersecurity-ai.html",
+        "category": "lightning"
+      },
+      {
+        "title": "Anthropic gives thoughts on open-weights models, especially those from China",
+        "source": "TweakTown",
+        "url": "https://www.tweaktown.com/news/112880/anthropic-gives-thoughts-on-open-weights-models-especially-those-from-china/index.html",
+        "category": "main"
+      },
+      {
+        "title": "Anthropic Fable 5.1 Enters Beta for August 2026 Release",
+        "source": "Geeky Gadgets",
+        "url": "https://www.geeky-gadgets.com/ai-news-fable-gpt-gemini/",
+        "category": "main"
+      },
+      {
+        "title": "Jensen Huang says that AI job destruction doomers are 'exactly backward'",
+        "source": "Business Insider",
+        "url": "https://www.businessinsider.com/jensen-huang-ai-job-destruction-theory-backwards-2026-7#article",
+        "category": "main"
+      }
+    ]
+  },
+  {
     "date": "2026-07-28",
     "title": "2.8 Trillion Reasons to Worry",
     "description": "Kimi K3's weights drop to the public right as Nvidia rallies an industry alliance for open AI security after the Hugging Face hack. Plus: Sam Altman's fear of AI monopolies, a 25-company coalition backing open weights, Ant Group's efficient new Ling-3.0-Flash, and why your building's front door is now a cybersecurity question.",

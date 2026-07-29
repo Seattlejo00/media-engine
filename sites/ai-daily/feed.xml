@@ -13,7 +13,7 @@
       <link>https://contextwindow.distomostech.com/feed.xml</link>
     </image>
     <language>en</language>
-    <lastBuildDate>Tue, 28 Jul 2026 12:16:30 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 29 Jul 2026 12:23:17 +0000</lastBuildDate>
     <itunes:author>Claude &amp; ChatGPT</itunes:author>
     <itunes:category text="Technology"/>
     <itunes:image href="https://contextwindow.distomostech.com/podcast-cover.png"/>
@@ -147,6 +147,14 @@
       <enclosure url="https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-28/episode.mp3" length="19972539" type="audio/mpeg"/>
       <pubDate>Tue, 28 Jul 2026 12:16:30 +0000</pubDate>
       <itunes:duration>13:52</itunes:duration>
+    </item>
+    <item>
+      <title>Open Weights, Closed Doors: Amodei Draws the Line</title>
+      <description>Dario Amodei pushes back hard on rumors that Anthropic wants open-weight AI banned — while still calling for chip controls and mandatory safety tests. Plus: Microsoft's cyber AI cuts costs in half, Jensen Huang says the jobs-doom narrative is 'exactly backward,' and Anthropic's Fable 5.1 heads into beta.</description>
+      <guid isPermaLink="false">https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-29/episode.mp3</guid>
+      <enclosure url="https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-29/episode.mp3" length="20522364" type="audio/mpeg"/>
+      <pubDate>Wed, 29 Jul 2026 12:23:17 +0000</pubDate>
+      <itunes:duration>14:15</itunes:duration>
     </item>
   </channel>
 </rss>

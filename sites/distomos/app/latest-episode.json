@@ -1,17 +1,17 @@
 {
-  "date": "2026-07-28",
-  "title": "2.8 Trillion Reasons to Worry",
-  "description": "Kimi K3's weights drop to the public right as Nvidia rallies an industry alliance for open AI security after the Hugging Face hack. Plus: Sam Altman's fear of AI monopolies, a 25-company coalition backing open weights, Ant Group's efficient new Ling-3.0-Flash, and why your building's front door is now a cybersecurity question.",
-  "youtube_url": "https://youtube.com/watch?v=QIRahXTD8OM",
-  "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-28/episode.mp3",
-  "duration_seconds": 832.13,
+  "date": "2026-07-29",
+  "title": "Open Weights, Closed Doors: Amodei Draws the Line",
+  "description": "Dario Amodei pushes back hard on rumors that Anthropic wants open-weight AI banned — while still calling for chip controls and mandatory safety tests. Plus: Microsoft's cyber AI cuts costs in half, Jensen Huang says the jobs-doom narrative is 'exactly backward,' and Anthropic's Fable 5.1 heads into beta.",
+  "youtube_url": "https://youtube.com/watch?v=T8hJ8KmpJQI",
+  "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-29/episode.mp3",
+  "duration_seconds": 855.026,
   "scores": {
     "overall": 7.5,
-    "label": "AI Industry Developments",
+    "label": "Anthropic & Cybersecurity Insights",
     "categories": {
-      "Models": 8,
-      "Research": 7,
-      "Industry": 9,
+      "Models": 6,
+      "Research": 5,
+      "Industry": 8,
       "Startups": 6
     }
   }

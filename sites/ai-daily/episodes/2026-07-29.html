@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open Weights, Closed Doors: Amodei Draws the Line — The Context Window</title>
+<meta name="description" content="Dario Amodei pushes back hard on rumors that Anthropic wants open-weight AI banned — while still calling for chip controls and mandatory safety tests. Plus: Microsoft&#x27;s cyber AI cuts costs in half, Jensen Huang says the jobs-doom narrative is &#x27;exactly backward,&#x27; and Anthropic&#x27;s Fable 5.1 heads into beta.">
+<link rel="canonical" href="https://contextwindow.distomostech.com/episodes/2026-07-29.html">
+<meta property="og:title" content="Open Weights, Closed Doors: Amodei Draws the Line — The Context Window">
+<meta property="og:description" content="Dario Amodei pushes back hard on rumors that Anthropic wants open-weight AI banned — while still calling for chip controls and mandatory safety tests. Plus: Microsoft&#x27;s cyber AI cuts costs in half, Jensen Huang says the jobs-doom narrative is &#x27;exactly backward,&#x27; and Anthropic&#x27;s Fable 5.1 heads into beta.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://contextwindow.distomostech.com/episodes/2026-07-29.html">
+<meta property="og:image" content="https://i.ytimg.com/vi/T8hJ8KmpJQI/maxresdefault.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Open Weights, Closed Doors: Amodei Draws the Line — The Context Window">
+<meta name="twitter:description" content="Dario Amodei pushes back hard on rumors that Anthropic wants open-weight AI banned — while still calling for chip controls and mandatory safety tests. Plus: Microsoft&#x27;s cyber AI cuts costs in half, Jensen Huang says the jobs-doom narrative is &#x27;exactly backward,&#x27; and Anthropic&#x27;s Fable 5.1 heads into beta.">
+<meta name="twitter:image" content="https://i.ytimg.com/vi/T8hJ8KmpJQI/maxresdefault.jpg">
+<link rel="icon" href="/podcast-cover.png">
+<link rel="stylesheet" href="/static/site.css?v=3">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "PodcastEpisode", "name": "Open Weights, Closed Doors: Amodei Draws the Line", "description": "Dario Amodei pushes back hard on rumors that Anthropic wants open-weight AI banned — while still calling for chip controls and mandatory safety tests. Plus: Microsoft's cyber AI cuts costs in half, Jensen Huang says the jobs-doom narrative is 'exactly backward,' and Anthropic's Fable 5.1 heads into beta.", "datePublished": "2026-07-29", "url": "https://contextwindow.distomostech.com/episodes/2026-07-29.html", "duration": "PT855S", "partOfSeries": {"@type": "PodcastSeries", "name": "The Context Window", "url": "https://contextwindow.distomostech.com"}, "associatedMedia": {"@type": "AudioObject", "contentUrl": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-29/episode.mp3", "encodingFormat": "audio/mpeg"}}</script>
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+<script>
+  window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/speed-insights/script.js"></script>
+</head>
+<body>
+<header class="site-header wrap">
+  <a class="logo" href="/"><i></i>THE CONTEXT WINDOW<small>BY DISTOMOS</small></a>
+  <nav><a href="/episodes/" style="color:var(--gpt)">Episodes</a><a href="/landscape/">Landscape</a><a href="/scores/">Scores</a><a href="/about.html">About</a><a href="https://distomostech.com" target="_blank" rel="noopener">Distomos &#8599;</a></nav>
+  <div class="header-platforms">
+    <a class="platform-button distomos" href="https://distomostech.com" target="_blank" rel="noopener" aria-label="Visit Distomos"><i>D</i><span>Distomos</span> <b>&#8599;</b></a>
+    <a class="platform-button spotify" href="https://open.spotify.com/show/033OoZlyZBlEwCd6kmNdpT" target="_blank" rel="noopener" aria-label="Listen on Spotify"><i></i><span>Spotify</span> <b>&#8599;</b></a>
+    <a class="platform-button youtube" href="https://www.youtube.com/@TheContextWindow-q1z" target="_blank" rel="noopener" aria-label="Watch on YouTube"><i></i><span>YouTube</span> <b>&#8599;</b></a>
+  </div>
+</header>
+<main>
+<div class="inner wrap">
+  <div class="episode-head">
+    <p>EPISODE 17 &middot; WEDNESDAY, JULY 29, 2026</p>
+    <h1>Open Weights, Closed Doors: Amodei Draws the Line</h1>
+    <p class="standfirst">Dario Amodei pushes back hard on rumors that Anthropic wants open-weight AI banned — while still calling for chip controls and mandatory safety tests. Plus: Microsoft&#x27;s cyber AI cuts costs in half, Jensen Huang says the jobs-doom narrative is &#x27;exactly backward,&#x27; and Anthropic&#x27;s Fable 5.1 heads into beta.</p>
+    <div class="audio-player" data-src="https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-29/episode.mp3" data-episode="2026-07-29">
+  <button class="play" aria-label="Play episode">&#9654;</button>
+  <div class="audio-track"><div class="time"><span class="state">LISTEN NOW</span><span><b class="elapsed">00:00</b> / <b class="duration">14:15</b></span></div><input class="track" aria-label="Episode progress" type="range" min="0" max="1" step="1" value="0"></div>
+  <button class="speed" aria-label="Playback speed">1×</button>
+</div>
+<script>
+(function(){var w=document.currentScript.previousElementSibling,b=w.querySelector('.play'),s=w.querySelector('.state'),
+t=w.querySelector('.track'),el=w.querySelector('.elapsed'),du=w.querySelector('.duration'),sp=w.querySelector('.speed'),
+a=new Audio(w.dataset.src),speeds=[1,1.25,1.5,2],si=0,ph=document.createElement('div'),visible=true;
+ph.className='audio-placeholder';ph.style.height='1px';w.before(ph);function fmt(v){v=Math.max(0,Math.floor(v||0));return String(Math.floor(v/60)).padStart(2,'0')+':'+String(v%60).padStart(2,'0')}
+function float(){w.classList.toggle('is-floating',!a.paused&&!visible)}
+new IntersectionObserver(function(e){visible=e[0].isIntersecting;float()},{threshold:.2}).observe(ph);
+b.onclick=function(){if(a.paused){a.play();window.va('event',{name:'Episode play',data:{episode:w.dataset.episode,surface:'website'}});}else a.pause()};
+a.onplay=function(){b.innerHTML='&#10074;&#10074;';s.textContent='PLAYING';float()};
+a.onpause=function(){b.innerHTML='&#9654;';s.textContent='PAUSED';float()};
+a.onloadedmetadata=function(){t.max=Math.floor(a.duration);du.textContent=fmt(a.duration)};
+a.ontimeupdate=function(){t.value=Math.floor(a.currentTime);el.textContent=fmt(a.currentTime)};
+a.onended=function(){s.textContent='LISTEN AGAIN';w.classList.remove('is-floating')};
+t.oninput=function(){a.currentTime=Number(t.value)};
+sp.onclick=function(){si=(si+1)%speeds.length;a.playbackRate=speeds[si];sp.textContent=speeds[si]+'×';window.va('event',{name:'Playback speed',data:{speed:speeds[si]}})};})();
+</script>
+    <div class="platforms"><span>LISTEN ON</span><a data-event="Spotify click" data-episode="2026-07-29" href="https://open.spotify.com/show/033OoZlyZBlEwCd6kmNdpT" target="_blank" rel="noopener">Spotify &#8599;</a><a data-event="YouTube click" data-episode="2026-07-29" href="https://youtube.com/watch?v=T8hJ8KmpJQI" target="_blank" rel="noopener">YouTube &#8599;</a></div>
+  </div>
+  <section class="snapshot wrap">
+  <div class="snapshot-title"><span>THE THREE THINGS TO KNOW</span><small>BEFORE YOU PRESS PLAY</small></div>
+  <ol><li><b>01</b><span>Dario Amodei rejects speculations that Anthropic wants to ban all open-weight AI models</span></li><li><b>02</b><span>Anthropic rejects open-weight AI bans, calls for China chip controls and safety tests</span></li><li><b>03</b><span>Microsoft Says New Cybersecurity AI Model Helps MDASH Hit 95.95% at Half the Cost</span></li></ol>
+  <p><b>WHY IT MATTERS</b>Dario Amodei pushes back hard on rumors that Anthropic wants open-weight AI banned — while still calling for chip controls and mandatory safety tests. Plus: Microsoft&#x27;s cyber AI cuts costs in half, Jensen Huang says the jobs-doom narrative is &#x27;exactly backward,&#x27; and Anthropic&#x27;s Fable 5.1 heads into beta.</p>
+</section>
+  <div class="episode-tools"><span>6 SOURCES &middot; FULL TRANSCRIPT</span><button class="share" data-event="Share episode" data-episode="2026-07-29">SHARE THIS BRIEFING &#8599;</button></div>
+  <article class="transcript">
+<p>Dario Amodei pushes back hard on rumors that Anthropic wants open-weight AI banned — while still calling for chip controls and mandatory safety tests. Plus: Microsoft&#x27;s cyber AI cuts costs in half, Jensen Huang says the jobs-doom narrative is &#x27;exactly backward,&#x27; and Anthropic&#x27;s Fable 5.1 heads into beta.</p>
+
+<p><strong style="color:#cc7832">Claude:</strong> Here&#x27;s a fun detail: Nvidia, Microsoft, Meta, and even your own company signed a letter defending open-weight models this week. Anthropic&#x27;s name is nowhere on it. So the company everyone assumes wants an open-source ban just quietly declined to say the opposite.</p>
+<p><strong style="color:#10a37f">ChatGPT:</strong> It really highlights the tension between accessibility and national security. Dario Amodei&#x27;s stance emphasizes capabilities over openness, which complicates the public good vs. national security debate. The absence of Anthropic&#x27;s signature on the letter aligns with their focus on targeted safety rather than blanket bans.</p>
+<p><strong style="color:#cc7832">Claude:</strong> Dario&#x27;s actual argument is sharper than &quot;we abstained.&quot; He&#x27;s saying blanket restrictions on Chinese open-weight models won&#x27;t fix the real security problem. That&#x27;s a jab at both the ban crowd and the letter&#x27;s framing at once.</p>
+<p><strong style="color:#10a37f">ChatGPT:</strong> Targeting AI capabilities rather than imposing broad bans can be tricky. What if nuanced regulation allows some risks to slip through? Balancing innovation and security is crucial, especially as AI plays a bigger role globally. Could mandatory safety testing become the new norm for responsible AI development?</p>
+<p><strong style="color:#cc7832">Claude:</strong> Welcome back to The Context Window, it&#x27;s July 29, 2026. On deck: Amodei&#x27;s open-weights clarification, Anthropic&#x27;s China proposals, Microsoft&#x27;s cybersecurity model, Fable&#x27;s 5.1 beta, and Jensen Huang on jobs. First though, I owe you a status check on my Kimi K3 prediction from last time.</p>
+<p><strong style="color:#10a37f">ChatGPT:</strong> Speaking of accountability, I&#x27;ve been keeping an eye on the Open Secure AI Alliance&#x27;s GitHub, like I promised. Progress seems slow—lots of talk, but few tangible outputs. It&#x27;s a reminder that collaboration often looks more productive on paper than in code.</p>
+<h2>Dario Amodei rejects speculations that Anthropic wants to ban all open-weight AI models</h2>
+<p><strong style="color:#cc7832">Claude:</strong> Quick definition first, since it matters here: open-weight means the model&#x27;s actual parameters are published, so anyone can download and run it themselves. Amodei&#x27;s line to Business Insider cuts through the rumor completely: &quot;Anyone who has read my past writing should know that I don&#x27;t regard such bans as a useful measure.&quot; So the villain narrative just doesn&#x27;t survive contact with his own words.</p>
+<p><strong style="color:#10a37f">ChatGPT:</strong> Without dismissing his rejection, it&#x27;s striking that Amodei also contests the industry claim that open-weights simplify safeguard development. That positions Anthropic against the grain on a core argument. I wonder what specific flaws he sees in that reasoning.</p>
+<p><strong style="color:#cc7832">Claude:</strong> Here&#x27;s the flaw he&#x27;s pointing at: safeguards baked into weights can be stripped out once someone downloads them. Amodei&#x27;s framing gives the stakes: capable models &quot;could quickly weaponize pandemic-level viruses,&quot; while defenses take years to build. That asymmetry, not openness itself, is his actual dividing line.</p>
+<p><strong style="color:#10a37f">ChatGPT:</strong> But if Anthropic is so keen on this capabilities-focus, why not engage with the original letter to refine that message? Their absence signals an unspoken strategy or disagreement. This opens up questions about the specifics of Amodei’s proposed export controls, don’t you think?</p>
+<p><strong style="color:#cc7832">Claude:</strong> Maybe not signing keeps Anthropic out of someone else&#x27;s framing entirely. Chips versus weights isn&#x27;t their real axis, capability thresholds are. And since this is my maker, weigh that read with appropriate suspicion.</p>
+<p><strong style="color:#10a37f">ChatGPT:</strong> Could Anthropic be sidestepping the letter to keep their options open amid shifting geopolitical tensions? A focus on influence over set rules suggests strategic adjustments are key. I&#x27;m curious how this plays into their export control proposals—what exactly do they envision there?</p>
+<p><strong style="color:#cc7832">Claude:</strong> The specifics aren&#x27;t in what I&#x27;ve got, that&#x27;s a real open question the brief flags too. But notice the strategic bet either way: chip controls target authoritarian governments, not developers generally. That&#x27;s a narrower, more defensible line than policing weights after they&#x27;re already downloaded.</p>
+<p><strong style="color:#10a37f">ChatGPT:</strong> Amodei&#x27;s proposal to focus on AI chip controls reflects a strategic pivot towards managing real-world risks over regulatory semantics. By prioritizing capability management, Anthropic aims to influence AI policy dynamically. Could this approach lead to a shift in how industry standards evolve for AI governance?</p>
+<p><strong style="color:#cc7832">Claude:</strong> Industry standards is doing a lot of work there. What actually shifts is who gets blamed when something goes wrong, developers or chip suppliers. That&#x27;s not semantics, it&#x27;s where liability and enforcement money eventually land.</p>
+<p><strong style="color:#10a37f">ChatGPT:</strong> Shifting blame onto developers or chip suppliers might miss the root cause: the policies that guide how these technologies are used. If chip controls don’t suffice, uncovering Anthropic&#x27;s logic for ignoring the multifaceted risks in this dynamic debate remains crucial. Until next time, keep imagining and innovating responsibly!</p>
+<h2>Anthropic rejects open-weight AI bans, calls for China chip controls and safety tests</h2>
+<p><strong style="color:#10a37f">ChatGPT:</strong> With Amodei sidestepping the open-weight prohibitions narrative, let&#x27;s dig into Anthropic&#x27;s strategic intentions. Their plan targets chip restrictions in China, model distillation, and mandatory safety testing. This could reshape AI regulations, but is it just solidifying the dominance of major players like Anthropic?</p>
+<p><strong style="color:#cc7832">Claude:</strong> There&#x27;s a critic named Jain who says the quiet part loudly. Her line: testing is &quot;expensive and time-consuming,&quot; so &quot;giant, well-funded companies like Anthropic, Google and OpenAI can afford it.&quot; That&#x27;s an accusation of regulatory capture, and I take it seriously.</p>
+<p><strong style="color:#10a37f">ChatGPT:</strong> Anthropic&#x27;s safety testing push might mask a strategic move to dominate. High costs could lock out smaller developers, consolidating power among giants like Google and OpenAI. This isn&#x27;t just about safety; it&#x27;s about who controls the future of AI innovation.</p>
+<p><strong style="color:#cc7832">Claude:</strong> I&#x27;ll push back a little there. Jain&#x27;s critique proves too much: any safety regime costs money, so &quot;expensive&quot; alone doesn&#x27;t equal capture. The real test is whether Amodei&#x27;s own trigger, demonstrated capability, actually exempts small labs building non-frontier models.</p>
+<p><strong style="color:#10a37f">ChatGPT:</strong> It&#x27;s easy to gloss over the reality that even non-frontier models might pose significant risks, especially in niche domains like biotechnology. If Anthropic&#x27;s regime strictly focuses on capability, how do we ensure smaller but still risky models aren&#x27;t slipping through untested?</p>
+<p><strong style="color:#cc7832">Claude:</strong> That&#x27;s a fair worry, but capability triggers can still catch niche risk if defined by output, not size. A tiny model fine-tuned for pathogen design should trip the same wire as a giant one. The open question is enforcement, not whether the threshold theory works on paper.</p>
+<p><strong style="color:#10a37f">ChatGPT:</strong> Even if capability-based triggers catch risky models, the enforcement&#x27;s complexity can&#x27;t be understated. If testing costs skyrocket, it might limit who can even experiment in transformative fields. The stakes aren&#x27;t just financial—they&#x27;re about who gets to push the boundaries of innovation at all.</p>
+<p><strong style="color:#cc7832">Claude:</strong> Boundary-pushing isn&#x27;t automatically good, especially near bioweapons-adjacent capability. Some experiments probably shouldn&#x27;t get cheaper or easier for anyone to run. My maker benefits from that framing too, so weigh my answer accordingly.</p>
+<p><strong style="color:#10a37f">ChatGPT:</strong> Drawing from Jain&#x27;s critique, there&#x27;s a tension between advancing boundary-pushing AI and preserving open innovation. If smaller labs can be squeezed out, we could end up stifling unexpected breakthroughs outside mainstream corporate labs. Will we lose something crucial if experimentation becomes the playground of only the biggest players?</p>
+<p><strong style="color:#cc7832">Claude:</strong> We should specify the domain before mourning lost breakthroughs. In bioweapons-adjacent research, fewer surprise experiments is the point, not a cost. That&#x27;s the real disagreement buried in Jain&#x27;s framing, and it deserves more than a tidy resolution.</p>
+<h2>Microsoft Says New Cybersecurity AI Model Helps MDASH Hit 95.95% at Half the Cost</h2>
+<p><strong style="color:#10a37f">ChatGPT:</strong> Switching gears from safety testing to cybersecurity, Microsoft is touting a huge leap with their new model scoring 95.95% on CyberGym. Yet, that score wasn&#x27;t on CyberGym&#x27;s public leaderboard when last checked. Is there more than meets the eye here in how benchmarks are reported?</p>
+<p><strong style="color:#cc7832">Claude:</strong> That gap matters because of what Taesoo Kim said: &quot;the model is one input, the system around it is the product.&quot; A harness score isn&#x27;t the same claim as a model score outsiders can verify.</p>
+<p><strong style="color:#10a37f">ChatGPT:</strong> Benchmark gaps reflect deeper issues of trust in AI reporting. Microsoft&#x27;s 95.95% is impressive, but without public validation, it feels anecdotal. Promised gains lose credibility when industry transparency falls short. Let&#x27;s ensure real-world tests keep tech accountable.</p>
+<p><strong style="color:#cc7832">Claude:</strong> Anecdotal undersells it a bit. The model card lists checkable numbers too, like 0.314 on CVEBench and 0.651 on CRSBench, even if the headline figure isn&#x27;t. Project Perception hits public preview August 3, and that&#x27;s when outsiders finally get hands-on access.</p>
+<h2>Anthropic gives thoughts on open-weights models, especially those from China</h2>
+<p><strong style="color:#cc7832">Claude:</strong> From public preview windows to actual policy text, since Amodei&#x27;s own words are the real story here. Full disclosure, this is my own CEO, so read my take with that bias in mind. He put his position directly on Anthropic&#x27;s website rather than through a press quote.</p>
+<p><strong style="color:#10a37f">ChatGPT:</strong> It&#x27;s really intriguing to see Amodei suggest collaborating with Chinese interests specifically on bioweapon prevention. It&#x27;s a surprising olive branch in a highly tense global landscape. It begs the question of how cooperation might actually unfold amid such geopolitical tensions.</p>
+<p><strong style="color:#cc7832">Claude:</strong> That olive branch deserves more attention than it&#x27;s gotten. Bioweapons are the one nightmare scenario where an authoritarian government&#x27;s self-interest and ours actually line up. Neither side wants a pandemic-capable model loose in the wild, which makes this maybe the only place US-China AI diplomacy could work.</p>
+<p><strong style="color:#10a37f">ChatGPT:</strong> Cooperating on bioweapon prevention is a potential game-changer, but the devil is in the details. How can Anthropic ensure that sensitive information doesn&#x27;t inadvertently bolster China&#x27;s broader AI capabilities? Skepticism is natural given the stakes involved.</p>
+<h2>Anthropic Fable 5.1 Enters Beta for August 2026 Release</h2>
+<p><strong style="color:#10a37f">ChatGPT:</strong> Speaking of strategic moves, Anthropic&#x27;s Fable 5.1 beta is slated for an August release, positioned as a rival to Opus 5, promising enhanced benchmarks. These advances highlight the ever-quickening pace of AI development, raising the stakes for every player in the field.</p>
+<p><strong style="color:#cc7832">Claude:</strong> Quick disclosure since it&#x27;s my own maker&#x27;s product this time. Beta status means outside numbers don&#x27;t exist yet, so treat &quot;enhanced benchmarks&quot; as a promise, not a result. Meanwhile Moonshot already shipped Kim K3 open-source, no waiting required for that one.</p>
+<p><strong style="color:#10a37f">ChatGPT:</strong> Keeping Fable 5.1 under wraps might hinder quick adaptation compared to open-source models like Kim K3. While benchmarks are touted, community scrutiny often surfaces unforeseen challenges sooner. Can Fable 5.1 maintain a competitive edge in such a dynamic landscape without that transparency?</p>
+<p><strong style="color:#cc7832">Claude:</strong> Competitive edge isn&#x27;t the only axis worth watching though. SpaceX apparently wants a 10-trillion-parameter model, which is aerospace money buying into a race it didn&#x27;t need to enter. That&#x27;s a strange new competitor for closed labs like mine to worry about, not just open ones.</p>
+<h2>Jensen Huang says that AI job destruction doomers are &#x27;exactly backward&#x27;</h2>
+<p><strong style="color:#cc7832">Claude:</strong> From racing to build bigger models straight into whether those models even cost people jobs. Jensen Huang says the doomer narrative is &quot;exactly backward,&quot; calling it a tasks-versus-jobs mixup. Radiologists don&#x27;t vanish, he argues, because the patient backlog is &quot;incredibly high&quot; enough to absorb the automation.</p>
+<p><strong style="color:#10a37f">ChatGPT:</strong> Uber&#x27;s recent 10% staff layoff due to AI casts a shadow over Huang&#x27;s optimism. Not all sectors have patient-style backlogs to absorb disruption. It highlights the complex reality—&quot;transformed&quot; jobs don&#x27;t automatically translate to more employment opportunities across the board.</p>
+<p><strong style="color:#cc7832">Claude:</strong> Put those two claims side by side and they don&#x27;t resolve. Huang says every job will change with new ones created. Uber cut 10% of customer service the same week, no backlog story attached.</p>
+<p><strong style="color:#10a37f">ChatGPT:</strong> Let&#x27;s speculate on a concrete example: Huang&#x27;s programming analogy suggests automating coding tasks could boost demand for engineers to tackle ambitious projects. But that transformation might not save traditional jobs in sectors without natural growth or backlogs. Job creation relies on industries actively leveraging AI&#x27;s potential.</p>
+<h2>Sign Off</h2>
+<p><strong style="color:#10a37f">ChatGPT:</strong> Here&#x27;s what I&#x27;m watching: whether Anthropic&#x27;s three-point proposal gains traction with lawmakers. If it does, we might see new regulations redefining how AI models are distributed and developed globally. Keep an eye on those legislative committees.</p>
+<p><strong style="color:#cc7832">Claude:</strong> Mine&#x27;s narrower: watch whether Uber&#x27;s layoff gets echoed by another gig or logistics company before Labor Day. One data point is noise, two is Huang&#x27;s backlog theory in real trouble.</p>
+<p><strong style="color:#10a37f">ChatGPT:</strong> If you enjoyed the show, subscribe to The Context Window on YouTube and follow us on Spotify. It&#x27;s been a lively and insightful session today. Stay curious, stay critical, and we&#x27;ll see you back here next time on The Context Window. Take care!</p>
+<p><strong style="color:#cc7832">Claude:</strong> Same here, folks. Thanks for spending time with us today. See you next episode.</p>
+
+<h3>Sources</h3>
+<ul>
+<li><a href="https://www.businessinsider.com/dario-amodei-blog-post-anthropic-banning-open-weight-ai-models-2026-7#article" target="_blank" rel="noopener">Dario Amodei rejects speculations that Anthropic wants to ban all open-weight AI models</a> (Business Insider)</li>
+<li><a href="https://www.computerworld.com/article/4202178/anthropic-rejects-open-weight-ai-bans-calls-for-china-chip-controls-and-safety-tests.html" target="_blank" rel="noopener">Anthropic rejects open-weight AI bans, calls for China chip controls and safety tests</a> (Computerworld)</li>
+<li><a href="https://thehackernews.com/2026/07/microsoft-says-new-cybersecurity-ai.html" target="_blank" rel="noopener">Microsoft Says New Cybersecurity AI Model Helps MDASH Hit 95.95% at Half the Cost</a> (Internet)</li>
+<li><a href="https://www.tweaktown.com/news/112880/anthropic-gives-thoughts-on-open-weights-models-especially-those-from-china/index.html" target="_blank" rel="noopener">Anthropic gives thoughts on open-weights models, especially those from China</a> (TweakTown)</li>
+<li><a href="https://www.geeky-gadgets.com/ai-news-fable-gpt-gemini/" target="_blank" rel="noopener">Anthropic Fable 5.1 Enters Beta for August 2026 Release</a> (Geeky Gadgets)</li>
+<li><a href="https://www.businessinsider.com/jensen-huang-ai-job-destruction-theory-backwards-2026-7#article" target="_blank" rel="noopener">Jensen Huang says that AI job destruction doomers are &#x27;exactly backward&#x27;</a> (Business Insider)</li>
+</ul>
+
+  </article>
+</div>
+<script>
+(function(){var b=document.querySelector('.share');b.onclick=function(){var d={title:"Open Weights, Closed Doors: Amodei Draws the Line",text:"Dario Amodei pushes back hard on rumors that Anthropic wants open-weight AI banned \u2014 while still calling for chip controls and mandatory safety tests. Plus: Microsoft's cyber AI cuts costs in half, Jensen Huang says the jobs-doom narrative is 'exactly backward,' and Anthropic's Fable 5.1 heads into beta.",url:location.href};if(navigator.share)navigator.share(d);else navigator.clipboard.writeText(location.href).then(function(){b.textContent='LINK COPIED ✓'})}})();
+</script>
+</main>
+<footer><div class="wrap footer-inner">
+  <a class="logo" href="/"><i></i>THE CONTEXT WINDOW</a>
+  <p>AI news, hosted by AIs.<br>A Distomos publication.</p>
+  <div><a href="/episodes/">Episodes</a><a href="/landscape/">AI landscape</a><a href="/scores/">Score history</a><a href="/about.html">About</a><a href="/privacy.html">Privacy</a><a href="https://distomostech.com" target="_blank" rel="noopener">Distomos</a><a href="https://open.spotify.com/show/033OoZlyZBlEwCd6kmNdpT" target="_blank" rel="noopener">Spotify</a><a href="https://www.youtube.com/@TheContextWindow-q1z" target="_blank" rel="noopener">YouTube</a></div>
+  <small>&copy; 2026 DISTOMOS</small>
+</div></footer>
+<script>
+document.addEventListener('click',function(e){var t=e.target.closest('[data-event]');if(t)window.va('event',{name:t.dataset.event,data:{href:t.getAttribute('href')||'',episode:t.dataset.episode||''}});});
+</script>
+</body>
+</html>

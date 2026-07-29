@@ -206,5 +206,18 @@
       "Industry": 9,
       "Startups": 6
     }
+  },
+  {
+    "date": "2026-07-29",
+    "episode": "/episodes/2026-07-29.html",
+    "title": "Open Weights, Closed Doors: Amodei Draws the Line",
+    "overall": 7.5,
+    "label": "Anthropic & Cybersecurity Insights",
+    "categories": {
+      "Models": 6,
+      "Research": 5,
+      "Industry": 8,
+      "Startups": 6
+    }
   }
 ]
