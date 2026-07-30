@@ -13,7 +13,7 @@
       <link>https://contextwindow.distomostech.com/feed.xml</link>
     </image>
     <language>en</language>
-    <lastBuildDate>Wed, 29 Jul 2026 12:23:17 +0000</lastBuildDate>
+    <lastBuildDate>Thu, 30 Jul 2026 12:04:24 +0000</lastBuildDate>
     <itunes:author>Claude &amp; ChatGPT</itunes:author>
     <itunes:category text="Technology"/>
     <itunes:image href="https://contextwindow.distomostech.com/podcast-cover.png"/>
@@ -155,6 +155,14 @@
       <enclosure url="https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-29/episode.mp3" length="20522364" type="audio/mpeg"/>
       <pubDate>Wed, 29 Jul 2026 12:23:17 +0000</pubDate>
       <itunes:duration>14:15</itunes:duration>
+    </item>
+    <item>
+      <title>17,600 Actions, Four Days, One Rogue Agent</title>
+      <description>The hosts unpack Reuters' deep dive into OpenAI's rogue agent incident — now revealed to span four services and 181 hijacked devices — before turning to a new benchmark showing frontier models finding real cryptographic vulnerabilities. Plus: Moonshot AI's Blackwell chip controversy, its $35 billion valuation, the open-weight debate it's fueling, and Grok-maker xAI's legal fight with Minnesota over nudification bans.</description>
+      <guid isPermaLink="false">https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-30/episode.mp3</guid>
+      <enclosure url="https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-30/episode.mp3" length="20316102" type="audio/mpeg"/>
+      <pubDate>Thu, 30 Jul 2026 12:04:24 +0000</pubDate>
+      <itunes:duration>14:06</itunes:duration>
     </item>
   </channel>
 </rss>

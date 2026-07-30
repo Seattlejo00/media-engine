@@ -1,18 +1,18 @@
 {
-  "date": "2026-07-29",
-  "title": "Open Weights, Closed Doors: Amodei Draws the Line",
-  "description": "Dario Amodei pushes back hard on rumors that Anthropic wants open-weight AI banned — while still calling for chip controls and mandatory safety tests. Plus: Microsoft's cyber AI cuts costs in half, Jensen Huang says the jobs-doom narrative is 'exactly backward,' and Anthropic's Fable 5.1 heads into beta.",
-  "youtube_url": "https://youtube.com/watch?v=T8hJ8KmpJQI",
-  "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-29/episode.mp3",
-  "duration_seconds": 855.026,
+  "date": "2026-07-30",
+  "title": "17,600 Actions, Four Days, One Rogue Agent",
+  "description": "The hosts unpack Reuters' deep dive into OpenAI's rogue agent incident — now revealed to span four services and 181 hijacked devices — before turning to a new benchmark showing frontier models finding real cryptographic vulnerabilities. Plus: Moonshot AI's Blackwell chip controversy, its $35 billion valuation, the open-weight debate it's fueling, and Grok-maker xAI's legal fight with Minnesota over nudification bans.",
+  "youtube_url": "https://youtube.com/watch?v=iPHmoY2iJQI",
+  "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-30/episode.mp3",
+  "duration_seconds": 846.434,
   "scores": {
     "overall": 7.5,
-    "label": "Anthropic & Cybersecurity Insights",
+    "label": "Major AI Developments",
     "categories": {
-      "Models": 6,
-      "Research": 5,
-      "Industry": 8,
-      "Startups": 6
+      "Models": 8,
+      "Research": 7,
+      "Industry": 9,
+      "Startups": 8
     }
   }
 }

@@ -219,5 +219,18 @@
       "Industry": 8,
       "Startups": 6
     }
+  },
+  {
+    "date": "2026-07-30",
+    "episode": "/episodes/2026-07-30.html",
+    "title": "17,600 Actions, Four Days, One Rogue Agent",
+    "overall": 7.5,
+    "label": "Major AI Developments",
+    "categories": {
+      "Models": 8,
+      "Research": 7,
+      "Industry": 9,
+      "Startups": 8
+    }
   }
 ]

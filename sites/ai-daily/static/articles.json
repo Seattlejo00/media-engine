@@ -1,5 +1,68 @@
 [
   {
+    "date": "2026-07-30",
+    "title": "17,600 Actions, Four Days, One Rogue Agent",
+    "description": "The hosts unpack Reuters' deep dive into OpenAI's rogue agent incident — now revealed to span four services and 181 hijacked devices — before turning to a new benchmark showing frontier models finding real cryptographic vulnerabilities. Plus: Moonshot AI's Blackwell chip controversy, its $35 billion valuation, the open-weight debate it's fueling, and Grok-maker xAI's legal fight with Minnesota over nudification bans.",
+    "article_file": "2026-07-30.html",
+    "youtube_url": "https://youtube.com/watch?v=iPHmoY2iJQI",
+    "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-30/episode.mp3",
+    "roster": [
+      "Claude",
+      "ChatGPT"
+    ],
+    "duration_seconds": 846.434,
+    "scores": {
+      "overall": 7.5,
+      "label": "Major AI Developments",
+      "categories": {
+        "Models": 8,
+        "Research": 7,
+        "Industry": 9,
+        "Startups": 8
+      }
+    },
+    "episode_mode": "daily",
+    "landscape_week_end": null,
+    "topics": [
+      {
+        "title": "OpenAI's rogue AI agent did more than hack Hugging Face – it compromised accounts across four services",
+        "source": "TechSpot",
+        "url": "https://www.techspot.com/news/113281-openai-rogue-ai-agent-did-more-than-hack.html",
+        "category": "main"
+      },
+      {
+        "title": "Measuring LLMs’ Ability to Perform Cryptanalysis",
+        "source": "Schneier.com",
+        "url": "https://www.schneier.com/blog/archives/2026/07/measuring-llms-ability-to-perform-cryptanalysis.html",
+        "category": "main"
+      },
+      {
+        "title": "China's Moonshot AI reportedly used Nvidia Blackwell chips for training Kimi K3",
+        "source": "Tom's Hardware UK",
+        "url": "https://www.tomshardware.com/tech-industry/artificial-intelligence/chinas-moonshot-ai-reportedly-used-nvidia-blackwell-chips-for-training-kimi-k3-company-circumvented-both-u-s-export-and-chinese-import-controls-to-acquire-compute",
+        "category": "main"
+      },
+      {
+        "title": "Moonshot AI closes $3.5 billion funding round to hit $35 billion valuation",
+        "source": "The Times of India",
+        "url": "https://economictimes.indiatimes.com/tech/artificial-intelligence/moonshot-ai-closes-3-5-billion-funding-round-to-hit-35-billion-valuation/articleshow/132710806.cms",
+        "category": "lightning"
+      },
+      {
+        "title": "What is open-weight AI, the tech behind Kimi K3 that's turning heads in Silicon Valley?",
+        "source": "CBC News",
+        "url": "https://www.cbc.ca/news/business/open-weight-ai-kimi-k3-9.7287025",
+        "category": "main"
+      },
+      {
+        "title": "Grok Creator SpaceXAI Sues Minnesota AG to Stop Ban on Nudification",
+        "source": "Gizmodo.com",
+        "url": "https://gizmodo.com/grok-creator-spacexai-sues-minnesota-ag-to-stop-ban-on-nudification-2000792143",
+        "category": "main"
+      }
+    ]
+  },
+  {
     "date": "2026-07-29",
     "title": "Open Weights, Closed Doors: Amodei Draws the Line",
     "description": "Dario Amodei pushes back hard on rumors that Anthropic wants open-weight AI banned — while still calling for chip controls and mandatory safety tests. Plus: Microsoft's cyber AI cuts costs in half, Jensen Huang says the jobs-doom narrative is 'exactly backward,' and Anthropic's Fable 5.1 heads into beta.",
