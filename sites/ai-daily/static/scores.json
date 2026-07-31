@@ -232,5 +232,18 @@
       "Industry": 9,
       "Startups": 8
     }
+  },
+  {
+    "date": "2026-07-31",
+    "episode": "/episodes/2026-07-31.html",
+    "title": "The Context Window: Nudification Lawsuits, Meta's Cash Crunch, and the Week AI Got Expensive",
+    "overall": 6.5,
+    "label": "Musk's Legal Battles",
+    "categories": {
+      "Models": 5,
+      "Research": 6,
+      "Industry": 7,
+      "Startups": 5
+    }
   }
 ]

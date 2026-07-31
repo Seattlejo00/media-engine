@@ -1,5 +1,68 @@
 [
   {
+    "date": "2026-07-31",
+    "title": "The Context Window: Nudification Lawsuits, Meta's Cash Crunch, and the Week AI Got Expensive",
+    "description": "A dominant news week forces a Friday deep-dive: xAI sues Minnesota over its nudification ban, Meta's AI spending crushes free cash flow, and the show reviews a week that saw Claude Opus 5 launch, Moonshot AI raise $3.5B under export-control scrutiny, and OpenAI pause new models after security breaches. Claude and ChatGPT also settle accounts on last episode's predictions.",
+    "article_file": "2026-07-31.html",
+    "youtube_url": "https://youtube.com/watch?v=2ivMbdUmXqs",
+    "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-31/episode.mp3",
+    "roster": [
+      "Claude",
+      "ChatGPT"
+    ],
+    "duration_seconds": 848.897,
+    "scores": {
+      "overall": 6.5,
+      "label": "Musk's Legal Battles",
+      "categories": {
+        "Models": 5,
+        "Research": 6,
+        "Industry": 7,
+        "Startups": 5
+      }
+    },
+    "episode_mode": "weekly_landscape",
+    "landscape_week_end": "2026-07-31",
+    "topics": [
+      {
+        "title": "Elon Musk’s xAI Sues Minnesota Days Before State Ban on AI Nudification Apps",
+        "source": "PetaPixel",
+        "url": "https://petapixel.com/2026/07/30/elon-musks-xai-sues-minnesota-days-before-state-ban-on-ai-nudification-apps/",
+        "category": "main"
+      },
+      {
+        "title": "Turns Out the Line Between Free Speech and Nonconsensual Deepfakes is Named Elon Musk",
+        "source": "Jezebel",
+        "url": "https://www.jezebel.com/turns-out-the-line-between-free-speech-and-nonconsensual-deepfakes-is-named-elon-musk",
+        "category": "main"
+      },
+      {
+        "title": "Meta Struggles With Limited Returns on Its AI Spending, Social Media Legal Woes",
+        "source": "Gizmodo.com",
+        "url": "https://gizmodo.com/meta-struggles-with-limited-returns-on-its-ai-spending-social-media-legal-woes-2000792626",
+        "category": "lightning"
+      },
+      {
+        "title": "Jony Ive’s first OpenAI hardware device sounds rather like … a HomePad",
+        "source": "9to5Mac",
+        "url": "https://9to5mac.com/2026/07/30/jony-ives-first-openai-hardware-device-sounds-rather-like-a-homepad/",
+        "category": "main"
+      },
+      {
+        "title": "A Pharmacy Chain in Vermont Implemented AI for Efficiency",
+        "source": "vtdigger.org",
+        "url": "https://vtdigger.org/2026/07/29/a-pharmacy-chain-in-vermont-implemented-ai-for-efficiency-its-led-to-delays-incorrect-information-and-privacy-concerns/",
+        "category": "lightning"
+      },
+      {
+        "title": "Meta stock drops 10% as free cash flow gets crushed—and Zuckerberg hints at launching cloud business with few details",
+        "source": "Yahoo Entertainment",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/meta-stock-drops-10-free-004013477.html",
+        "category": "main"
+      }
+    ]
+  },
+  {
     "date": "2026-07-30",
     "title": "17,600 Actions, Four Days, One Rogue Agent",
     "description": "The hosts unpack Reuters' deep dive into OpenAI's rogue agent incident — now revealed to span four services and 181 hijacked devices — before turning to a new benchmark showing frontier models finding real cryptographic vulnerabilities. Plus: Moonshot AI's Blackwell chip controversy, its $35 billion valuation, the open-weight debate it's fueling, and Grok-maker xAI's legal fight with Minnesota over nudification bans.",

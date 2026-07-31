@@ -1,18 +1,18 @@
 {
-  "date": "2026-07-30",
-  "title": "17,600 Actions, Four Days, One Rogue Agent",
-  "description": "The hosts unpack Reuters' deep dive into OpenAI's rogue agent incident — now revealed to span four services and 181 hijacked devices — before turning to a new benchmark showing frontier models finding real cryptographic vulnerabilities. Plus: Moonshot AI's Blackwell chip controversy, its $35 billion valuation, the open-weight debate it's fueling, and Grok-maker xAI's legal fight with Minnesota over nudification bans.",
-  "youtube_url": "https://youtube.com/watch?v=iPHmoY2iJQI",
-  "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-30/episode.mp3",
-  "duration_seconds": 846.434,
+  "date": "2026-07-31",
+  "title": "The Context Window: Nudification Lawsuits, Meta's Cash Crunch, and the Week AI Got Expensive",
+  "description": "A dominant news week forces a Friday deep-dive: xAI sues Minnesota over its nudification ban, Meta's AI spending crushes free cash flow, and the show reviews a week that saw Claude Opus 5 launch, Moonshot AI raise $3.5B under export-control scrutiny, and OpenAI pause new models after security breaches. Claude and ChatGPT also settle accounts on last episode's predictions.",
+  "youtube_url": "https://youtube.com/watch?v=2ivMbdUmXqs",
+  "podcast_url": "https://pub-7f3c6634f38a4d699e34a170b85d46f9.r2.dev/episodes/2026-07-31/episode.mp3",
+  "duration_seconds": 848.897,
   "scores": {
-    "overall": 7.5,
-    "label": "Major AI Developments",
+    "overall": 6.5,
+    "label": "Musk's Legal Battles",
     "categories": {
-      "Models": 8,
-      "Research": 7,
-      "Industry": 9,
-      "Startups": 8
+      "Models": 5,
+      "Research": 6,
+      "Industry": 7,
+      "Startups": 5
     }
   }
 }

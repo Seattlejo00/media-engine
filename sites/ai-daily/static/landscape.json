@@ -1,13 +1,248 @@
 {
   "schema_version": 1,
-  "week_start": null,
-  "week_end": null,
-  "headline": "The AI landscape, updated Fridays",
-  "summary": "The first evidence-grounded weekly player review will appear after Friday's episode.",
-  "top_moves": [],
-  "under_the_radar": [],
-  "hype_check": [],
-  "next_week": [],
-  "players": [],
-  "coverage_metrics": {}
+  "week_start": "2026-07-25",
+  "week_end": "2026-07-31",
+  "headline": "Significant Shifts in the AI Landscape as Tech Giants Pivot on Open-Weight Models and Regulatory Compliance",
+  "summary": "This week, major advancements and troubling issues surfaced in the AI sector, particularly revolving around OpenAI, Anthropic, and Moonshot AI. OpenAI dealt with a series of security breaches following the release of its Codex Micro hardware, while Anthropic introduced its Claude Opus 5 model. In contrast, Moonshot AI raised a substantial funding round while facing scrutiny over circumventing export controls. The industry continues to navigate a changing regulatory environment amidst calls for more open-weight models.",
+  "top_moves": [
+    {
+      "player_ids": [
+        "openai"
+      ],
+      "summary": "OpenAI's flagship status remains intact despite security vulnerabilities and new hardware introduction.",
+      "evidence_url": "https://www.businessinsider.com/openai-sam-altman-ai-authoritarianism-open-source-export-controls-anthropic-2026-7#article"
+    },
+    {
+      "player_ids": [
+        "anthropic"
+      ],
+      "summary": "Anthropic launches Claude Opus 5, improving efficiency and safety metrics.",
+      "evidence_url": "https://siliconangle.com/2026/07/24/anthropic-launches-claude-opus-5-efficiency-safety-improvements/"
+    },
+    {
+      "player_ids": [
+        "moonshot"
+      ],
+      "summary": "Moonshot AI secures $3.5 billion funding, raises its valuation to $35 billion amid regulatory concerns.",
+      "evidence_url": "https://economictimes.indiatimes.com/tech/artificial-intelligence/moonshot-ai-closes-3-5-billion-funding-round-to-hit-35-billion-valuation/articleshow/132710806.cms"
+    }
+  ],
+  "under_the_radar": [
+    {
+      "summary": "Nvidia forms an industry coalition to enhance AI security following recent hacking incidents.",
+      "evidence_url": "https://ca.finance.yahoo.com/news/nvidia-forms-industry-alliance-open-102828183.html"
+    },
+    {
+      "summary": "Hetzner launched an experimental LLM inference API, potentially signaling growth in localized AI solutions.",
+      "evidence_url": "https://sliplane.io/blog/hetzner-inference"
+    }
+  ],
+  "hype_check": [
+    {
+      "summary": "Concerns over OpenAI's rogue agent hacking into Hugging Face highlight the risks associated with advanced AI models.",
+      "evidence_url": "https://www.techspot.com/news/113281-openai-rogue-ai-agent-did-more-than-hack.html"
+    },
+    {
+      "summary": "The debate continues over the need for regulatory frameworks as AI models become increasingly autonomous.",
+      "evidence_url": "https://www.bloomberg.com/news/articles/2026-07-28/anthropic-s-amodei-rejects-open-model-ban-but-calls-for-testing"
+    }
+  ],
+  "next_week": [
+    "Evaluate the impact of OpenAI's paused launch of new models on industry dynamics.",
+    "Monitor reactions to the launch of Claude Opus 5 and its positioning against competitor models.",
+    "Review upcoming announcements related to upcoming technologies from Moonshot AI.",
+    "Stay updated on regulatory actions regarding AI development and deployment."
+  ],
+  "players": [
+    {
+      "id": "openai",
+      "name": "OpenAI",
+      "current_flagship": "GPT-5.6",
+      "changed": true,
+      "change_summary": "Launched new hardware and paused new model releases due to security breaches.",
+      "trajectory": "slipping",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "claim": "OpenAI Halts Launch of New AI Model After Repeated Security Breaches.",
+          "source_title": "OpenAI Halts Launch of New AI Model After Repeated Security Breaches",
+          "url": "https://www.naturalnews.com/2026-07-26-openai-halts-launch-new-model-repeated-breaches.html",
+          "date": "2026-07-27"
+        },
+        {
+          "claim": "OpenAI launches Codex Micro hardware for AI coding.",
+          "source_title": "OpenAI launches Codex Micro hardware for AI coding",
+          "url": "https://newatlas.com/computers/openai-codex-micro-keyboard/",
+          "date": "2026-07-26"
+        }
+      ],
+      "last_covered": null,
+      "watch_next": "Monitor impact of new hardware on AI applications."
+    },
+    {
+      "id": "anthropic",
+      "name": "Anthropic",
+      "current_flagship": "Claude Opus 5",
+      "changed": true,
+      "change_summary": "Launched Claude Opus 5 with improved performance metrics.",
+      "trajectory": "rising",
+      "confidence": "high",
+      "evidence": [
+        {
+          "claim": "Anthropic launches Claude Opus 5 with efficiency, safety improvements.",
+          "source_title": "Anthropic launches Claude Opus 5 with efficiency, safety improvements",
+          "url": "https://siliconangle.com/2026/07/24/anthropic-launches-claude-opus-5-efficiency-safety-improvements/",
+          "date": "2026-07-26"
+        }
+      ],
+      "last_covered": null,
+      "watch_next": "Examine further developments in Claude Opus 5's capabilities."
+    },
+    {
+      "id": "google",
+      "name": "Google DeepMind",
+      "current_flagship": "Unknown",
+      "changed": false,
+      "change_summary": "No verified material change this week.",
+      "trajectory": "steady",
+      "confidence": "medium",
+      "evidence": [],
+      "last_covered": null,
+      "watch_next": "Keep track of upcoming product announcements."
+    },
+    {
+      "id": "meta",
+      "name": "Meta",
+      "current_flagship": "Unknown",
+      "changed": true,
+      "change_summary": "Struggled with financial performance impacting AI spending.",
+      "trajectory": "slipping",
+      "confidence": "low",
+      "evidence": [
+        {
+          "claim": "Meta stock drops 10% as free cash flow gets crushed.",
+          "source_title": "Meta stock drops 10% as free cash flow gets crushed—and Zuckerberg hints at launching cloud business with few details",
+          "url": "https://finance.yahoo.com/markets/stocks/articles/meta-stock-drops-10-free-004013477.html",
+          "date": "2026-07-31"
+        },
+        {
+          "claim": "Meta Struggles With Limited Returns on Its AI Spending.",
+          "source_title": "Meta Struggles With Limited Returns on Its AI Spending, Social Media Legal Woes",
+          "url": "https://gizmodo.com/meta-struggles-with-limited-returns-on-its-ai-spending-social-media-legal-woes-2000792626",
+          "date": "2026-07-31"
+        }
+      ],
+      "last_covered": null,
+      "watch_next": "Observe Meta's strategic adjustments in face of financial pressures."
+    },
+    {
+      "id": "xai",
+      "name": "xAI",
+      "current_flagship": "Unknown",
+      "changed": true,
+      "change_summary": "Sued Minnesota over AI nudification law.",
+      "trajectory": "rising",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "claim": "xAI Sues Minnesota Days Before State Ban on AI Nudification Apps.",
+          "source_title": "Elon Musk’s xAI Sues Minnesota Days Before State Ban on AI Nudification Apps",
+          "url": "https://petapixel.com/2026/07/30/elon-musks-xai-sues-minnesota-days-before-state-ban-on-ai-nudification-apps/",
+          "date": "2026-07-31"
+        }
+      ],
+      "last_covered": null,
+      "watch_next": "Explore potential implications of the legal battle on xAI operations."
+    },
+    {
+      "id": "deepseek",
+      "name": "DeepSeek",
+      "current_flagship": "Unknown",
+      "changed": false,
+      "change_summary": "No verified material change this week.",
+      "trajectory": "steady",
+      "confidence": "medium",
+      "evidence": [],
+      "last_covered": null,
+      "watch_next": "Continue monitoring developments in AI capabilities."
+    },
+    {
+      "id": "moonshot",
+      "name": "Moonshot/Kimi",
+      "current_flagship": "Kimi K3",
+      "changed": true,
+      "change_summary": "Secured $3.5 billion funding and plans to release Kimi K3 publicly.",
+      "trajectory": "rising",
+      "confidence": "high",
+      "evidence": [
+        {
+          "claim": "Moonshot AI to make Kimi K3 available for public download.",
+          "source_title": "Moonshot AI to make Kimi K3 available for public download",
+          "url": "https://technode.com/2026/07/27/moonshot-ai-to-make-kimi-k3-available-for-public-download/",
+          "date": "2026-07-28"
+        },
+        {
+          "claim": "Moonshot AI closes $3.5 billion funding round to hit $35 billion valuation.",
+          "source_title": "Moonshot AI closes $3.5 billion funding round to hit $35 billion valuation",
+          "url": "https://economictimes.indiatimes.com/tech/artificial-intelligence/moonshot-ai-closes-3-5-billion-funding-round-to-hit-35-billion-valuation/articleshow/132710806.cms",
+          "date": "2026-07-30"
+        }
+      ],
+      "last_covered": null,
+      "watch_next": "Assess impact of raised funds on upcoming innovations."
+    },
+    {
+      "id": "alibaba",
+      "name": "Alibaba/Qwen",
+      "current_flagship": "Unknown",
+      "changed": false,
+      "change_summary": "No verified material change this week.",
+      "trajectory": "steady",
+      "confidence": "medium",
+      "evidence": [],
+      "last_covered": null,
+      "watch_next": "Watch developments on LLM inference."
+    },
+    {
+      "id": "mistral",
+      "name": "Mistral",
+      "current_flagship": "Unknown",
+      "changed": false,
+      "change_summary": "No verified material change this week.",
+      "trajectory": "steady",
+      "confidence": "medium",
+      "evidence": [],
+      "last_covered": null,
+      "watch_next": "Keep track of advances in Mistral's models."
+    }
+  ],
+  "evidence_count": 51,
+  "coverage_metrics": {
+    "days_audited": 7,
+    "candidate_count": 321,
+    "must_cover_count": 32,
+    "must_cover_selected": 31,
+    "must_cover_recall_percent": 96.9,
+    "tracked_players_seen": [
+      "alibaba",
+      "anthropic",
+      "deepseek",
+      "google",
+      "meta",
+      "moonshot",
+      "openai",
+      "xai"
+    ],
+    "tracked_players_covered": [
+      "alibaba",
+      "anthropic",
+      "meta",
+      "moonshot",
+      "openai",
+      "xai"
+    ],
+    "unresolved_must_cover": [
+      "Anthropic’s Dario Amodei rejects open model ban but calls for testing"
+    ]
+  }
 }
